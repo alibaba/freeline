@@ -1,0 +1,27 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.antfortune.freeline">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:vmSafeMode="true"
+        android:label="@string/app_name">
+
+        <activity android:name=".MiddlewareActivity"
+            android:screenOrientation="portrait" />
+        
+        <service android:name=".FreelineService"
+            android:process=":freeline" />
+        <service android:name=".FreelineService$InnerService"
+            android:process=":freeline" />
+
+        <receiver android:name=".FreelineReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.FreelineReceiver"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
