@@ -1,0 +1,210 @@
+# -*- coding:utf8 -*-
+from __future__ import print_function
+import os
+import re
+import time
+import datetime
+
+import android_tools
+from builder import Builder
+from logger import Logger
+from utils import cexec, curl, get_file_content, write_file_content
+
+NO_DEVICE_FOUND_MESSAGE = """\tPlease make sure your application is properly running in your device.
+\tCheck follow steps:
+\t1. If freeline is not added to your app's denpendencies, modifiy your dependency and run `python freeline.py -f`."""
+
+
+class SyncClient(object):
+    def __init__(self, is_art, config):
+        self._is_art = is_art
+        self._config = config
+        self._adb = Builder.get_adb(self._config)
+        self._cache_dir = self._config['build_cache_dir']
+        self._port = 0
+
+    def debug(self, message):
+        Logger.debug('[sync_client] {}'.format(message))
+
+    def check_device_connection(self):
+        commands = [self._adb, 'devices']
+        output, err, code = cexec(commands, callback=None)
+        if code == 0:
+            devices = output.strip().split('\n')
+            length = len(devices)
+            from exceptions import UsbConnectionException
+            if length < 2:
+                self.debug('No device\'s connection found')
+                raise UsbConnectionException('No device\'s connection found',
+                                             '\tUse `adb devices` to check your device connection')
+            if length > 2:
+                self.debug('More than 1 devices connect:')
+                self.debug(devices)
+                raise UsbConnectionException('More than 1 devices connect',
+                                             '\tOnly 1 device allowed, '
+                                             'use `adb devices` to check your devices\' connection')
+
+    def check_installation(self):
+        commands = [self._adb, 'shell', 'pm', 'list', 'packages', self._config['package']]
+        output, err, code = cexec(commands, callback=None)
+        result = re.findall(self._config['package'].replace('.', '\.') + '\s+\Z', output)
+        if len(result) != 1:
+            self.debug('No package named {} been installed to your device'.format(self._config['package']))
+            from exceptions import NoInstallationException
+            raise NoInstallationException(
+                'No package named {} been installed to your device'.format(self._config['package']),
+                '\tUse `adb shell pm list packages {}` to check app installation.'.format(self._config['package']))
+
+    def ensure_device_status(self):
+        if not self._check_screen_status():
+            self.debug('try to turn on your device\'s screen...')
+            self._turn_on_screen()
+
+    def connect_device(self):
+        self.debug('start to connect device...')
+        self._port = self.scan_device_port()
+
+        if self._port == 0:
+            self.wake_up()
+            for i in range(1, 25):
+                self._port = self.scan_device_port()
+                if self._port != 0:
+                    break
+                time.sleep(0.2)
+                self.debug('try to connect device {} times...'.format(i))
+
+        if self._port == 0:
+            self.check_device_connection()
+            self.check_installation()
+            self.debug('package {} not found. Please make sure your application is properly running in your device, '
+                       'freeline will start a clean build'.format(self._config['package']))
+            from exceptions import NoDeviceFoundException
+            raise NoDeviceFoundException('Package {} is not found.'.format(self._config['package']),
+                                         NO_DEVICE_FOUND_MESSAGE)
+        self.debug('find device port: {}'.format(self._port))
+
+    def close_connection(self):
+        if self._port != 0:
+            cexec([self._adb, 'forward', '--remove', 'tcp:{}'.format(self._port)], callback=None)
+
+    def scan_device_port(self):
+        port = 0
+        apktime_path = self._get_apktime_path()
+        self.debug("apktime path: " + apktime_path)
+        sync_value = get_sync_value(apktime_path, self._cache_dir)
+        self.debug('your local sync value is: {}'.format(sync_value))
+
+        for i in range(0, 10):
+            cexec([self._adb, 'forward', 'tcp:{}'.format(41128 + i), 'tcp:{}'.format(41128 + i)], callback=None)
+            url = 'http://127.0.0.1:{}/checkSync?sync={}'.format(41128 + i, sync_value)
+            result, err, code = curl(url)
+            if code == 0 and result is not None:
+                port = 41128 + i
+                if result and int(result) == 0:
+                    self.debug('server result is {}'.format(result))
+                    self.debug('check sync value failed, maybe you need a clean build.')
+                    from exceptions import CheckSyncStateException
+                    raise CheckSyncStateException('check sync value failed, maybe you need a clean build.',
+                                                  'NO CAUSE')
+                break
+        for i in range(0, 10):
+            if (41128 + i) != port:
+                cexec([self._adb, 'forward', '--remove', 'tcp:{}'.format(41128 + i)], callback=None)
+
+        return port
+
+    def sync_incremental_res(self):
+        raise NotImplementedError  # TODO: sync single res.pack
+
+    def sync_incremental_dex(self):
+        dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
+        if os.path.exists(dex_path):
+            self.debug('start to sync incremental dex...')
+            with open(dex_path, 'rb') as fp:
+                url = 'http://127.0.0.1:{}/pushDex'.format(self._port)
+                self.debug('pushdex: ' + url)
+                result, err, code = curl(url, body=fp.read())
+                if code != 0:
+                    from exceptions import FreelineException
+                    raise FreelineException('sync incremental dex failed.', err.message)
+        else:
+            self.debug('no {} exists.'.format(dex_path))
+
+    def sync_state(self, is_need_restart):
+        if self._is_need_sync_dex() or self._is_need_sync_res():
+            self.debug('start to sync close longlink...')
+            restart_char = 'restart' if is_need_restart else 'no'
+            update_last_sync_ticket(self._cache_dir)
+            url = 'http://127.0.0.1:{}/closeLongLink?{}&lastSync={}'.format(self._port, restart_char,
+                                                                            get_last_sync_ticket(self._cache_dir))
+            self.debug('closeLongLink: ' + url)
+            result, err, code = curl(url)
+            # self.wake_up()
+            if code != 0:
+                rollback_last_sync_ticket(self._cache_dir)
+                from exceptions import FreelineException
+                raise FreelineException('sync state failed.', err.message)
+
+    def wake_up(self):
+        cexec([self._adb, 'shell', 'am', 'start', '-n', '{}/{}'.format(self._config['package'],
+                                                                       self._config['launcher'])], callback=None)
+
+    def _check_screen_status(self):
+        commands = [self._adb, 'shell', 'dumpsys', 'input_method']
+        check_str = 'mInteractive=true' if self._is_art else 'mScreenOn=true'
+        output, err, code = cexec(commands, callback=None)
+        return re.search(check_str, output)
+
+    def _turn_on_screen(self):
+        commands = [self._adb, 'shell', 'input', 'keyevent', '26']
+        cexec(commands, callback=None)
+
+    def _get_apktime_path(self):
+        raise NotImplementedError
+
+    def _is_need_sync_dex(self):
+        return os.path.exists(android_tools.get_incremental_dex_path(self._cache_dir))
+
+    def _is_need_sync_res(self):
+        raise NotImplementedError
+
+
+def get_sync_value(apktime_path, cache_dir):
+    return get_apk_created_ticket(apktime_path) + get_last_sync_ticket(cache_dir)
+
+
+def get_last_sync_ticket_path(cache_dir):
+    return os.path.join(cache_dir, 'syncid')
+
+
+def get_last_sync_ticket(cache_dir):
+    ticket_path = get_last_sync_ticket_path(cache_dir)
+    data = get_file_content(ticket_path)
+    return 0 if len(data) == 0 else int(data)
+
+
+def update_last_sync_ticket(cache_dir):
+    ticket = get_last_sync_ticket(cache_dir) + 1
+    ticket_path = get_last_sync_ticket_path(cache_dir)
+    write_file_content(ticket_path, ticket)
+
+
+def rollback_last_sync_ticket(cache_dir):
+    ticket = get_last_sync_ticket(cache_dir)
+    if ticket > 0:
+        ticket -= 1
+    else:
+        ticket = 0
+    write_file_content(get_last_sync_ticket_path(cache_dir), ticket)
+
+
+def get_apk_created_ticket(apktime_path):
+    data = get_file_content(apktime_path)
+    return 0 if len(data) == 0 else int(data)
+
+
+def update_clean_build_created_flag(apktime_path):
+    flag = str(datetime.datetime.now().microsecond)
+    Logger.debug("update apk time path: " + apktime_path)
+    Logger.debug("new clean build flag value: " + flag)
+    write_file_content(apktime_path, flag)

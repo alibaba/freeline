@@ -1,0 +1,104 @@
+# -*- coding:utf8 -*-
+from __future__ import print_function
+
+import os
+
+from android_tools import InstallApkTask, CleanAllCacheTask
+from builder import CleanBuilder
+from gradle_tools import GenerateFileStatTask, BuildBaseResourceTask, get_project_info
+from task import CleanBuildTask, Task
+from utils import cexec, load_json_cache, write_json_cache
+from utils import is_windows_system
+
+
+class GradleCleanBuilder(CleanBuilder):
+    def __init__(self, config, task_engine, project_info=None):
+        CleanBuilder.__init__(self, config, task_engine, builder_name='gradle_clean_builder')
+        self._root_task = None
+        self._project_info = project_info
+
+    def check_build_environment(self):
+        CleanBuilder.check_build_environment(self)
+        if self._project_info is None:
+            project_info_cache_path = os.path.join(self._config['build_cache_dir'], 'project_info_cache.json')
+            if os.path.exists(project_info_cache_path):
+                self._project_info = load_json_cache(project_info_cache_path)
+            else:
+                self._project_info = get_project_info(self._config)
+
+    def find_dependencies(self):
+        pass
+
+    def generate_sorted_build_tasks(self):
+        # tasks' order:
+        # 1. generate file stat / check before clean build
+        # 2. clean build
+        # 3. install / clean cache
+        # 4. build base res / generate project info cache
+        build_task = GradleCleanBuildTask(self._config)
+        install_task = InstallApkTask(self._adb, self._config)
+        clean_all_cache_task = CleanAllCacheTask(self._config['build_cache_dir'], ignore=[
+            'stat_cache.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml'])
+        build_base_resource_task = BuildBaseResourceTask(self._config, self._project_info)
+        generate_stat_task = GenerateFileStatTask(self._config)
+        read_project_info_task = GradleReadProjectInfoTask()
+        generate_project_info_task = GradleGenerateProjectInfoTask(self._config)
+
+        # generate_stat_task.add_child_task(read_project_info_task)
+        build_task.add_child_task(clean_all_cache_task)
+        build_task.add_child_task(install_task)
+        clean_all_cache_task.add_child_task(build_base_resource_task)
+        clean_all_cache_task.add_child_task(generate_project_info_task)
+        read_project_info_task.add_child_task(build_task)
+        self._root_task = [generate_stat_task, read_project_info_task]
+
+    def clean_build(self):
+        self._task_engine.add_root_task(self._root_task)
+        self._task_engine.start()
+
+
+class GradleReadProjectInfoTask(Task):
+    def __init__(self):
+        Task.__init__(self, 'read_project_info_task')
+
+    def execute(self):
+        command = './gradlew -q checkBeforeCleanBuild'
+        if is_windows_system():
+            command = 'gradlew.bat -q checkBeforeCleanBuild'
+
+        output, err, code = cexec(command.split(' '), callback=None)
+        if code != 0:
+            from exceptions import FreelineException
+            raise FreelineException('freeline failed when read project info with script: {}'.format(command),
+                                    '{}\n{}'.format(output, err))
+
+
+class GradleGenerateProjectInfoTask(Task):
+    def __init__(self, config):
+        Task.__init__(self, 'generate_project_info_task')
+        self._config = config
+
+    def execute(self):
+        write_json_cache(os.path.join(self._config['build_cache_dir'], 'project_info_cache.json'),
+                         get_project_info(self._config))
+
+
+class GradleCleanBuildTask(CleanBuildTask):
+    def __init__(self, config):
+        CleanBuildTask.__init__(self, 'gradle_clean_build_task', config)
+
+    def execute(self):
+        # reload config
+        from dispatcher import read_freeline_config
+        self._config = read_freeline_config()
+        cwd = self._config['build_script_work_directory'].strip()
+        if not cwd or not os.path.isdir(cwd):
+            cwd = None
+
+        output, err, code = cexec(self._config['build_script'].split(' '), callback=None, cwd=cwd)
+        self.debug(self._config['build_script'])
+        self.debug("Gradle build task is running, please wait a minute...")
+        if code != 0:
+            from exceptions import FreelineException
+            raise FreelineException('build failed with script: {}'.format(self._config['build_script']),
+                                    '{}\n{}'.format(output, err))
