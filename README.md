@@ -42,7 +42,7 @@ Freeline has been tested with API versions 17, 19, 22, 23 on the android emulato
 ## Download
 Configure your project-level build.gradle to include freeline plugin:
 
-````
+````Gradle
 buildscript {
     repositories {
         jcenter()
@@ -54,7 +54,7 @@ buildscript {
 ````
 Then, apply the freeline plugin in your android application module's build.gradle and add the freeline dependencies:
 
-````
+````Gradle
 apply plugin: 'com.antfortune.freeline'
 
 android {
@@ -70,7 +70,7 @@ dependencies {
 ````
 Finally, apply freeline in your application class.
 
-````
+````Java
 public class App extends Application {
     @Override
     public void onCreate() {
@@ -85,6 +85,8 @@ See [wiki](https://github.com/alibaba/freeline/wiki) for more about freeline DSL
 ## Installation
 - Windows: `gradlew.bat initFreeline`
 - Linux/Mac: `./gradlew initFreeline`
+
+`gradle initFreeline -Pmirror` or proxy might be useful, if you have trouble in downloading freeline dependency.
 
 Note that, you should apply the freeline plugin dependency before you execute these commands. 
 
