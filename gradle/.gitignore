@@ -1,0 +1,12 @@
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+*/build
+/captures
+
+/.freeline_cache
+*.py
+*.pyc

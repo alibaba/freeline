@@ -1,0 +1,81 @@
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+
+def mavenDesc = 'Freeline is an incremental build tool for Android platform.'
+def siteUrl = 'https://github.com/alibaba/freeline'
+def gitUrl = 'https://github.com/alibaba/freeline'
+def issueUrl = 'https://github.com/alibaba/freeline/issues'
+
+def licenseIds = ['BSD']
+
+def developerId = 'yong.hy'
+def developerName = 'yong.hy'
+def developerEmail = 'yong.hy@alipay.com'
+
+def publishedGroupId = 'com.antfortune.freeline'
+def artifact = 'gradle'
+def libraryName = 'freeline-gradle'
+def publishVersion = '0.5.0'
+
+install {
+    repositories {
+        mavenInstaller {
+            pom.project {
+                name libraryName
+                description mavenDesc
+                url siteUrl
+
+                groupId publishedGroupId
+                artifactId artifact
+                version publishVersion
+
+                developers {
+                    developer {
+                        id developerId
+                        name developerName
+                        email developerEmail
+                    }
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allGroovy
+    classifier = 'sources'
+}
+
+
+task javadocJar(type: Jar, dependsOn: groovydoc) {
+    from groovydoc.getDestinationDir()
+    classifier = 'javadoc'
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+// Bintray
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+bintray {
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apikey")
+
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = libraryName
+        desc = mavenDesc
+        websiteUrl = siteUrl
+        issueTrackerUrl = issueUrl
+        vcsUrl = gitUrl
+        labels = ['android', 'incremental build', 'freeline', 'hotpatch']
+        licenses = licenseIds
+        publish = true
+        publicDownloadNumbers = true
+    }
+}
