@@ -13,7 +13,7 @@ Freeline splits the build task into several small tasks that run concurrently. I
 
 Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which can be as small as 1 kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
 
-Freeline will automatically switch between full build and incremental build
+Freeline will automatically switch between full build and incremental build.
 
 Freeline is also a great basis for over-the-air hotpatching. Deliverying Freeline's incremental output, which can be packed into a zip file and usually less than 100 kb, it is able to take effect to fix crashes or other problems. Statistical data over large amount cases show that it is effective for 99% of users. Please note that the OTA patch delivery system is out of scope of this project.
 
