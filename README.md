@@ -15,7 +15,7 @@ Freeline uses multi-dex solution for incremental dex hot swapping. A deeply opti
 
 Freeline will automatically switch between full build and incremental build.
 
-Freeline is also a great basis for over-the-air hotpatching. Deliverying Freeline's incremental output, which can be packed into a zip file and usually less than 100 kb, it is able to take effect to fix crashes or other problems. Statistical data over large amount cases show that it is effective for 99% of users. Please note that the OTA patch delivery system is out of scope of this project.
+Freeline is also a great basis for over-the-air hotpatching. Deliverying Freeline's incremental output, which can be packed into a zip file and usually less than 100 kb, it is able to take effect to fix crashes or other problems and replace resoucres dynamically. Statistical data over large amount cases show that it is effective for 99% of users. Please note that the OTA patch delivery system is out of scope of this project.
 
 FreelineAapt will open source codes later. See wiki to know more about Freeline, only Chinese available now.
 
