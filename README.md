@@ -81,6 +81,15 @@ public class App extends Application {
 ````
 
 See [wiki](https://github.com/alibaba/freeline/wiki) for more about freeline DSL.
+DSL:
+freeline{
+    hack true            //for dynamic hot swap class
+    buildScript './gradlew assembleDebug'  // your default build command 
+    apkPath '/xxx/fresco/samples/comparison/build/outputs/apk/comparison-x86-debug.apk' //if your main project final build has multi results，fill here and freeline will auto install on you phone 
+}
+
+
+
 
 ## Installation
 - Windows: `gradlew.bat initFreeline`
