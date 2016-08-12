@@ -86,7 +86,7 @@ DSL: use to customize your project
   
 ````
 freeline{
-    hack true //for dynamic hot swap class
+    hack true //for hot swap class
     buildScript './gradlew assembleDebug'  // your default build command 
     apkPath '/xxx/fresco/samples/build/outputs/apk/comparison-x86-debug.apk' //if your main project final build has multi results，fill here and freeline will auto install on you phone 
 }
