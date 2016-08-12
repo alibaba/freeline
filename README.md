@@ -109,6 +109,7 @@ distributionUrl=http\://mirrors.taobao.net/mirror/gradle/gradle-2.10-all.zip
 ````
 
 ## Usage
+On the root dir of your project :
 - Daily build：`python freeline.py`
 - Rebuild project：`python freeline.py -f`
 
