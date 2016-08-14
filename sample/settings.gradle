@@ -1,0 +1,1 @@
+include ':app', ':common', ':resources', ':ThirdParty:share', ':ThirdParty:payment'
