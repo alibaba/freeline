@@ -202,6 +202,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                                                       is_art=is_art)
         self._all_module_info = all_module_info
         self._module_dir_map = module_dir_map
+        self._merged_res_paths = []
+        self._merged_res_paths.append(self._finder.get_backup_res_dir())
+        for mname in self._all_module_info.keys():
+            if mname in self._config['project_source_sets']:
+                self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
+                self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_assets_directory'])
 
     def before_execute(self):
         self._finder = GradleDirectoryFinder(self._name, self._dir_name, self._cache_dir,
@@ -369,22 +375,29 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         changed_list = []
         for rfile in self._changed_files['res']:
             if rfile not in changed_list:
-                changed_list.append(self.get_res_relative_path(rfile))
+                changed_list.append(self._get_res_relative_path(rfile))
 
         for afile in self._changed_files['assets']:
             if afile not in changed_list:
-                changed_list.append(self.get_res_relative_path(afile))
+                changed_list.append(self._get_res_relative_path(afile))
         return changed_list
 
-    def get_res_relative_path(self, res):
+    def _get_res_relative_path(self, res):
         if res.startswith('res') or res.startswith('AndroidManifest.xml'):
             return res
-        if 'assets' + os.sep in res:
-            resTemp = res.split('assets' + os.sep)[1]
-            return os.path.join('assets', resTemp)
-        elif 'res' + os.sep in res:
-            resTemp = res.split('res' + os.sep)[1]
-            return os.path.join('res', resTemp)
+
+        def path_fix(path):
+            return path if path.endswith(os.sep) else path + os.sep
+
+        for respath in self._merged_res_paths:
+            respath = path_fix(respath)
+            if res.startswith(respath):
+                index = respath.strip(os.sep).rfind(os.sep)
+                if index >= 0:
+                    res_dir_name = respath[index + 1:].strip(os.sep)
+                    relative_path = os.path.join(res_dir_name, res.replace(respath, ''))
+                    self.debug("find relative path: {}".format(relative_path))
+                    return relative_path
         return None
 
     def __modify_other_modules_r(self, package_name):
