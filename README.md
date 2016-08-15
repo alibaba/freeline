@@ -158,6 +158,14 @@ The classes which would skip the freeline class-inject process, the default valu
 ## Troubleshooting
 Note: Only Chinese Version Available Now
 
+- **Exception: `Public symbol xxxx declared here is not defined.`**
+
+Aapt 打资源包报错。在aapt的参数中，缺少某些未被freeline自动识别的资源路径，导致部分资源id没有被找到。将缺少的资源路径，在`build.gradle`的freeline DSL中加入配置项：`extraResourceDependencyPaths = ['/path/to/resource/directory1', '/path/to/resource/directory2']`
+
+- **Exception: `Attribute xxxxxx has already been defined`**
+
+Aapt 打资源包报错。工程文件中存在重复定义的资源id，可以手动删掉，不影响工程编译。
+
 - **与Genymotion自带的adb发生冲突**
 
 ````
