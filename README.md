@@ -82,17 +82,7 @@ public class App extends Application {
 }
 ````
 
-DSL: use to customize your project
-  
-````
-freeline{
-    hack true //for hot swap class
-    buildScript './gradlew assembleDebug'  // your default build command 
-    apkPath '/xxx/fresco/samples/build/outputs/apk/comparison-x86-debug.apk' //if your main project final build has multi apk ,results，fill here for freeline auto install to you phone or not need not config this 
-}
-
-````
-
+If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](#Freeline-DSL-References).
 
 ## Installation
 - Windows: `gradlew.bat initFreeline`
@@ -101,12 +91,6 @@ freeline{
 `gradle initFreeline -Pmirror` or proxy might be useful, if you have trouble in downloading freeline dependency.
 
 Note that, you should apply the freeline plugin dependency before you execute these commands. 
-
-If you are stuck in downloading gradle's zip file, you can try to modify `distributionUrl` configuration located in  `gradle/wrapper/gradle-wrapper.properties`, and then re-run the gradle task. For example:
-
-````
-distributionUrl=http\://mirrors.taobao.net/mirror/gradle/gradle-2.10-all.zip
-````
 
 ## Usage
 On the root dir of your project :
@@ -129,6 +113,40 @@ If your project has manifest.xml, build.gradle or libs modified, freeline will a
 ## Contributing
 We are always very happy to have contributions, whether for trivial cleanups, big new features or other material rewards.
 
+## Freeline DSL References
+### Properties
+| Property | Description |
+|:---:|:---:|
+|hack| The global switch for freeline hack process. |
+|buildScript| The build script for your project. |
+|productFlavor| The flavor your debuggable project use. |
+|apkPath| The path of the build output apk file which would be installed to your device. |
+|extraResourceDependencyPaths| The extra resources dependency paths which would be added to the aapt options. | 
+|excludeResourceDependencyPaths| The resources dependency paths which would be removed from the aapt options. |
+|excludeHackClasses| The classes which would skip the freeline class-inject process. |
+
+### Property details
+#### boolean hack
+The global switch for freeline hack process, the default value is false.
+
+#### String buildScript
+The build script for your project, the default value is `gradle assemble{ProductFlavor}Debug`.
+
+#### String productFlavor
+The flavor your debuggable project use, the default is empty.
+
+#### apkPath
+The path of the build output apk file which would be installed to your device, the default value is `{main_module_dir}/build/outputs/apk/{main_module_name}-debug.apk`.
+
+#### extraResourceDependencyPaths
+The extra resources dependency paths which would be added to the aapt options, the default value is empty.
+
+#### excludeResourceDependencyPaths
+The resources dependency paths which would be removed from the aapt options, the default value is empty.
+
+#### excludeHackClasses
+The classes which would skip the freeline class-inject process, the default value is the class which has a parent class 'android/app/Application'.
+
 ## Troubleshooting
 [Troubleshooting](https://github.com/alibaba/freeline/wiki)  
 
@@ -139,6 +157,10 @@ We are always very happy to have contributions, whether for trivial cleanups, bi
 
 ## License
 BSD License
+
+
+
+
 
 
 
