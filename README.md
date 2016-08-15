@@ -82,7 +82,7 @@ public class App extends Application {
 }
 ````
 
-If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](#freeline-dsl-references).
+If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References).
 
 ## Installation
 - Windows: `gradlew.bat initFreeline`
@@ -121,42 +121,8 @@ cd freeline/sample
 ## Contributing
 We are always very happy to have contributions, whether for trivial cleanups, big new features or other material rewards.
 
-## Freeline DSL References
-### Properties
-| Property | Description |
-|:---:|:---:|
-|hack| The global switch for freeline hack process. |
-|buildScript| The build script for your project. |
-|productFlavor| The flavor your debuggable project use. |
-|apkPath| The path of the build output apk file which would be installed to your device. |
-|extraResourceDependencyPaths| The extra resources dependency paths which would be added to the aapt options. | 
-|excludeResourceDependencyPaths| The resources dependency paths which would be removed from the aapt options. |
-|excludeHackClasses| The classes which would skip the freeline class-inject process. |
-
-### Property details
-#### boolean hack
-The global switch for freeline hack process, the default value is false.
-
-#### String buildScript
-The build script for your project, the default value is `gradle assemble{ProductFlavor}Debug`.
-
-#### String productFlavor
-The flavor your debuggable project use, the default is empty.
-
-#### apkPath
-The path of the build output apk file which would be installed to your device, the default value is `{main_module_dir}/build/outputs/apk/{main_module_name}-debug.apk`.
-
-#### extraResourceDependencyPaths
-The extra resources dependency paths which would be added to the aapt options, the default value is empty.
-
-#### excludeResourceDependencyPaths
-The resources dependency paths which would be removed from the aapt options, the default value is empty.
-
-#### excludeHackClasses
-The classes which would skip the freeline class-inject process, the default value is the class which has a parent class 'android/app/Application'.
-
 ## Troubleshooting
-See [wiki](https://github.com/alibaba/freeline/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+See [wiki](https://github.com/alibaba/freeline/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98).
 
 ## Thanks
 - [Instant Run](https://developer.android.com/studio/run/index.html#instant-run)
