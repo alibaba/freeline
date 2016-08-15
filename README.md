@@ -82,7 +82,7 @@ public class App extends Application {
 }
 ````
 
-If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](#Freeline-DSL-References).
+If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](#freeline-dsl-references).
 
 ## Installation
 - Windows: `gradlew.bat initFreeline`
@@ -94,10 +94,18 @@ Note that, you should apply the freeline plugin dependency before you execute th
 
 ## Usage
 On the root dir of your project :
+
 - Daily build：`python freeline.py`
 - Rebuild project：`python freeline.py -f`
 
 If your project has manifest.xml, build.gradle or libs modified, freeline will automatically rebuild your project, you don't need to pay attention to what you just modified!
+
+## Sample Usage
+````
+git clone git@github.com:alibaba/freeline.git
+cd freeline/sample
+./gradlew initFreeline
+````
 
 ## TODO
 - Compatibility Improvement
@@ -148,7 +156,47 @@ The resources dependency paths which would be removed from the aapt options, the
 The classes which would skip the freeline class-inject process, the default value is the class which has a parent class 'android/app/Application'.
 
 ## Troubleshooting
-[Troubleshooting](https://github.com/alibaba/freeline/wiki)  
+Note: Only Chinese Version Available Now
+
+- **与Genymotion自带的adb发生冲突**
+
+````
+$ adb devices
+adb server is out of date.  killing...
+cannot bind 'tcp:5037'
+ADB server didn't ACK
+*failed to start daemon *
+````
+问题出现的原因是genymotion自带了adb工具，会造成冲突。解决的方式是将Genymotion所使用的adb改为androidsdk自带的adb。具体可以参考：[StackOverflow Link](http://stackoverflow.com/questions/26630398/how-to-use-adb-with-genymotion-on-mac)
+
+- **每次增量编译的时候，不停地提示`sync value error`**
+
+需要检查以下几个问题：
+
+1. 是否注册了Application类
+2. 是否在Application类中初始化了Freeline
+3. 是否在同一台设备上安装了多个依赖了freeline的应用
+
+需要在minifest注册正确的Application类，并在其中初始化freeline，以及在开发使用的设备上只安装一个依赖freeline的应用。
+
+- **NoConfigFoundException：`/path/ not found, please execute gradlew checkBeforeCleanBuild first.`**
+    
+执行`./gradlew checkBeforeCleanBuild`或者`gradlew.bat checkBeforeCleanBuild`
+    
+- **Java增量编译无效**
+
+需要检查一下所修改的类是否在Application类中被引用。部分机型如小米，在Application中被import，而没有被调用，仍然会预加载dex进来。导致其dex在freeline之前被初始化引用，造成无法增量生效的情况。解决方案是去掉无用import，将`FreelineCore.init(this);`放在Application类中的`onCreate()`函数的最前面调用。
+
+- **Exception: `manifest merger failed: uses-sdk:minSdkVersion can not be smaller than 14 declared in library[com.antfortune.freeline:runtime:x.x.x]`**
+
+工程的minSdkVersion比freeline:runtime来得低导致的，解决方案如下：
+
+````xml
+<uses-sdk
+        android:minSdkVersion="9"
+        android:targetSdkVersion="21"
+        tools:overrideLibrary="com.antfortune.freeline"/>
+````
 
 ## Thanks
 - [Instant Run](https://developer.android.com/studio/run/index.html#instant-run)
