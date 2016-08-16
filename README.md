@@ -95,8 +95,8 @@ Note that, you should apply the freeline plugin dependency before you execute th
 ## Usage
 On the root dir of your project :
 
-- Daily build：`python freeline.py`
-- Rebuild project：`python freeline.py -f`
+- increment build：`python freeline.py`
+- force full build：`python freeline.py -f`
 
 If your project has manifest.xml, build.gradle or libs modified, freeline will automatically rebuild your project, you don't need to pay attention to what you just modified!
 
