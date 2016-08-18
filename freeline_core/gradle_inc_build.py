@@ -34,10 +34,10 @@ class GradleIncBuilder(IncrementalBuilder):
             self._module_dir_map[item['name']] = item['relative_dir']
 
         for key, value in self._project_info.iteritems():
-            self._module_dependencies[key] = [self._module_dir_map[item] for item in value['local_module_dep']]
+            self._module_dependencies[key] = [item for item in value['local_module_dep']]
 
         self._is_art = android_tools.get_device_sdk_version_by_adb(Builder.get_adb(self._config)) > 20
-        # merge all resources modified files
+        # merge all resources modified files to main resources
         self.__merge_res_files()
 
     def generate_sorted_build_tasks(self):
@@ -58,24 +58,23 @@ class GradleIncBuilder(IncrementalBuilder):
         return GradleCompileCommand(module, self.__setup_invoker(module))
 
     def __setup_invoker(self, module):
-        return GradleIncBuildInvoker(self._project_info[module]['name'], self._project_info[module]['relative_dir'],
-                                     self._config, self._changed_files['projects'][module], self._project_info[module],
-                                     self._is_art, all_module_info=self._project_info,
-                                     module_dir_map=self._module_dir_map)
+        return GradleIncBuildInvoker(module, self._project_info[module]['path'], self._config,
+                                     self._changed_files['projects'][module], self._project_info[module], self._is_art,
+                                     all_module_info=self._project_info, module_dir_map=self._module_dir_map)
 
     def __merge_res_files(self):
-        main_res = self._changed_files['projects'][self._config['main_project_dir']]
+        main_res = self._changed_files['projects'][self._config['main_project_name']]
         for module, file_dict in self._changed_files['projects'].iteritems():
-            if module == self._config['main_project_dir']:
+            if module == self._config['main_project_name']:
                 continue
             for key, files in file_dict.iteritems():
                 if key == 'res' or key == 'assets':
                     main_res[key].extend(files)
-        self._changed_files['projects'][self._config['main_project_dir']] = main_res
+        self._changed_files['projects'][self._config['main_project_name']] = main_res
 
     def incremental_build(self):
         merge_dex_task = GradleMergeDexTask(self._config['build_cache_dir'], self._all_modules, self._project_info)
-        aapt_task = GradleAaptTask(self.__setup_invoker(self._config['main_project_dir']))
+        aapt_task = GradleAaptTask(self.__setup_invoker(self._config['main_project_name']))
 
         task_list = self._tasks_dictionary.values()
         last_tasks = find_last_tasks(task_list)
@@ -83,10 +82,8 @@ class GradleIncBuilder(IncrementalBuilder):
         for rtask in find_root_tasks(task_list):
             aapt_task.add_child_task(rtask)
 
-        clean_cache_task = GradleCleanCacheTask(self._config['build_cache_dir'], self._project_info,
-                                                self._module_dir_map)
-        sync_client = GradleSyncClient(self._is_art, self._config, self._project_info, self._all_modules,
-                                       self._config['main_project_dir'])
+        clean_cache_task = GradleCleanCacheTask(self._config['build_cache_dir'], self._project_info)
+        sync_client = GradleSyncClient(self._is_art, self._config, self._project_info, self._all_modules)
         connect_task = android_tools.ConnectDeviceTask(sync_client)
         sync_task = GradleSyncTask(sync_client, self._config['build_cache_dir'])
         update_stat_task = android_tools.UpdateStatTask(self._config, self._changed_files['projects'])
@@ -196,9 +193,9 @@ class GradleIncDexCommand(IncDexCommand):
 
 
 class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
-    def __init__(self, module_name, dir_name, config, changed_files, module_info, is_art, all_module_info=None,
+    def __init__(self, module_name, path, config, changed_files, module_info, is_art, all_module_info=None,
                  module_dir_map=None):
-        android_tools.AndroidIncBuildInvoker.__init__(self, module_name, dir_name, config, changed_files, module_info,
+        android_tools.AndroidIncBuildInvoker.__init__(self, module_name, path, config, changed_files, module_info,
                                                       is_art=is_art)
         self._all_module_info = all_module_info
         self._module_dir_map = module_dir_map
@@ -210,11 +207,11 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_assets_directory'])
 
     def before_execute(self):
-        self._finder = GradleDirectoryFinder(self._name, self._dir_name, self._cache_dir,
+        self._finder = GradleDirectoryFinder(self._name, self._module_path, self._cache_dir,
                                              package_name=self._module_info['packagename'], config=self._config)
 
     def check_res_task(self):
-        if self._dir_name != self._config['main_project_dir']:
+        if self._name != self._config['main_project_name']:
             self.debug('skip {} aapt task'.format(self._name))
             return False
         return android_tools.AndroidIncBuildInvoker.check_res_task(self)
@@ -293,7 +290,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         return aapt_args, final_changed_list
 
     def check_other_modules_resources(self):
-        if self._dir_name == self._config['main_project_dir'] and self._all_module_info is not None:
+        if self._name == self._config['main_project_name'] and self._all_module_info is not None:
             changed_modules = []
             for fn in self._changed_files['res']:
                 module = self.__find_res_in_which_module(fn)
@@ -316,13 +313,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
     def append_r_file(self):
         if len(self._changed_files['res']) > 0:
-            backupdir = os.path.join(self._cache_dir, self._config['main_project_dir'], 'backup')
+            backupdir = os.path.join(self._cache_dir, self._config['main_project_name'], 'backup')
             rpath = os.path.join(backupdir, self._module_info['packagename'].replace('.', os.sep), 'R.java')
             if os.path.exists(rpath):
                 self._changed_files['src'].append(rpath)
 
             main_rpath = os.path.join(backupdir,
-                                      self._all_module_info[self._config['main_project_dir']]['packagename'].replace(
+                                      self._all_module_info[self._config['main_project_name']]['packagename'].replace(
                                           '.', os.sep), 'R.java')
             if os.path.exists(main_rpath):
                 self._changed_files['src'].append(main_rpath)
@@ -347,7 +344,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         # remove existing same-name class in build directory
         # src_dir = android_tools.get_src_dir(self._dir_name)
         from gradle_tools import get_module_name
-        srcdirs = self._config['project_source_sets'][get_module_name(self._dir_name)]['main_src_directory']
+        srcdirs = self._config['project_source_sets'][get_module_name(self._module_path)]['main_src_directory']
         for dirpath, dirnames, files in os.walk(patch_classes_cache_dir):
             for fn in files:
                 if self._is_r_file_changed and self._module_info['packagename'] + '.R.' in fn:
@@ -421,8 +418,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def __find_res_in_which_module(self, res_path):
         for module in self._all_module_info.keys():
             # rdir = android_tools.get_res_dir(module)
-            from gradle_tools import get_module_name
-            res_dirs = self._config['project_source_sets'][get_module_name(module)]['main_res_directory']
+            res_dirs = self._config['project_source_sets'][module]['main_res_directory']
             for rdir in res_dirs:
                 if rdir is not None:
                     if res_path.startswith(rdir) or rdir in res_path:

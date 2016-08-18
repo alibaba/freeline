@@ -19,10 +19,9 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         self._config = config
         self._changed_files = {}
         self.project_info = None
-        self._finder = GradleDirectoryFinder(get_module_name(self._config['main_project_dir']),
-                                             self._config['main_project_dir'], self._config['build_cache_dir'])
-        self._build_dirs_map = {}
         self._stat_cache = None
+        self._finder = GradleDirectoryFinder(self._config['main_project_name'], self._config['main_project_dir'],
+                                             self._config['build_cache_dir'])
 
     def execute(self):
         cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
@@ -38,12 +37,12 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             self.project_info = get_project_info(self._config)
             write_json_cache(project_info_cache_path, self.project_info)
 
-        all_modules = self.project_info.keys()
-        build_info = self._get_bulild_info()
+        build_info = self._get_build_info()
 
-        for module in all_modules:
-            self._changed_files[module] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [], 'config': []}
-            self._scan_module_changes(module)
+        for module_name, module_info in self.project_info.iteritems():
+            self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
+                                                'config': []}
+            self._scan_module_changes(module_name, module_info['path'])
 
         self._mark_changed_flag()
 
@@ -58,38 +57,39 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             if not android_tools.is_res_changed(cache_dir) and len(bundle['res']) > 0:
                 android_tools.mark_res_changed(cache_dir)
 
-    def _get_bulild_info(self):
+    def _get_build_info(self):
         final_apk_path = self._config['apk_path']
         last_clean_build_time = os.path.getmtime(final_apk_path) if os.path.exists(final_apk_path) else 0
         is_root_config_changed = os.path.getmtime(os.path.join('build.gradle')) > last_clean_build_time
+        if not is_root_config_changed:
+            is_root_config_changed = os.path.getmtime(os.path.join('settings.gradle')) > last_clean_build_time
 
         return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
 
-    def _scan_module_changes(self, module):
-        module_name = get_module_name(module)
-        module_cache = self._stat_cache[module]
+    def _scan_module_changes(self, module_name, module_path):
+        module_cache = self._stat_cache[module_name]
 
         # scan bulid.gradle
-        config_path = os.path.join(module, 'build.gradle')
-        if self.__check_changes(module, config_path, module_cache):
-            self._changed_files[module]['config'].append(config_path)
+        config_path = os.path.join(module_path, 'build.gradle')
+        if self.__check_changes(module_name, config_path, module_cache):
+            self._changed_files[module_name]['config'].append(config_path)
 
         # scan libs dirs
         libs_dir_names = ['libs', 'lib']
         for lib_dir_name in libs_dir_names:
-            lib_dir_path = os.path.join(module, lib_dir_name)
+            lib_dir_path = os.path.join(module_path, lib_dir_name)
             if os.path.isdir(lib_dir_path):
                 for dirpath, dirnames, files in os.walk(lib_dir_path):
                     for fn in files:
                         fpath = os.path.join(dirpath, fn)
-                        if self.__check_changes(module, fpath, module_cache):
-                            self._changed_files[module]['libs'].append(fpath)
+                        if self.__check_changes(module_name, fpath, module_cache):
+                            self._changed_files[module_name]['libs'].append(fpath)
 
         if module_name in self._config['project_source_sets']:
             # scan manifest
             manifest = self._config['project_source_sets'][module_name]['main_manifest_path']
-            if self.__check_changes(module, manifest, module_cache):
-                self._changed_files[module]['manifest'].append(manifest)
+            if self.__check_changes(module_name, manifest, module_cache):
+                self._changed_files[module_name]['manifest'].append(manifest)
 
             # scan assets
             assets_dirs = self._config['project_source_sets'][module_name]['main_assets_directory']
@@ -98,8 +98,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                     for dirpath, dirnames, files in os.walk(assets_dir):
                         for fn in files:
                             fpath = os.path.join(dirpath, fn)
-                            if self.__check_changes(module, fpath, module_cache):
-                                self._changed_files[module]['assets'].append(fpath)
+                            if self.__check_changes(module_name, fpath, module_cache):
+                                self._changed_files[module_name]['assets'].append(fpath)
 
             # scan res
             res_dirs = self._config['project_source_sets'][module_name]['main_res_directory']
@@ -112,8 +112,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if '.DS_Store' in fn:
                                     continue
                                 fpath = os.path.join(sub_dir_path, fn)
-                                if self.__check_changes(module, fpath, module_cache, should_check_size=True):
-                                    self._changed_files[module]['res'].append(fpath)
+                                if self.__check_changes(module_name, fpath, module_cache, should_check_size=True):
+                                    self._changed_files[module_name]['res'].append(fpath)
 
             # scan src
             src_dirs = self._config['project_source_sets'][module_name]['main_src_directory']
@@ -127,10 +127,10 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if fn.endswith('package-info.java') or fn.endswith('BuildConfig.java'):
                                     continue
                                 fpath = os.path.join(dirpath, fn)
-                                if self.__check_changes(module, fpath, module_cache):
-                                    self._changed_files[module]['src'].append(fpath)
+                                if self.__check_changes(module_name, fpath, module_cache):
+                                    self._changed_files[module_name]['src'].append(fpath)
 
-    def __check_changes(self, module, fpath, module_cache, should_check_size=False):
+    def __check_changes(self, module_name, fpath, module_cache, should_check_size=False):
         if not fpath:
             return False
 
@@ -143,7 +143,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         if mtime > stat['mtime']:
             self.debug('find {} has modification.'.format(fpath))
             stat['mtime'] = mtime
-            self._stat_cache[module][fpath] = stat
+            self._stat_cache[module_name][fpath] = stat
             return True
 
         if should_check_size:
@@ -151,7 +151,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             if size != stat['size']:
                 self.debug('find {} has modification.'.format(fpath))
                 stat['size'] = size
-                self._stat_cache[module][fpath] = stat
+                self._stat_cache[module_name][fpath] = stat
                 return True
 
         return False
@@ -164,10 +164,14 @@ class GenerateFileStatTask(Task):
         self._stat_cache = {}
 
     def execute(self):
-        all_modules = get_all_modules(os.getcwd())
+        if 'modules' in self._config:
+            all_modules = self._config['modules']
+        else:
+            all_modules = get_all_modules(os.getcwd())
+
         for module in all_modules:
-            self._stat_cache[module['path']] = {}
-            self._save_module_stat(module['path'])
+            self._stat_cache[module['name']] = {}
+            self._save_module_stat(module['name'], module['path'])
         self._save_cache()
 
     def _save_cache(self):
@@ -176,31 +180,30 @@ class GenerateFileStatTask(Task):
             os.remove(cache_path)
         write_json_cache(cache_path, self._stat_cache)
 
-    def _save_module_stat(self, module):
-        module_name = get_module_name(module)
+    def _save_module_stat(self, module_name, module_path):
         # scan bulid.gradle
-        self.__save_stat(module, os.path.join(module, 'build.gradle'))
+        self.__save_stat(module_name, os.path.join(module_path, 'build.gradle'))
 
         # scan libs dirs
         libs_dir_names = ['libs', 'lib']
         for lib_dir_name in libs_dir_names:
-            lib_dir_path = os.path.join(module, lib_dir_name)
+            lib_dir_path = os.path.join(module_path, lib_dir_name)
             if os.path.isdir(lib_dir_path):
                 for dirpath, dirnames, files in os.walk(lib_dir_path):
                     for fn in files:
-                        self.__save_stat(module, os.path.join(dirpath, fn))
+                        self.__save_stat(module_name, os.path.join(dirpath, fn))
 
         # scan assets
         if module_name in self._config['project_source_sets']:
             # scan manifest
-            self.__save_stat(module, self._config['project_source_sets'][module_name]['main_manifest_path'])
+            self.__save_stat(module_name, self._config['project_source_sets'][module_name]['main_manifest_path'])
 
             assets_dirs = self._config['project_source_sets'][module_name]['main_assets_directory']
             for assets_dir in assets_dirs:
                 if os.path.exists(assets_dir):
                     for dirpath, dirnames, files in os.walk(assets_dir):
                         for fn in files:
-                            self.__save_stat(module, os.path.join(dirpath, fn))
+                            self.__save_stat(module_name, os.path.join(dirpath, fn))
 
             res_dirs = self._config['project_source_sets'][module_name]['main_res_directory']
             for res_dir in res_dirs:
@@ -211,7 +214,7 @@ class GenerateFileStatTask(Task):
                             for fn in os.listdir(sub_dir_path):
                                 if '.DS_Store' in fn:
                                     continue
-                                self.__save_stat(module, os.path.join(sub_dir_path, fn))
+                                self.__save_stat(module_name, os.path.join(sub_dir_path, fn))
 
             src_dirs = self._config['project_source_sets'][module_name]['main_src_directory']
             for src_dir in src_dirs:
@@ -223,7 +226,7 @@ class GenerateFileStatTask(Task):
                             if fn.endswith('java'):
                                 if fn.endswith('package-info.java') or fn.endswith('BuildConfig.java'):
                                     continue
-                                self.__save_stat(module, os.path.join(dirpath, fn))
+                                self.__save_stat(module_name, os.path.join(dirpath, fn))
 
     def __save_stat(self, module, fpath):
         if fpath is not None and os.path.exists(fpath):
@@ -272,17 +275,17 @@ class GradleDispatchPolicy(DispatchPolicy):
 
 
 class GradleDirectoryFinder(android_tools.DirectoryFinder):
-    def __init__(self, module_name, module_dir_name, cache_dir, package_name=None, config=None):
-        android_tools.DirectoryFinder.__init__(self, module_dir_name, cache_dir)
-        self._dir_name = module_name
-        self._module_dir_name = module_dir_name
+    def __init__(self, module_name, module_path, cache_dir, package_name=None, config=None):
+        android_tools.DirectoryFinder.__init__(self, module_name, cache_dir)
+        self._module_name = module_name
+        self._module_path = module_path
         self._package_name = package_name
         self._config = config
         if not self._package_name:
             self._package_name = ''
 
     def get_dst_manifest_path(self):
-        return android_tools.get_manifest_path(self._module_dir_name)
+        return android_tools.get_manifest_path(self._module_path)
 
     def get_dst_r_dir(self):
         return os.path.join(self.get_base_build_dir(), 'generated', 'source', 'r')
@@ -311,14 +314,14 @@ class GradleDirectoryFinder(android_tools.DirectoryFinder):
         return os.path.join(self.get_base_gen_dir(), 'res.job')
 
     def get_base_build_dir(self):
-        return os.path.join(self._module_dir_name, 'build')
+        return os.path.join(self._module_path, 'build')
 
     def get_base_gen_dir(self):
         return os.path.join(self.get_base_build_dir(), 'intermediates')
 
     def get_dst_classes_dir(self):
         if self._config is not None and 'product_flavor' in self._config:
-            if self._module_dir_name == self._config['main_project_dir']:
+            if self._module_name == self._config['main_project_name']:
                 if self._config['product_flavor'] == '' or self._config['product_flavor'] == 'debug':
                     return os.path.join(self.get_base_gen_dir(), 'classes', 'debug')
                 else:
@@ -368,9 +371,8 @@ class GradleSyncTask(android_tools.SyncTask):
 
 
 class GradleSyncClient(SyncClient):
-    def __init__(self, is_art, config, project_info, all_modules, portal_dir):
+    def __init__(self, is_art, config, project_info, all_modules):
         SyncClient.__init__(self, is_art, config)
-        self._portal_dir = portal_dir
         self._project_info = project_info
         self._all_modules = all_modules
         self._is_need_sync_base_res = False
@@ -407,9 +409,8 @@ class GradleSyncClient(SyncClient):
         mode = 'increment' if self._is_art else 'full'
         can_sync_inc_res = False
         for module in self._all_modules:
-            module_name = get_module_name(module)
-            finder = GradleDirectoryFinder(module_name, module, self._cache_dir)
-            fpath = finder.get_dst_res_pack_path(module_name)
+            finder = GradleDirectoryFinder(module, self._project_info[module]['path'], self._cache_dir)
+            fpath = finder.get_dst_res_pack_path(module)
             sync_status = finder.get_sync_file_path()
 
             if not os.path.exists(sync_status):
@@ -438,9 +439,8 @@ class GradleSyncClient(SyncClient):
 
     def _is_need_sync_res(self):
         for module in self._all_modules:
-            module_name = get_module_name(module)
-            finder = GradleDirectoryFinder(module_name, module, self._cache_dir)
-            fpath = finder.get_dst_res_pack_path(module_name)
+            finder = GradleDirectoryFinder(module, self._project_info[module]['path'], self._cache_dir)
+            fpath = finder.get_dst_res_pack_path(module)
             sync_status = fpath.replace('.pack', '.sync')
             if os.path.exists(sync_status):
                 return True
@@ -448,9 +448,8 @@ class GradleSyncClient(SyncClient):
 
 
 class GradleCleanCacheTask(android_tools.CleanCacheTask):
-    def __init__(self, cache_dir, project_info, module_dir_map):
+    def __init__(self, cache_dir, project_info):
         android_tools.CleanCacheTask.__init__(self, cache_dir, project_info)
-        self._module_dir_map = module_dir_map
 
     def execute(self):
         android_tools.clean_src_changed_flag(self._cache_dir)
@@ -466,9 +465,8 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
                     os.remove(os.path.join(dirpath, fn))
 
     def _refresh_public_files(self, module):
-        dirpath = self._module_dir_map[module]
-        finder = GradleDirectoryFinder(module, dirpath, self._cache_dir,
-                                       package_name=self._project_info[dirpath]['packagename'])
+        finder = GradleDirectoryFinder(module, self._project_info[module]['path'], self._cache_dir,
+                                       package_name=self._project_info[module]['packagename'])
         public_xml_path = finder.get_public_xml_path()
         ids_xml_path = finder.get_ids_xml_path()
         rpath = finder.get_backup_r_path()
@@ -476,7 +474,7 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
             # self.debug('refresh {} public.xml and ids.xml'.format(dirpath))
             # android_tools.generate_public_files_by_r(rpath, public_xml_path, ids_xml_path)
             # android_tools.merge_public_file_with_old(public_xml_path, ids_xml_path, dirpath)
-            self.debug('refresh {} ids.xml'.format(dirpath))
+            self.debug('refresh {} ids.xml'.format(module))
             android_tools.generate_id_file_by_public(public_xml_path, ids_xml_path)
 
 
@@ -491,17 +489,14 @@ class BuildBaseResourceTask(Task):
         self._config = read_freeline_config()
         self._project_info = get_project_info(self._config)
 
-        self._main_dir = self._config['main_project_dir']
+        # self._main_dir = self._config['main_project_dir']
         self._main_module_name = self._config['main_project_name']
-        self._module_info = self._project_info[self._main_dir]
-        self._finder = GradleDirectoryFinder(self._main_module_name, self._main_dir,
+        self._module_info = self._project_info[self._main_module_name]
+        self._finder = GradleDirectoryFinder(self._main_module_name, self._project_info[self._main_module_name]['path'],
                                              self._config['build_cache_dir'],
                                              package_name=self._module_info['packagename'])
         self._public_xml_path = self._finder.get_public_xml_path()
         self._ids_xml_path = self._finder.get_ids_xml_path()
-        self._module_dir_map = {}
-        for item in self._project_info.values():
-            self._module_dir_map[item['name']] = item['relative_dir']
 
     def execute(self):
         self.__init_attributes()
@@ -623,7 +618,10 @@ class GradleModule(object):
 def get_project_info(config):
     Logger.debug("collecting project info, please wait a while...")
     project_info = {}
-    modules = get_all_modules(os.getcwd())
+    if 'modules' in config:
+        modules = config['modules']
+    else:
+        modules = get_all_modules(os.getcwd())
 
     jar_dependencies_path = os.path.join(config['build_cache_dir'], 'jar_dependencies.json')
     jar_dependencies = []
@@ -631,35 +629,40 @@ def get_project_info(config):
         jar_dependencies = load_json_cache(jar_dependencies_path)
 
     for module in modules:
-        # module_info = get_module_info(module)
         if module['name'] in config['project_source_sets']:
             module_info = {}
             module_info['name'] = module['name']
+            module_info['path'] = module['path']
             module_info['relative_dir'] = module['path']
             module_info['dep_jar_path'] = jar_dependencies
-            module_info['packagename'] = get_package_name(config['project_source_sets'][module['name']]['main_manifest_path'])
+            module_info['packagename'] = get_package_name(
+                config['project_source_sets'][module['name']]['main_manifest_path'])
 
             gradle_content = remove_comments(get_file_content(os.path.join(module['path'], 'build.gradle')))
             module_info['local_module_dep'] = get_local_dependency(gradle_content)
 
-            project_info[module['path']] = module_info
+            project_info[module['name']] = module_info
 
     for module in modules:
         if module['name'] in config['project_source_sets']:
-            local_deps = project_info[module['path']]['local_module_dep']
-            for dep in project_info[module['path']]['local_module_dep']:
+            local_deps = project_info[module['name']]['local_module_dep']
+            for dep in project_info[module['name']]['local_module_dep']:
                 if dep in project_info:
                     local_deps.extend(project_info[dep]['local_module_dep'])
             local_deps = list(set(local_deps))
-            project_info[module['path']]['local_module_dep'] = [project_info[item]['name'] for item in local_deps if
-                                                                item in project_info]
+            project_info[module['name']]['local_module_dep'] = []
+            for item in local_deps:
+                local_dep_name = get_module_name(item)
+                if local_dep_name in project_info:
+                    project_info[module['name']]['local_module_dep'].append(local_dep_name)
 
-            res_dependencies_path = os.path.join(config['build_cache_dir'], module['name'], 'resources_dependencies.json')
+            res_dependencies_path = os.path.join(config['build_cache_dir'], module['name'],
+                                                 'resources_dependencies.json')
             res_dependencies = {'library_resources': [], 'local_resources': []}
             if os.path.exists(res_dependencies_path):
                 res_dependencies = load_json_cache(res_dependencies_path)
-            project_info[module['path']]['dep_res_path'] = res_dependencies['library_resources']
-            project_info[module['path']]['local_dep_res_path'] = res_dependencies['local_resources']
+            project_info[module['name']]['dep_res_path'] = res_dependencies['library_resources']
+            project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
 
     return project_info
 

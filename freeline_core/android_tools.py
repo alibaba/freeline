@@ -162,8 +162,8 @@ class UpdateStatTask(Task):
 
 
 class DirectoryFinder(object):
-    def __init__(self, dir_name, cache_dir):
-        self._dir_name = dir_name
+    def __init__(self, module_name, cache_dir):
+        self._module_name = module_name
         self._cache_dir = cache_dir
 
     def get_res_dir(self):
@@ -188,7 +188,7 @@ class DirectoryFinder(object):
         raise NotImplementedError
 
     def get_backup_dir(self):
-        backup_dir = os.path.join(self._cache_dir, self._dir_name, 'backup')
+        backup_dir = os.path.join(self._cache_dir, self._module_name, 'backup')
         if not os.path.isdir(backup_dir):
             os.makedirs(backup_dir)
         return backup_dir
@@ -212,13 +212,13 @@ class DirectoryFinder(object):
         return os.path.join(self.get_backup_values_dir(), 'freeline_id_keeper_ids.xml')
 
     def get_sync_file_path(self):
-        dir_path = os.path.join(self._cache_dir, self._dir_name, 'respack')
+        dir_path = os.path.join(self._cache_dir, self._module_name, 'respack')
         if not os.path.isdir(dir_path):
             os.makedirs(dir_path)
-        return os.path.join(dir_path, self._dir_name + '.sync')
+        return os.path.join(dir_path, self._module_name + '.sync')
 
     def get_dst_dex_path(self):
-        return os.path.join(self.get_patch_dex_dir(), self._dir_name + '.dex')
+        return os.path.join(self.get_patch_dex_dir(), self._module_name + '.dex')
 
     def get_dst_res_pack_path(self, module):
         pack_dir = os.path.join(self._cache_dir, module, 'respack')
@@ -227,13 +227,13 @@ class DirectoryFinder(object):
         return os.path.join(pack_dir, module + '.pack')
 
     def get_patch_dex_dir(self):
-        dir_path = os.path.join(self._cache_dir, self._dir_name, 'dex')
+        dir_path = os.path.join(self._cache_dir, self._module_name, 'dex')
         if not os.path.isdir(dir_path):
             os.makedirs(dir_path)
         return dir_path
 
     def get_patch_classes_cache_dir(self):
-        cache_dir = os.path.join(self._cache_dir, self._dir_name, 'classes')
+        cache_dir = os.path.join(self._cache_dir, self._module_name, 'classes')
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         return cache_dir
@@ -301,10 +301,10 @@ class AndroidIncrementalBuildTask(IncrementalBuildTask):
 
 
 class AndroidIncBuildInvoker(object):
-    def __init__(self, name, dir_name, config, changed_files, module_info, is_art=False,
+    def __init__(self, name, path, config, changed_files, module_info, is_art=False,
                  is_other_bundles_has_src_changed=False):
         self._name = name
-        self._dir_name = dir_name
+        self._module_path = path
         self._config = config
         self._changed_files = changed_files
         self._module_info = module_info
