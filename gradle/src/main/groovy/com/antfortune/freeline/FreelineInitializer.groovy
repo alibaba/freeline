@@ -15,8 +15,14 @@ class FreelineInitializer {
         println "Freeline init process start..."
 
         def mirror = project.hasProperty("mirror")
+        def snapshot = project.hasProperty("snapshot")
+
         if (mirror) {
             println "[NOTE] Download freeline dependency from mirror..."
+        }
+
+        if (snapshot) {
+            println "[NOTE] Download freeline snapshot enabled..."
         }
 
         def json = FreelineUtils.getJson(LATEST_RELEASE_URL)
@@ -26,10 +32,14 @@ class FreelineInitializer {
         }
 
         def url
-        if (mirror) {
-            url = "http://obr0ndq7a.bkt.clouddn.com/freeline/${json.assets[0].name}"
+        if (snapshot) {
+            url = "http://obr0ndq7a.bkt.clouddn.com/freeline/snapshot.zip"
         } else {
-            url = json.assets[0].browser_download_url
+            if (mirror) {
+                url = "http://obr0ndq7a.bkt.clouddn.com/freeline/${json.assets[0].name}"
+            } else {
+                url = json.assets[0].browser_download_url
+            }
         }
         println "Downloading lastest release from ${url}"
         println "Please wait a minute..."
@@ -122,6 +132,7 @@ class FreelineInitializer {
 
 
         projectDescription.project_source_sets = [:]
+        projectDescription.modules = []
         project.rootProject.allprojects.each { pro ->
             def sourceSets = [:]
             sourceSets.main_src_directory = []
@@ -138,10 +149,12 @@ class FreelineInitializer {
                 appendDirs(sourceSets.main_assets_directory, pro.android.sourceSets.debug.assets.srcDirs.asList())
 
                 projectDescription.project_source_sets[pro.name] = sourceSets
+                projectDescription.modules.add(['name': pro.name, 'path': pro.projectDir.absolutePath])
             } else if (pro.plugins.hasPlugin("java") && pro.hasProperty("sourceSets")) {
                 pro.sourceSets.main.allJava.srcDirs.asList().collect(sourceSets.main_src_directory) { it.absolutePath }
                 sourceSets.main_manifest_path = null
                 projectDescription.project_source_sets[pro.name] = sourceSets
+                projectDescription.modules.add(['name': pro.name, 'path': pro.projectDir.absolutePath])
             }
         }
 
