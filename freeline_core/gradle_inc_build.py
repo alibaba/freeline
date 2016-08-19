@@ -222,7 +222,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def _get_aapt_args(self):
         aapt_args = [self._aapt, 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._config['project_source_sets'][self._name]['main_manifest_path']]
+                     '-M', self._finder.get_dst_manifest_path()]
 
         for rdir in self._config['project_source_sets'][self._name]['main_res_directory']:
             if os.path.exists(rdir):

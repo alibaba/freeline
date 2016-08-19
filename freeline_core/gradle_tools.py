@@ -285,6 +285,13 @@ class GradleDirectoryFinder(android_tools.DirectoryFinder):
             self._package_name = ''
 
     def get_dst_manifest_path(self):
+        if self._config is not None and 'product_flavor' in self._config:
+            if self._module_name == self._config['main_project_name']:
+                if self._config['product_flavor'] == '' or self._config['product_flavor'] == 'debug':
+                    return os.path.join(self.get_base_gen_dir(), 'manifests', 'full', 'debug', 'AndroidManifest.xml')
+                else:
+                    return os.path.join(self.get_base_gen_dir(), 'manifests', 'full', self._config['product_flavor'],
+                                        'debug', 'AndroidManifest.xml')
         return android_tools.get_manifest_path(self._module_path)
 
     def get_dst_r_dir(self):
@@ -493,7 +500,7 @@ class BuildBaseResourceTask(Task):
         self._main_module_name = self._config['main_project_name']
         self._module_info = self._project_info[self._main_module_name]
         self._finder = GradleDirectoryFinder(self._main_module_name, self._project_info[self._main_module_name]['path'],
-                                             self._config['build_cache_dir'],
+                                             self._config['build_cache_dir'], config=self._config,
                                              package_name=self._module_info['packagename'])
         self._public_xml_path = self._finder.get_public_xml_path()
         self._ids_xml_path = self._finder.get_ids_xml_path()
@@ -522,7 +529,7 @@ class BuildBaseResourceTask(Task):
     def run_aapt(self):
         aapt_args = [Builder.get_aapt(), 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._config['main_manifest_path']]
+                     '-M', self._finder.get_dst_manifest_path()]
 
         for rdir in self._config['project_source_sets'][self._main_module_name]['main_res_directory']:
             if os.path.exists(rdir):
