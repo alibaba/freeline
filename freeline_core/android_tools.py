@@ -313,6 +313,8 @@ class AndroidIncBuildInvoker(object):
 
         self._aapt = Builder.get_aapt()
         self._javac = Builder.get_javac()
+        if self._javac is None:
+            raise FreelineException('Please declares your JAVA_HOME to system env!')
         self._dx = Builder.get_dx(self._config)
         self._cache_dir = self._config['build_cache_dir']
         self._finder = None
