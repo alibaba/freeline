@@ -171,7 +171,7 @@ class Logger(object):
 
 
 def get_error_log_path():
-    return os.path.join(get_error_log_dir(), time.strftime('%y-%m-%d %H:%M:%S') + '.log')
+    return os.path.join(get_error_log_dir(), time.strftime('%y-%m-%d %H-%M-%S') + '.log')
 
 
 def get_error_log_dir():
