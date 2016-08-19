@@ -18,7 +18,7 @@ class FreelineGenerator {
     public static String generateBuildScript(String productFlavor) {
         def params = []
         if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-            params.add("gradle.bat")
+            params.add("gradlew.bat")
         } else {
             params.add("./gradlew")
         }
