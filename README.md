@@ -96,9 +96,12 @@ Note that, you should apply the freeline plugin dependency before you execute th
 On the root dir of your project :
 
 - increment build：`python freeline.py`
-- force full build：`python freeline.py -f`
+    If your project has manifest.xml, build.gradle or libs modified, freeline will automatically rebuild your project, freeline will perform an incremental build on other change case,you don't need to pay attention to what you just modified!
 
-If your project has manifest.xml, build.gradle or libs modified, freeline will automatically rebuild your project, you don't need to pay attention to what you just modified!
+- force full build：`python freeline.py -f`
+   when if freeline are not automatically change to full build ,you can force it through "-f"
+
+
 
 ## Sample Usage
 ````
