@@ -110,6 +110,7 @@ On the root dir of your project :
 git clone git@github.com:alibaba/freeline.git
 cd freeline/sample
 ./gradlew initFreeline
+python freeline.py
 ````
 
 ## TODO
