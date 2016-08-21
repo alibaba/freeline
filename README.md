@@ -94,7 +94,7 @@ Note that, you should apply the freeline plugin dependency before you execute th
 ## Usage
 On the root dir of your project :
 
-- increment build：`python freeline.py`
+- `python freeline.py`
 
     freeline will automatically perform a full build on your project when your project has manifest.xml, build.gradle or libs modified, 
     and an incremental build on other change case,you don't need to pay attention to what you just modified!
