@@ -37,7 +37,6 @@ See the following table for changes support.
 | change    | √    |  √   |√ |
 | remove   | √    |   √  |x|
 
-Incremental resource patch is not supported for Android api level lower than 20. Freeline will automatically delivery full resource pack to the device, which may be a bit slower than incremental resource pack.
 
 Freeline has been tested with API versions 17, 19, 22, 23 on the android emulators, a Nexus 6p running marshmallow and a smartisan running Kitkat. Incremental resource patch would be much faster if the android device is running Lolipop or above.
 
