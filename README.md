@@ -96,8 +96,12 @@ On the root dir of your project :
 
 - `python freeline.py`
 
-    freeline will automatically perform a full build on your project when your project has manifest.xml, build.gradle or libs modified, 
-    and an incremental build on other change case,you don't need to pay attention to what you just modified!
+    freeline will automatically perform a full build on your project as follows
+    1.manifest.xml
+    2.build.gradle
+    3.libs modified,
+    4.change other phone after any incremental build
+    and an incremental build on other change case (java or res ),you don't need to pay attention to what you just modified!
 
 - force full build：`python freeline.py -f`
 
