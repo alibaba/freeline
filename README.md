@@ -102,7 +102,7 @@ On the root dir of your project :
     - libs modified
     - connect to other mobile phones after any incremental build
     
-    and an incremental build on other change case (java or res ),you don't need to pay attention to what you just modified!
+    and an incremental build on other change case (java or res modified ),you don't need to pay attention to what you just modified!
 
 - force full build：`python freeline.py -f`
 
