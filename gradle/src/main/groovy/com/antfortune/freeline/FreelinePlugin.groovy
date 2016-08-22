@@ -86,14 +86,14 @@ class FreelinePlugin implements Plugin<Project> {
                 def classesProcessTask
                 def preDexTask
                 if (isLowerVersion) {
-                    if (project.android.defaultConfig.multiDexEnabled) {
+                    if (variant.mergedFlavor.multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
                     } else {
                         classesProcessTask = project.tasks.findByName("dex${variant.name.capitalize()}")
                         preDexTask = project.tasks.findByName("preDex${variant.name.capitalize()}")
                     }
                 } else {
-                    if (project.android.defaultConfig.multiDexEnabled) {
+                    if (variant.mergedFlavor.minSdkVersion.apiLevel < 21 && variant.mergedFlavor.multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("transformClassesWithJarMergingFor${variant.name.capitalize()}")
                     } else {
                         classesProcessTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
@@ -214,8 +214,9 @@ class FreelinePlugin implements Plugin<Project> {
 
             project.rootProject.allprojects.each { p ->
                 if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
-                    def mapper = ["match" : "", "path" : p.android.sourceSets.main.res.srcDirs.asList().get(0).path]
+                    def mapper = ["match" : "", "path" : []]
                     mapper.match = "exploded-aar${File.separator}${p.group}${File.separator}${p.name}${File.separator}"
+                    p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     mappers.add(mapper)
                 }
             }
@@ -226,7 +227,7 @@ class FreelinePlugin implements Plugin<Project> {
                     def marker = false
                     mappers.each { mapper ->
                         if (path.contains(mapper.match)) {
-                            resourcesDependencies.local_resources.add(mapper.path)
+                            mapper.path.collect(resourcesDependencies.local_resources) {it}
                             marker = true
                             return false
                         }
