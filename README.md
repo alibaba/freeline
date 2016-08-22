@@ -100,7 +100,7 @@ On the root dir of your project :
     - manifest.xml modified
     - build.gradle modified
     - libs modified
-    - change other phone after any incremental build
+    - connect to other mobile phones after any incremental build
     
     and an incremental build on other change case (java or res ),you don't need to pay attention to what you just modified!
 
