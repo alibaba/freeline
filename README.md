@@ -49,7 +49,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.5.1'
+        classpath 'com.antfortune.freeline:gradle:0.5.2'
     }
 }
 ````
