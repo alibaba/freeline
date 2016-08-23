@@ -92,6 +92,9 @@ If you have a complex project structure, you may need to use freeline DSL to cus
 Note that, you should apply the freeline plugin dependency before you execute these commands. 
 
 ## Usage
+
+You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands.
+
 On the root dir of your project :
 
 - `python freeline.py`
@@ -102,11 +105,11 @@ On the root dir of your project :
     - libs modified
     - connect to other mobile phones after any incremental build
     
-    and an incremental build on other change case (java or res modified ),you don't need to pay attention to what you just modified!
+    and an incremental build on other change case (java or res modified ),you don't need to pay attention to what you just modified.
 
-- force full build：`python freeline.py -f`
+- `python freeline.py -f`
 
-    when if freeline are not automatically change to full build ,you can force it through "-f"
+    Freeline will rebuild the project.
 
 
 
