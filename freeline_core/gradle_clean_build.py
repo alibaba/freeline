@@ -76,7 +76,9 @@ class GradleReadProjectInfoTask(Task):
 class GradleGenerateProjectInfoTask(Task):
     def __init__(self, config):
         Task.__init__(self, 'generate_project_info_task')
-        self._config = config
+        # reload project info
+        from dispatcher import read_freeline_config
+        self._config = read_freeline_config()
 
     def execute(self):
         write_json_cache(os.path.join(self._config['build_cache_dir'], 'project_info_cache.json'),

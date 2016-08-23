@@ -23,8 +23,10 @@ except ImportError:
 class InstallApkTask(Task):
     def __init__(self, adb, config):
         Task.__init__(self, 'install_apk_task')
+        # reload freeline config
+        from dispatcher import read_freeline_config
+        self._config = read_freeline_config()
         self._adb = adb
-        self._config = config
         self._apk_path = self._config['apk_path']
         self._package = self._config['package']
         self._launcher = self._config['launcher']
