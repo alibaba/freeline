@@ -109,7 +109,7 @@ On the root dir of your project :
 
 - `python freeline.py -f`
 
-    Freeline will rebuild the project.
+    when if you need full build in other case , your can force it through adding "-f"
 
 
 
