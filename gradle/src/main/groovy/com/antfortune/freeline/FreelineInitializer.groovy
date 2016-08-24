@@ -63,6 +63,7 @@ class FreelineInitializer {
         println 'unziped freeline.zip.'
 
         if (FreelineUtils.isWindows()) {
+            FileUtils.deleteDirectory(new File(project.rootDir, "freeline_core"))
             FileUtils.copyDirectory(new File(freelineDir, "freeline_core"), new File(project.rootDir, "freeline_core"));
             FileUtils.copyFile(new File(freelineDir, "freeline.py"), new File(project.rootDir, "freeline.py"))
         } else {
