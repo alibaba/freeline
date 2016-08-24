@@ -347,6 +347,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 if os.path.exists(rpath) and rpath not in self._changed_files['src']:
                     self._changed_files['src'].append(rpath)
                     self.debug('add R.java to changed list: ' + rpath)
+                elif pn == self._module_info['packagename']:
+                    fpath = self.__modify_other_modules_r(pn)
+                    self.debug('modify {}'.format(fpath))
+                    if os.path.exists(fpath):
+                        self._changed_files['src'].append(fpath)
+                        self.debug('add R.java to changed list: ' + fpath)
 
     def fill_classpaths(self):
         # classpaths:
@@ -431,10 +437,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         r_path = android_tools.find_r_file(finder.get_dst_r_dir(), package_name=package_name)
         if os.path.exists(r_path):
-            backup_dir = os.path.join(finder.get_backup_dir(), package_name.replace('.', os.sep))
-            if not os.path.isdir(backup_dir):
-                os.makedirs(backup_dir)
-            # target_path = os.path.join(backup_dir, 'R.java')
             target_dir = os.path.join(self.__get_freeline_backup_r_dir(), package_name.replace('.', os.sep))
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
