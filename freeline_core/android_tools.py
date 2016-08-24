@@ -304,14 +304,14 @@ class AndroidIncrementalBuildTask(IncrementalBuildTask):
 
 class AndroidIncBuildInvoker(object):
     def __init__(self, name, path, config, changed_files, module_info, is_art=False,
-                 is_other_bundles_has_src_changed=False):
+                 is_other_modules_has_src_changed=False):
         self._name = name
         self._module_path = path
         self._config = config
         self._changed_files = changed_files
         self._module_info = module_info
         self._is_art = is_art
-        self._is_other_bundles_has_src_changed = is_other_bundles_has_src_changed
+        self._is_other_modules_has_src_changed = is_other_modules_has_src_changed
 
         self._aapt = Builder.get_aapt()
         self._javac = Builder.get_javac()
@@ -456,7 +456,9 @@ class AndroidIncBuildInvoker(object):
     def check_r_md5(self):
         old_md5 = None
         old_r_file = self._finder.get_dst_r_path(config=self._config)
+        self.debug("{} old R.java path: {}".format(self._name, old_r_file))
         new_r_file = DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
+        self.debug("{} new R.java path: {}".format(self._name, new_r_file))
         if old_r_file and os.path.exists(old_r_file):
             old_md5 = get_md5(old_r_file)
         if new_r_file and os.path.exists(new_r_file):
@@ -473,6 +475,7 @@ class AndroidIncBuildInvoker(object):
 
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
+        self.debug("src changed files:")
         self.debug(self._changed_files['src'])
 
         # mark is there has R.java modification in src list
@@ -487,9 +490,9 @@ class AndroidIncBuildInvoker(object):
             self._is_need_javac = False
 
         if self._is_only_r_changed():
-            if self._is_other_bundles_has_src_changed:
+            if self._is_other_modules_has_src_changed:
                 self.debug(
-                    '{} code only change R.java, but other bundles has files changed, need not go javac task'.format(
+                    '{} only find R.java changed, but other modules has src files changed, so need javac task'.format(
                         self._name))
                 self._is_need_javac = True
             else:

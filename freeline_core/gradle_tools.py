@@ -299,10 +299,11 @@ class GradleDirectoryFinder(android_tools.DirectoryFinder):
 
     def get_dst_r_path(self, config=None):
         if config is not None:
-            if 'main_r_path' in config:
-                path = config['main_r_path'].strip()
-                if os.path.isfile(path):
-                    return path
+            if 'main_project_name' in config and self._module_name == config['main_project_name']:
+                if 'main_r_path' in config:
+                    path = config['main_r_path'].strip()
+                    if os.path.isfile(path):
+                        return path
         return android_tools.find_r_file(self.get_dst_r_dir(), package_name=self._package_name)
 
     def get_backup_r_path(self):

@@ -23,6 +23,8 @@ class GradleIncBuilder(IncrementalBuilder):
         self._all_modules = []
         self._is_art = False
         self._module_dir_map = {}
+        self._has_res_changed = self.__is_any_modules_have_res_changed()
+        self._changed_modules = self.__changed_modules()
 
     def check_build_environment(self):
         if not self._project_info:
@@ -60,7 +62,9 @@ class GradleIncBuilder(IncrementalBuilder):
     def __setup_invoker(self, module):
         return GradleIncBuildInvoker(module, self._project_info[module]['path'], self._config,
                                      self._changed_files['projects'][module], self._project_info[module], self._is_art,
-                                     all_module_info=self._project_info, module_dir_map=self._module_dir_map)
+                                     all_module_info=self._project_info, module_dir_map=self._module_dir_map,
+                                     is_any_modules_have_res_changed=self._has_res_changed,
+                                     changed_modules=self._changed_modules)
 
     def __merge_res_files(self):
         main_res = self._changed_files['projects'][self._config['main_project_name']]
@@ -71,6 +75,20 @@ class GradleIncBuilder(IncrementalBuilder):
                 if key == 'res' or key == 'assets':
                     main_res[key].extend(files)
         self._changed_files['projects'][self._config['main_project_name']] = main_res
+
+    def __is_any_modules_have_res_changed(self):
+        for key, value in self._changed_files['projects'].iteritems():
+            if len(value['res']) > 0:
+                self.debug('find {} modules have res changed'.format(key))
+                return True
+        return False
+
+    def __changed_modules(self):
+        modules = []
+        for module, file_dict in self._changed_files['projects'].iteritems():
+            if len(file_dict['src']) > 0 or len(file_dict['res']) or len(file_dict['assets']) > 0:
+                modules.append(module)
+        return modules
 
     def incremental_build(self):
         merge_dex_task = GradleMergeDexTask(self._config['build_cache_dir'], self._all_modules, self._project_info)
@@ -194,11 +212,13 @@ class GradleIncDexCommand(IncDexCommand):
 
 class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def __init__(self, module_name, path, config, changed_files, module_info, is_art, all_module_info=None,
-                 module_dir_map=None):
+                 module_dir_map=None, is_any_modules_have_res_changed=False, changed_modules=None):
         android_tools.AndroidIncBuildInvoker.__init__(self, module_name, path, config, changed_files, module_info,
                                                       is_art=is_art)
         self._all_module_info = all_module_info
         self._module_dir_map = module_dir_map
+        self._is_any_modules_have_res_changed = is_any_modules_have_res_changed
+        self._changed_modules = changed_modules
         self._merged_res_paths = []
         self._merged_res_paths.append(self._finder.get_backup_res_dir())
         for mname in self._all_module_info.keys():
@@ -291,13 +311,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
     def check_other_modules_resources(self):
         if self._name == self._config['main_project_name'] and self._all_module_info is not None:
-            changed_modules = []
-            for fn in self._changed_files['res']:
-                module = self.__find_res_in_which_module(fn)
-                if not module:
-                    continue
-                if module != self._name and module != self._config['build_cache_dir']:
-                    changed_modules.append(module)
+            # changed_modules = []
+            # for fn in self._changed_files['res']:
+            #     module = self.__find_res_in_which_module(fn)
+            #     if not module:
+            #         continue
+            #     if module != self._name and module != self._config['build_cache_dir']:
+            #         changed_modules.append(module)
+            changed_modules = self._changed_modules
 
             if len(changed_modules) > 0:
                 main_r_fpath = os.path.join(self._finder.get_backup_dir(),
@@ -305,24 +326,64 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 self.debug('modify {}'.format(main_r_fpath))
                 write_file_content(main_r_fpath, GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath)))
 
+                target_main_r_dir = os.path.join(self.__get_freeline_backup_r_dir(),
+                                                 self._module_info['packagename'].replace('.', os.sep))
+                if not os.path.exists(target_main_r_dir):
+                    os.makedirs(target_main_r_dir)
+
+                target_main_r_path = os.path.join(target_main_r_dir, 'R.java')
+                self.debug('copy {} to {}'.format(main_r_fpath, target_main_r_path))
+                shutil.copy(main_r_fpath, target_main_r_path)
+
                 for module in changed_modules:
                     fpath = self.__modify_other_modules_r(self._all_module_info[module]['packagename'])
                     self.debug('modify {}'.format(fpath))
-                    if fpath not in self._changed_files['src']:
-                        self._changed_files['src'].append(fpath)
+                    # if fpath not in self._changed_files['src']:
+                    #     self._changed_files['src'].append(fpath)
 
     def append_r_file(self):
-        if len(self._changed_files['res']) > 0:
-            backupdir = os.path.join(self._cache_dir, self._config['main_project_name'], 'backup')
-            rpath = os.path.join(backupdir, self._module_info['packagename'].replace('.', os.sep), 'R.java')
-            if os.path.exists(rpath):
-                self._changed_files['src'].append(rpath)
+        # if self._is_any_modules_have_res_changed:
+        # backupdir = os.path.join(self._cache_dir, self._config['main_project_name'], 'backup')
+        # main_finder = GradleDirectoryFinder(self._config['main_project_name'], self._config['main_project_dir'],
+        #                                     self._cache_dir, self._config['package'], self._config)
+        #
+        # rpath = os.path.join(backupdir, self._module_info['packagename'].replace('.', os.sep), 'R.java')
+        # if os.path.exists(rpath) and rpath not in self._changed_files['src']:
+        #     self._changed_files['src'].append(rpath)
+        #     self.debug('add R.java to changed list: ' + rpath)
+        # else:
+        #     self.__modify_other_modules_r(self._module_info['packagename'], finder=main_finder)
+        #     self.debug('generate {} R.java'.format(self._name))
+        #     if os.path.exists(rpath):
+        #         self._changed_files['src'].append(rpath)
+        #         self.debug('add R.java to changed list: ' + rpath)
+        #
+        # main_rpath = os.path.join(backupdir, self._config['package'].replace('.', os.sep), 'R.java')
+        # if main_rpath not in self._changed_files['src']:
+        #     if os.path.exists(main_rpath):
+        #         self._changed_files['src'].insert(0, main_rpath)
+        #         self.debug('add R.java to changed list: ' + main_rpath)
+        #     else:
+        #         origin_main_r_path = main_finder.get_dst_r_path(self._config)
+        #         write_file_content(main_rpath,
+        #                            GradleIncBuildInvoker.remove_final_tag(get_file_content(origin_main_r_path)))
+        #         self._changed_files['src'].insert(0, main_rpath)
+        #         self.debug('add R.java to changed list: ' + main_rpath)
+        if self._name != self._config['main_project_name']:
+            backupdir = self.__get_freeline_backup_r_dir()
+            pns = [self._config['package'], self._module_info['packagename']]
 
-            main_rpath = os.path.join(backupdir,
-                                      self._all_module_info[self._config['main_project_name']]['packagename'].replace(
-                                          '.', os.sep), 'R.java')
-            if os.path.exists(main_rpath):
-                self._changed_files['src'].append(main_rpath)
+            for m in self._module_info['local_module_dep']:
+                pns.append(self._all_module_info[m]['packagename'])
+
+            for pn in pns:
+                rpath = os.path.join(backupdir, pn.replace('.', os.sep), 'R.java')
+                if os.path.exists(rpath) and rpath not in self._changed_files['src']:
+                    # if pn == self._config['package']:
+                    #     self._changed_files['src'].insert(0, rpath)
+                    # else:
+                    self._changed_files['src'].append(rpath)
+                    self.debug('add R.java to changed list: ' + rpath)
 
     def fill_classpaths(self):
         # classpaths:
@@ -342,9 +403,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         self._classpaths.extend(self._module_info['dep_jar_path'])
 
         # remove existing same-name class in build directory
-        # src_dir = android_tools.get_src_dir(self._dir_name)
-        from gradle_tools import get_module_name
-        srcdirs = self._config['project_source_sets'][get_module_name(self._module_path)]['main_src_directory']
+        srcdirs = self._config['project_source_sets'][self._name]['main_src_directory']
         for dirpath, dirnames, files in os.walk(patch_classes_cache_dir):
             for fn in files:
                 if self._is_r_file_changed and self._module_info['packagename'] + '.R.' in fn:
@@ -397,20 +456,33 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     return relative_path
         return None
 
-    def __modify_other_modules_r(self, package_name):
-        r_path = android_tools.find_r_file(self._finder.get_dst_r_dir(), package_name=package_name)
+    def __get_freeline_backup_r_dir(self):
+        dirpath = os.path.join(self._cache_dir, 'freeline-backup-r')
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+        return dirpath
+
+    def __modify_other_modules_r(self, package_name, finder=None):
+        if not finder:
+            finder = self._finder
+
+        r_path = android_tools.find_r_file(finder.get_dst_r_dir(), package_name=package_name)
         if os.path.exists(r_path):
-            backup_dir = os.path.join(self._finder.get_backup_dir(), package_name.replace('.', os.sep))
+            backup_dir = os.path.join(finder.get_backup_dir(), package_name.replace('.', os.sep))
             if not os.path.isdir(backup_dir):
                 os.makedirs(backup_dir)
-            target_path = os.path.join(backup_dir, 'R.java')
+            # target_path = os.path.join(backup_dir, 'R.java')
+            target_dir = os.path.join(self.__get_freeline_backup_r_dir(), package_name.replace('.', os.sep))
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            target_path = os.path.join(target_dir, 'R.java')
             if not os.path.exists(target_path):
                 self.debug('copy {} to {}'.format(r_path, target_path))
                 shutil.copy(r_path, target_path)
 
                 content = get_file_content(target_path)
                 content = GradleIncBuildInvoker.remove_final_tag(content)
-                content = GradleIncBuildInvoker.extend_main_r(content, self._module_info['packagename'])
+                content = GradleIncBuildInvoker.extend_main_r(content, self._config['package'])
                 write_file_content(target_path, content)
 
             return target_path
