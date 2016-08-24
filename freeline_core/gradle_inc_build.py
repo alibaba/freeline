@@ -310,8 +310,24 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     self.debug('modify {}'.format(fpath))
                     if fpath not in self._changed_files['src']:
                         self._changed_files['src'].append(fpath)
+    def __clean_annotation(self, buffer):
+        if buffer is None:
+            return None
+        return buffer.replace(r"\u", r"d")
 
+    def delete_r_annotation(self):
+        backupdir = os.path.join(self._cache_dir, self._config['main_project_dir'], 'backup')
+        main_rpath = os.path.join(backupdir,
+                                  self._all_module_info[self._config['main_project_dir']]['packagename'].replace(
+                                      '.', os.sep), 'R.java')
+        if os.path.exists(main_rpath):
+            from utils import get_file_content, write_file_content
+            buf = get_file_content(main_rpath)
+            new_buf = self.__clean_annotation(buf)
+            write_file_content(main_rpath, new_buf)
+            
     def append_r_file(self):
+        self.delete_r_annotation()
         if len(self._changed_files['res']) > 0:
             backupdir = os.path.join(self._cache_dir, self._config['main_project_name'], 'backup')
             rpath = os.path.join(backupdir, self._module_info['packagename'].replace('.', os.sep), 'R.java')
