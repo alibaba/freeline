@@ -35,12 +35,12 @@ public class CloseLonglinkSchema implements ISchemaAction {
         if (LongLinkServer.isDexChanged() || LongLinkServer.isResourcesChanged()) {
             if (LongLinkServer.isDexChanged() || forceRestart) {
                 Log.i(TAG, "with dex changes, need to restart the process (activity stack will be reserved)");
-                FreelineCore.restartApplication();
+                FreelineCore.restartApplication(LongLinkServer.getBundleName(), LongLinkServer.getDstPath(), LongLinkServer.getDynamicDexPath(), LongLinkServer.getOptDirPath());
                 LongLinkServer.resetDexChangedFlag();
                 LongLinkServer.resetResourcesChangedFlag();
             } else if (LongLinkServer.isResourcesChanged()) {
                 FreelineCore.clearResourcesCache();
-                FreelineCore.updateActivity();
+                FreelineCore.updateActivity(LongLinkServer.getBundleName(), LongLinkServer.getDstPath());
                 LongLinkServer.resetResourcesChangedFlag();
                 Log.i(TAG, "with only res changes, just recreate the running activity.");
             }

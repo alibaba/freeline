@@ -97,10 +97,9 @@ public class PushResourceSchema implements ISchemaAction {
             FileUtils.rm(pendingFile);
             Log.d(TAG, new StringBuilder().append("sync res increment files to  ").append(destFile.getAbsolutePath()).append(" last:").append(System.currentTimeMillis() - s).toString());
         }
-//        HashMap<String, String> res = new HashMap<String, String>();
-//        Log.d(TAG, "destPath :" + destPath);
-//        res.put(bundleName, destPath);
-        FreelineCore.saveDynamicInfo(bundleName, destPath);
+        //FreelineCore.saveDynamicInfo(bundleName, destPath);
+        LongLinkServer.setBundleName(bundleName);
+        LongLinkServer.setDstPath(destPath);
         LongLinkServer.markResourcesChanged();
         response.setStatusCode(201);
         Log.d(TAG, new StringBuilder().append("increment resources file received (").append(count).append(" bytes)").toString());

@@ -33,6 +33,14 @@ public class LongLinkServer extends EmbedHttpServer {
 
     private static boolean hasDexChange;
 
+    private static String bundleName;
+
+    private static String dstPath;
+
+    private static String dynamicDexPath;
+
+    private static String optDirPath;
+
     private LongLinkServer(Context ctx, int port) {
         super(port);
         this.context = ctx;
@@ -78,6 +86,46 @@ public class LongLinkServer extends EmbedHttpServer {
         hasDexChange = false;
     }
 
+    public static void setBundleName(String name) {
+        bundleName = name;
+    }
+
+    public static String getBundleName() {
+        return bundleName;
+    }
+
+    public static void resetBundleName() {
+        bundleName = null;
+    }
+
+    public static void setDstPath(String path) {
+        dstPath = path;
+    }
+
+    public static String getDstPath() {
+        return dstPath;
+    }
+
+    public static void resetDstPath() {
+        dstPath = null;
+    }
+
+    public static void setDynamicDexPath(String dexPath) {
+        dynamicDexPath = dexPath;
+    }
+
+    public static String getDynamicDexPath() {
+        return dynamicDexPath;
+    }
+
+    public static String getOptDirPath() {
+        return optDirPath;
+    }
+
+    public static void setOptDirPath(String dirPath) {
+        optDirPath = dirPath;
+    }
+
     public static void start(Context ctx, Router router) {
         if (sServer != null) {
             Log.d(TAG, "Freeline.increment server is already running");
@@ -109,11 +157,4 @@ public class LongLinkServer extends EmbedHttpServer {
         sRouter.registerSchema(new RestartSchema());
     }
 
-
-    private static String byteArrayToHex(byte[] a) {
-        StringBuilder sb = new StringBuilder(a.length * 2);
-        for (byte b : a)
-            sb.append(String.format("%02x", new Object[]{Integer.valueOf(b & 0xFF)}));
-        return sb.toString();
-    }
 }

@@ -50,7 +50,9 @@ public class PushDexSchema implements ISchemaAction {
         LongLinkServer.markDexChanged();
         response.setStatusCode(201);
         boolean rst = file.renameTo(finalFile);
-        FreelineCore.applyDynamicDex(finalFile.getAbsolutePath(), optDir.getAbsolutePath());
+        //FreelineCore.applyDynamicDex(finalFile.getAbsolutePath(), optDir.getAbsolutePath());
+        LongLinkServer.setDynamicDexPath(finalFile.getAbsolutePath());
+        LongLinkServer.setOptDirPath(optDir.getAbsolutePath());
         Log.d(TAG, new StringBuilder().append("dex file received (").append(finalFile.length()).append(" bytes)").toString() + " rename rst :" + rst);
     }
 }

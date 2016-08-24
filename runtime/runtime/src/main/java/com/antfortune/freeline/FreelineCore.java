@@ -347,20 +347,27 @@ public class FreelineCore {
         return sApplication;
     }
 
-    public static void updateActivity() {
+    public static void updateActivity(String bundleName, String path) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");
         intent.putExtra(FreelineReceiver.ACTION_KEY, FreelineReceiver.ACTION_UPDATE_ACTIVITY);
+        intent.putExtra(FreelineReceiver.SP_KEY, bundleName);
+        intent.putExtra(FreelineReceiver.SP_VALUE, path);
         sApplication.sendBroadcast(intent);
     }
 
-    public static void restartApplication() {
+    public static void restartApplication(String bundleName, String path, String dexPath, String dirPath) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");
         intent.putExtra(FreelineReceiver.ACTION_KEY, FreelineReceiver.ACTION_RESTART_APPLICATION);
+        intent.putExtra(FreelineReceiver.SP_KEY, bundleName);
+        intent.putExtra(FreelineReceiver.SP_VALUE, path);
+        intent.putExtra(FreelineReceiver.DEX_VALUE, dexPath);
+        intent.putExtra(FreelineReceiver.OPT_VALUE, dirPath);
         sApplication.sendBroadcast(intent);
     }
 
+    @Deprecated
     public static void saveDynamicInfo(String bundleName, String path) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");

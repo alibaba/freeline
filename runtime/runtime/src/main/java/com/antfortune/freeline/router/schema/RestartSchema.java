@@ -20,7 +20,7 @@ public class RestartSchema implements ISchemaAction {
 
     @Override
     public void handle(String method, String path, HashMap<String, String> headers, Map<String, String> queries, InputStream input, EmbedHttpServer.ResponseOutputStream response) throws Exception {
-        FreelineCore.restartApplication();
+        FreelineCore.restartApplication(null, null, null, null);
         response.setStatusCode(200);
     }
 }
