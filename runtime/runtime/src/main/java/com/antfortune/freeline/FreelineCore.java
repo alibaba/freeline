@@ -110,13 +110,13 @@ public class FreelineCore {
     }
 
     public static void clearDynamicCache() {
-        getDynamicInfoSp().edit().clear().apply();
+        getDynamicInfoSp().edit().clear().commit();
         FileUtils.rm(new File(getDynamicInfoTempDir()));
         Log.i(TAG, "clear dynamic info sp cache");
     }
 
     public static void clearSyncCache() {
-        getSyncInfoSp().edit().clear().apply();
+        getSyncInfoSp().edit().clear().commit();
         Log.i(TAG, "clear sync info sp cache");
     }
 
@@ -246,7 +246,7 @@ public class FreelineCore {
         SharedPreferences.Editor editor = sp.edit();
         editor.putString(DYNAMIC_INFO_DEX_PATH_KEY, dexFileStr);
         editor.putString(DYNAMIC_INFO_OPT_PATH_KEY, dexOptDir);
-        editor.apply();
+        editor.commit();
         updateDynamicTime();
         return true;
     }
@@ -273,7 +273,7 @@ public class FreelineCore {
     }
 
     public static void saveLastDynamicSyncId(long sync) {
-        getSyncInfoSp().edit().putLong("lastSync", sync).apply();
+        getSyncInfoSp().edit().putLong("lastSync", sync).commit();
     }
 
     private static SharedPreferences getDynamicInfoSp() {
@@ -299,7 +299,7 @@ public class FreelineCore {
     }
 
     private static void updateDynamicTime() {
-        getDynamicInfoSp().edit().putLong("dynamicTime", System.currentTimeMillis()).apply();
+        getDynamicInfoSp().edit().putLong("dynamicTime", System.currentTimeMillis()).commit();
     }
 
     /***
@@ -315,7 +315,7 @@ public class FreelineCore {
             String pendingPath = dynamicRes.get(packageId);
             editor.putString(getDynamicResPathKey(packageId), pendingPath);
         }
-        editor.apply();
+        editor.commit();
         Log.i(TAG, "apply res :" + dynamicRes);
         updateDynamicTime();
         injectResources();
