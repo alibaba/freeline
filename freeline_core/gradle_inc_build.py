@@ -311,13 +311,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
     def check_other_modules_resources(self):
         if self._name == self._config['main_project_name'] and self._all_module_info is not None:
-            # changed_modules = []
-            # for fn in self._changed_files['res']:
-            #     module = self.__find_res_in_which_module(fn)
-            #     if not module:
-            #         continue
-            #     if module != self._name and module != self._config['build_cache_dir']:
-            #         changed_modules.append(module)
             changed_modules = self._changed_modules
 
             if len(changed_modules) > 0:
@@ -342,33 +335,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     #     self._changed_files['src'].append(fpath)
 
     def append_r_file(self):
-        # if self._is_any_modules_have_res_changed:
-        # backupdir = os.path.join(self._cache_dir, self._config['main_project_name'], 'backup')
-        # main_finder = GradleDirectoryFinder(self._config['main_project_name'], self._config['main_project_dir'],
-        #                                     self._cache_dir, self._config['package'], self._config)
-        #
-        # rpath = os.path.join(backupdir, self._module_info['packagename'].replace('.', os.sep), 'R.java')
-        # if os.path.exists(rpath) and rpath not in self._changed_files['src']:
-        #     self._changed_files['src'].append(rpath)
-        #     self.debug('add R.java to changed list: ' + rpath)
-        # else:
-        #     self.__modify_other_modules_r(self._module_info['packagename'], finder=main_finder)
-        #     self.debug('generate {} R.java'.format(self._name))
-        #     if os.path.exists(rpath):
-        #         self._changed_files['src'].append(rpath)
-        #         self.debug('add R.java to changed list: ' + rpath)
-        #
-        # main_rpath = os.path.join(backupdir, self._config['package'].replace('.', os.sep), 'R.java')
-        # if main_rpath not in self._changed_files['src']:
-        #     if os.path.exists(main_rpath):
-        #         self._changed_files['src'].insert(0, main_rpath)
-        #         self.debug('add R.java to changed list: ' + main_rpath)
-        #     else:
-        #         origin_main_r_path = main_finder.get_dst_r_path(self._config)
-        #         write_file_content(main_rpath,
-        #                            GradleIncBuildInvoker.remove_final_tag(get_file_content(origin_main_r_path)))
-        #         self._changed_files['src'].insert(0, main_rpath)
-        #         self.debug('add R.java to changed list: ' + main_rpath)
         if self._name != self._config['main_project_name']:
             backupdir = self.__get_freeline_backup_r_dir()
             pns = [self._config['package'], self._module_info['packagename']]
@@ -379,9 +345,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             for pn in pns:
                 rpath = os.path.join(backupdir, pn.replace('.', os.sep), 'R.java')
                 if os.path.exists(rpath) and rpath not in self._changed_files['src']:
-                    # if pn == self._config['package']:
-                    #     self._changed_files['src'].insert(0, rpath)
-                    # else:
                     self._changed_files['src'].append(rpath)
                     self.debug('add R.java to changed list: ' + rpath)
 
