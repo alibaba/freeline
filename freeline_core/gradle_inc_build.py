@@ -314,45 +314,51 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             changed_modules = self._changed_modules
 
             if len(changed_modules) > 0:
-                main_r_fpath = os.path.join(self._finder.get_backup_dir(),
-                                            self._module_info['packagename'].replace('.', os.sep), 'R.java')
-                self.debug('modify {}'.format(main_r_fpath))
-                write_file_content(main_r_fpath, GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath)))
-
-                target_main_r_dir = os.path.join(self.__get_freeline_backup_r_dir(),
-                                                 self._module_info['packagename'].replace('.', os.sep))
-                if not os.path.exists(target_main_r_dir):
-                    os.makedirs(target_main_r_dir)
-
-                target_main_r_path = os.path.join(target_main_r_dir, 'R.java')
-                self.debug('copy {} to {}'.format(main_r_fpath, target_main_r_path))
-                shutil.copy(main_r_fpath, target_main_r_path)
+                self.__modify_main_r()
 
                 for module in changed_modules:
                     fpath = self.__modify_other_modules_r(self._all_module_info[module]['packagename'])
                     self.debug('modify {}'.format(fpath))
-                    # if fpath not in self._changed_files['src']:
-                    #     self._changed_files['src'].append(fpath)
+
+    def __modify_main_r(self):
+        main_r_fpath = os.path.join(self._finder.get_backup_dir(),
+                                    self._module_info['packagename'].replace('.', os.sep), 'R.java')
+
+        self.debug('modify {}'.format(main_r_fpath))
+        write_file_content(main_r_fpath, GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath)))
+
+        target_main_r_dir = os.path.join(self.__get_freeline_backup_r_dir(),
+                                         self._module_info['packagename'].replace('.', os.sep))
+        if not os.path.exists(target_main_r_dir):
+            os.makedirs(target_main_r_dir)
+
+        target_main_r_path = os.path.join(target_main_r_dir, 'R.java')
+        self.debug('copy {} to {}'.format(main_r_fpath, target_main_r_path))
+        shutil.copy(main_r_fpath, target_main_r_path)
 
     def append_r_file(self):
         if self._name != self._config['main_project_name']:
             backupdir = self.__get_freeline_backup_r_dir()
-            pns = [self._config['package'], self._module_info['packagename']]
+            main_r_path = os.path.join(backupdir, self._config['package'].replace('.', os.sep), 'R.java')
 
-            for m in self._module_info['local_module_dep']:
-                pns.append(self._all_module_info[m]['packagename'])
+            # main_r_path existence means that resource modification exists, so that need to add R.java to classpath
+            if os.path.exists(main_r_path):
+                pns = [self._config['package'], self._module_info['packagename']]
 
-            for pn in pns:
-                rpath = os.path.join(backupdir, pn.replace('.', os.sep), 'R.java')
-                if os.path.exists(rpath) and rpath not in self._changed_files['src']:
-                    self._changed_files['src'].append(rpath)
-                    self.debug('add R.java to changed list: ' + rpath)
-                elif pn == self._module_info['packagename']:
-                    fpath = self.__modify_other_modules_r(pn)
-                    self.debug('modify {}'.format(fpath))
-                    if os.path.exists(fpath):
-                        self._changed_files['src'].append(fpath)
-                        self.debug('add R.java to changed list: ' + fpath)
+                for m in self._module_info['local_module_dep']:
+                    pns.append(self._all_module_info[m]['packagename'])
+
+                for pn in pns:
+                    rpath = os.path.join(backupdir, pn.replace('.', os.sep), 'R.java')
+                    if os.path.exists(rpath) and rpath not in self._changed_files['src']:
+                        self._changed_files['src'].append(rpath)
+                        self.debug('add R.java to changed list: ' + rpath)
+                    elif pn == self._module_info['packagename']:
+                        fpath = self.__modify_other_modules_r(pn)
+                        self.debug('modify {}'.format(fpath))
+                        if os.path.exists(fpath):
+                            self._changed_files['src'].append(fpath)
+                            self.debug('add R.java to changed list: ' + fpath)
 
     def fill_classpaths(self):
         # classpaths:
