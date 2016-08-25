@@ -44,7 +44,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.0.1'
-    compile 'com.antfortune.freeline:runtime:0.5.0'
+    compile 'com.antfortune.freeline:runtime:0.5.3'
     compile project(":common")
     compile project(":ThirdParty:share")
     compile project(":ThirdParty:payment")
