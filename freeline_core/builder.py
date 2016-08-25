@@ -81,9 +81,11 @@ class Builder(object):
         return aapt if os.path.exists(aapt) else None
 
     @staticmethod
-    def get_javac():
-        exec_name = 'javac.exe' if is_windows_system() else 'javac'
+    def get_javac(config=None):
         path = os.getenv('JAVA_HOME')
+        if config is not None and 'java_home' in config:
+            path = config['java_home']
+        exec_name = 'javac.exe' if is_windows_system() else 'javac'
         if path and is_exe(os.path.join(path, 'bin', exec_name)):
             return os.path.join(path, 'bin', exec_name)
         return None

@@ -86,6 +86,7 @@ class FreelineInitializer {
         def projectDescription = [:]
 
         projectDescription.project_type = 'gradle'
+        projectDescription.java_home = getJavaHome()
         projectDescription.freeline_cache_dir = FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath)
         projectDescription.product_flavor = productFlavor
         projectDescription.build_script = buildScript
@@ -172,6 +173,14 @@ class FreelineInitializer {
         String rootPath = project.rootProject.getRootDir()
         def dir = new File(rootPath, "freeline")
         return dir.exists() && dir.isDirectory()
+    }
+
+    private static String getJavaHome() {
+        String env = System.getenv("JAVA_HOME")
+        if (env == null || "".equals(env)) {
+            env = System.getProperty("java.home").replace(File.separator + "jre", "")
+        }
+        return env
     }
 
     private static void appendDirs(def targetCollections, def collections) {

@@ -314,7 +314,7 @@ class AndroidIncBuildInvoker(object):
         self._is_other_modules_has_src_changed = is_other_modules_has_src_changed
 
         self._aapt = Builder.get_aapt()
-        self._javac = Builder.get_javac()
+        self._javac = Builder.get_javac(config=config)
         if self._javac is None:
             raise FreelineException('Please declares your JAVA_HOME to system env!', 'JAVA_HOME not found in env.')
         self._dx = Builder.get_dx(self._config)
