@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -332,7 +333,12 @@ public class FreelineCore {
     }
 
     public static String getDynamicInfoTempPath(String packageId) {
-        File dir = new File(getDynamicInfoTempDir(), packageId + ".jar");
+        File dir;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            dir = new File(getDynamicInfoTempDir(), packageId + ".jar");
+        } else {
+            dir = new File(getDynamicInfoTempDir(), packageId);
+        }
         return dir.getAbsolutePath();
     }
 
