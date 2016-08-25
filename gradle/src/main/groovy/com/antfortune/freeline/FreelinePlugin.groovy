@@ -221,19 +221,28 @@ class FreelinePlugin implements Plugin<Project> {
                 }
             }
 
+            def projectResDirs = []
+            project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+
             mergeResourcesTask.inputs.files.files.each { f ->
-                def path = f.absolutePath
-                if (path.contains("exploded-aar")) {
-                    def marker = false
-                    mappers.each { mapper ->
-                        if (path.contains(mapper.match)) {
-                            mapper.path.collect(resourcesDependencies.local_resources) {it}
-                            marker = true
-                            return false
+                if (f.exists() && f.isDirectory()) {
+                    def path = f.absolutePath
+                    if (path.contains("exploded-aar")) {
+                        def marker = false
+                        mappers.each { mapper ->
+                            if (path.contains(mapper.match)) {
+                                mapper.path.collect(resourcesDependencies.local_resources) {it}
+                                marker = true
+                                return false
+                            }
                         }
-                    }
-                    if (!marker) {
-                        resourcesDependencies.library_resources.add(path)
+                        if (!marker) {
+                            resourcesDependencies.library_resources.add(path)
+                        }
+                    } else {
+                        if (!projectResDirs.contains(path)) {
+                            resourcesDependencies.library_resources.add(path)
+                        }
                     }
                 }
             }
