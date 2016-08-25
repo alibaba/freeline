@@ -551,7 +551,7 @@ class AndroidIncBuildInvoker(object):
         dex_path = self._finder.get_dst_dex_path()
         add_path = None
         if is_windows_system():
-            add_path = os.path.abspath(os.path.join(self._javac, os.pardir))
+            add_path = str(os.path.abspath(os.path.join(self._javac, os.pardir)))
             dex_args = [self._dx, '--dex', '--output=' + dex_path, patch_classes_cache_dir]
         else:
             dex_args = [self._dx, '--dex', '--no-optimize', '--force-jumbo', '--output=' + dex_path,
