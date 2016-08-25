@@ -91,6 +91,9 @@ If you have a complex project structure, you may need to use freeline DSL to cus
 
 Note that, you should apply the freeline plugin dependency before you execute these commands. 
 
+## Update
+After changing the version of freeline in build.gradle files, you should run `./gradlew initFreeline` or `gradlew.bat initFreeline` to download the latest freeline dependency.
+
 ## Usage
 
 You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands.
