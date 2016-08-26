@@ -334,7 +334,9 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                                     self._module_info['packagename'].replace('.', os.sep), 'R.java')
 
         self.debug('modify {}'.format(main_r_fpath))
-        write_file_content(main_r_fpath, GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath)))
+        buf = GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath))
+        buf = self.__fix_unicode_parse_error(buf, main_r_fpath)
+        write_file_content(main_r_fpath, buf)
 
         target_main_r_dir = os.path.join(self.__get_freeline_backup_r_dir(),
                                          self._module_info['packagename'].replace('.', os.sep))
@@ -368,6 +370,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         if os.path.exists(fpath):
                             self._changed_files['src'].append(fpath)
                             self.debug('add R.java to changed list: ' + fpath)
+        else:
+            if is_windows_system():
+                main_r_path = os.path.join(self._finder.get_backup_dir(),
+                                           self._module_info['packagename'].replace('.', os.sep), 'R.java')
+                content = self.__fix_unicode_parse_error(get_file_content(main_r_path), main_r_path)
+                write_file_content(main_r_path, content)
 
     def fill_classpaths(self):
         # classpaths:
@@ -463,6 +471,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 content = get_file_content(target_path)
                 content = GradleIncBuildInvoker.remove_final_tag(content)
                 content = GradleIncBuildInvoker.extend_main_r(content, self._config['package'])
+                content = self.__fix_unicode_parse_error(content, target_path)
                 write_file_content(target_path, content)
 
             return target_path
@@ -476,6 +485,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     if res_path.startswith(rdir) or rdir in res_path:
                         return module
         return None
+
+    def __fix_unicode_parse_error(self, content, path):
+        if content is not None and is_windows_system():
+            self.debug("avoid windows unicode error for {}".format(path))
+            return content.replace(r"\u", r"d")
+        return content
 
     @staticmethod
     def remove_final_tag(content):
