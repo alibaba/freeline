@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version '0.5.0'
+version '0.5.3'
 
 android {
     compileSdkVersion 23
@@ -20,17 +20,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ['libs']
-        }
-    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.0.1'
-    compile 'com.android.support:support-annotations:23.0.1'
 }
 

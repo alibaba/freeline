@@ -27,8 +27,6 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.util.LongSparseArray;
@@ -84,10 +82,10 @@ public class MonkeyPatcher {
     protected static final String LOG_TAG = "Freeline.ResPatcher";
 
     @SuppressWarnings("unchecked")  // Lots of conversions with generic types
-    public static void monkeyPatchApplication(@Nullable Context context,
-                                              @Nullable Application bootstrap,
-                                              @Nullable Application realApplication,
-                                              @Nullable String externalResourceFile) {
+    public static void monkeyPatchApplication(Context context,
+                                              Application bootstrap,
+                                              Application realApplication,
+                                              String externalResourceFile) {
         /*
         The code seems to perform this:
         Application realApplication = the newly instantiated (in attachBaseContext) user app
@@ -220,9 +218,9 @@ public class MonkeyPatcher {
             throw new IllegalStateException(e);
         }
     }
-    @Nullable
-    public static Object getActivityThread(@Nullable Context context,
-                                           @Nullable Class<?> activityThread) {
+
+    public static Object getActivityThread(Context context,
+                                           Class<?> activityThread) {
         try {
             if (activityThread == null) {
                 activityThread = Class.forName("android.app.ActivityThread");
@@ -246,9 +244,9 @@ public class MonkeyPatcher {
             return null;
         }
     }
-    public static void monkeyPatchExistingResources(@Nullable Context context,
-                                                    @Nullable String externalResourceFile,
-                                                    @Nullable Collection<Activity> activities) {
+    public static void monkeyPatchExistingResources(Context context,
+                                                    String externalResourceFile,
+                                                    Collection<Activity> activities) {
         if (externalResourceFile == null) {
             return;
         }
@@ -393,7 +391,7 @@ public class MonkeyPatcher {
             throw new IllegalStateException(e);
         }
     }
-    private static void pruneResourceCaches(@NonNull Object resources) {
+    private static void pruneResourceCaches(Object resources) {
         // Drain TypedArray instances from the typed array pool since these can hold on
         // to stale asset data
         if (SDK_INT >= LOLLIPOP) {
@@ -457,8 +455,8 @@ public class MonkeyPatcher {
             }
         }
     }
-    private static boolean pruneResourceCache(@NonNull Object resources,
-                                              @NonNull String fieldName) {
+    private static boolean pruneResourceCache(Object resources,
+                                              String fieldName) {
         try {
             Class<?> resourcesClass = resources.getClass();
             Field cacheField;
