@@ -76,13 +76,14 @@ class GradleReadProjectInfoTask(Task):
 class GradleGenerateProjectInfoTask(Task):
     def __init__(self, config):
         Task.__init__(self, 'generate_project_info_task')
-        # reload project info
-        from dispatcher import read_freeline_config
-        self._config = read_freeline_config()
 
     def execute(self):
-        write_json_cache(os.path.join(self._config['build_cache_dir'], 'project_info_cache.json'),
-                         get_project_info(self._config))
+        # reload project info
+        from dispatcher import read_freeline_config
+        config = read_freeline_config()
+
+        write_json_cache(os.path.join(config['build_cache_dir'], 'project_info_cache.json'),
+                         get_project_info(config))
 
 
 class GradleCleanBuildTask(CleanBuildTask):
@@ -93,6 +94,7 @@ class GradleCleanBuildTask(CleanBuildTask):
         # reload config
         from dispatcher import read_freeline_config
         self._config = read_freeline_config()
+
         cwd = self._config['build_script_work_directory'].strip()
         if not cwd or not os.path.isdir(cwd):
             cwd = None

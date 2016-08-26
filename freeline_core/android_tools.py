@@ -23,16 +23,22 @@ except ImportError:
 class InstallApkTask(Task):
     def __init__(self, adb, config):
         Task.__init__(self, 'install_apk_task')
+        self._adb = adb
+
+    def __init_attributes(self):
         # reload freeline config
         from dispatcher import read_freeline_config
         self._config = read_freeline_config()
-        self._adb = adb
         self._apk_path = self._config['apk_path']
-        self._package = self._config['package']
         self._launcher = self._config['launcher']
         self._cache_dir = self._config['build_cache_dir']
+        self._package = self._config['package']
+        if 'debug_package' in self._config:
+            # support applicationIdSuffix attribute
+            self._package = self._config['debug_package']
 
     def execute(self):
+        self.__init_attributes()
         self._check_connection()
         self._install_apk()
         self._launch_application()

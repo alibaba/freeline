@@ -102,6 +102,7 @@ class FreelineInitializer {
         projectDescription.compile_sdk_version = project.android.compileSdkVersion.toString()
         projectDescription.compile_sdk_directory = FreelineUtils.joinPath(projectDescription.sdk_directory, 'platforms', projectDescription.compile_sdk_version)
         projectDescription.package = project.android.defaultConfig.applicationId.toString()
+        projectDescription.debug_package = projectDescription.package
         projectDescription.main_src_directory = []
         project.android.sourceSets.main.java.srcDirs.asList().collect(projectDescription.main_src_directory) { it.absolutePath }
         projectDescription.main_res_directory = []
@@ -114,6 +115,14 @@ class FreelineInitializer {
         projectDescription.extra_dep_res_paths = extraResourcesDependencies
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
+
+        project.android.buildTypes.each { buildType ->
+            if ("debug".equalsIgnoreCase(buildType.name)) {
+                if (buildType.applicationIdSuffix) {
+                    projectDescription.debug_package = projectDescription.package + buildType.applicationIdSuffix
+                }
+            }
+        }
 
         if (apkPath == null || apkPath == '') {
             // set default build script
@@ -131,7 +140,6 @@ class FreelineInitializer {
             appendDirs(projectDescription.main_res_directory, project.android.sourceSets.debug.res.srcDirs.asList())
             appendDirs(projectDescription.main_assets_directory, project.android.sourceSets.debug.assets.srcDirs.asList())
         }
-
 
         projectDescription.project_source_sets = [:]
         projectDescription.modules = []
