@@ -56,7 +56,7 @@ class FreelineInitializer {
 
         def freelineDir = new File(project.rootDir, "freeline")
         if (freelineDir.exists()) {
-            freelineDir.delete()
+            FileUtils.deleteDirectory(freelineDir)
             println 'removing existing freeline directory'
         }
         ant.unzip(src: "freeline.zip", dest: project.rootDir.absolutePath)
@@ -69,6 +69,11 @@ class FreelineInitializer {
         } else {
             Runtime.getRuntime().exec("chmod -R +x freeline")
             Runtime.getRuntime().exec("ln -s freeline/freeline.py freeline.py")
+        }
+
+        def freelineZipFile = new File(project.rootDir, "freeline.zip")
+        if (freelineZipFile.exists()) {
+            freelineZipFile.delete()
         }
 
         generateProjectDescription(project)
