@@ -287,6 +287,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         aapt_args.append(adir)
 
         gen_path = self._finder.get_backup_dir()
+        aapt_args.append('--custom-package')
+        aapt_args.append(self._config['package'])
         aapt_args.append('-m')
         aapt_args.append('-J')
         aapt_args.append(gen_path)
