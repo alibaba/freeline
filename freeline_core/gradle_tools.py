@@ -566,6 +566,13 @@ class BuildBaseResourceTask(Task):
                 aapt_args.append('-A')
                 aapt_args.append(adir)
 
+        for m in self._module_info['local_module_dep']:
+            if m in self._config['project_source_sets']:
+                for adir in self._config['project_source_sets'][m]['main_assets_directory']:
+                    if os.path.exists(adir):
+                        aapt_args.append('-A')
+                        aapt_args.append(adir)
+
         base_resource_path = get_base_resource_path(self._config['build_cache_dir'])
         aapt_args.append('-m')
         aapt_args.append('-J')

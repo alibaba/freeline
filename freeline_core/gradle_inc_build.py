@@ -279,6 +279,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 aapt_args.append('-A')
                 aapt_args.append(adir)
 
+        for m in self._module_info['local_module_dep']:
+            if m in self._config['project_source_sets']:
+                for adir in self._config['project_source_sets'][m]['main_assets_directory']:
+                    if os.path.exists(adir):
+                        aapt_args.append('-A')
+                        aapt_args.append(adir)
+
         gen_path = self._finder.get_backup_dir()
         aapt_args.append('-m')
         aapt_args.append('-J')
