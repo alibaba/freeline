@@ -124,6 +124,10 @@ cd freeline/sample
 python freeline.py
 ````
 
+##Considerations
+- when run freeline on your phone for your project before，you may uninstall sample APK in your phone first as it may cause freeline could not change to increment mode 
+
+
 ## TODO
 - Compatibility Improvement
 - Android Studio Plugin
