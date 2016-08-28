@@ -11,7 +11,7 @@ Developed and used by **Ant Fortune（ [about us](https://www.antfortune.com/ "a
 ## Freeline Insights
 Freeline splits the build task into several small tasks that run concurrently. It makes full use of the compiled cache files to implement a real incremental build and uses some components of Buck such as dx and DexMerger to speed up the build tasks. Freeline runs a socket server in a separate process on device side, which connects with build tool on developer's machine, so that deployment can still take effects even if the main process crashes.
 
-Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which can be as small as 1 kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
+Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
 
 Freeline will automatically switch between full build and incremental build.
 
