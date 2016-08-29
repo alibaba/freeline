@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-v0.5.3-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release Version](https://img.shields.io/badge/release-0.5.4-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
@@ -114,7 +114,7 @@ On the root dir of your project :
 
     when if you need a full build in other case , your can force it through adding "-f"
 
-
+Freeline only support Python 2.7+ for now.
 
 ## Sample Usage
 ````
