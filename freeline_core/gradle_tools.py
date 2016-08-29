@@ -653,8 +653,11 @@ def get_project_info(config):
             module_info['packagename'] = get_package_name(
                 config['project_source_sets'][module['name']]['main_manifest_path'])
 
-            gradle_content = remove_comments(get_file_content(os.path.join(module['path'], 'build.gradle')))
-            module_info['local_module_dep'] = get_local_dependency(gradle_content)
+            if 'module_dependencies' in config:
+                module_info['local_module_dep'] = config['module_dependencies'][module['name']]
+            else:
+                gradle_content = remove_comments(get_file_content(os.path.join(module['path'], 'build.gradle')))
+                module_info['local_module_dep'] = get_local_dependency(gradle_content)
 
             project_info[module['name']] = module_info
 

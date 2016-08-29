@@ -3,6 +3,7 @@ package com.antfortune.freeline
 import groovy.json.JsonBuilder
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
+import org.gradle.api.artifacts.UnknownConfigurationException
 
 /**
  * Created by huangyong on 16/7/19.
@@ -175,6 +176,8 @@ class FreelineInitializer {
 
         // get launcher activity name
         projectDescription.launcher = FreelineParser.getLauncher(projectDescription.main_manifest_path.toString(), projectDescription.package.toString())
+        // get module dependencies
+        projectDescription.module_dependencies = findModuleDependencies(project)
 
         def json = new JsonBuilder(projectDescription).toPrettyString()
         println json
@@ -202,6 +205,42 @@ class FreelineInitializer {
                 targetCollections.add(dir.absolutePath)
             }
         }
+    }
+
+    private static def findModuleDependencies(Project project) {
+        def mappers = []
+        project.rootProject.allprojects.each { p ->
+            def mapper = ["match" : "", "name": p.name]
+            if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
+                mapper.match = "${p.name}-release.aar"
+                mappers.add(mapper)
+            } else if (p.plugins.hasPlugin("java")) {
+                mapper.match = "libs${File.separator}${p.name}.jar"
+                mappers.add(mapper)
+            }
+        }
+
+        def module_dependencies = [:]
+        project.rootProject.allprojects.each { pro ->
+            def deps = []
+            try {
+                if (pro.configurations.getByName("compile") != null) {
+                    pro.configurations.compile.asPath.split(":").each { f ->
+                        mappers.each { mapper ->
+                            if (f.endsWith(mapper.match)) {
+                                deps.add(mapper.name)
+                                return false
+                            }
+                        }
+                    }
+                }
+            } catch (UnknownConfigurationException e) {
+                //
+            }
+            module_dependencies[pro.name] = deps
+        }
+
+        return module_dependencies
     }
 
 }
