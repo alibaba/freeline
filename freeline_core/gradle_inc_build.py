@@ -41,7 +41,7 @@ class GradleIncBuilder(IncrementalBuilder):
         self._is_art = android_tools.get_device_sdk_version_by_adb(Builder.get_adb(self._config)) > 20
         # merge all resources modified files to main resources
         self.__merge_res_files()
-        self._merge_native_files()
+        self.__merge_native_files()
 
     def generate_sorted_build_tasks(self):
         """
@@ -77,10 +77,10 @@ class GradleIncBuilder(IncrementalBuilder):
                     main_res[key].extend(files)
         self._changed_files['projects'][self._config['main_project_name']] = main_res
 
-    def _merge_native_files(self):
-        nativeZipPath = os.path.join(self._config['build_cache_dir'],"natives.zip")
-        if os.path.exists(nativeZipPath):
-            os.remove(nativeZipPath)
+    def __merge_native_files(self):
+        native_zip_path = os.path.join(self._config['build_cache_dir'], "natives.zip")
+        if os.path.exists(native_zip_path):
+            os.remove(native_zip_path)
 
         libs = []
         for module, file_dict in self._changed_files['projects'].iteritems():
@@ -90,9 +90,9 @@ class GradleIncBuilder(IncrementalBuilder):
                         print (files[m])
                         libs.append(files[m])
 
-        if len(libs) > 0 :
+        if len(libs) > 0:
             from zipfile import ZipFile
-            with ZipFile(nativeZipPath,"w") as nativeZip:
+            with ZipFile(native_zip_path, "w") as nativeZip:
                 for m in range(len(libs)):
                     nativeZip.write(libs[m])
 
@@ -394,8 +394,9 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             if is_windows_system():
                 main_r_path = os.path.join(self._finder.get_backup_dir(),
                                            self._module_info['packagename'].replace('.', os.sep), 'R.java')
-                content = self.__fix_unicode_parse_error(get_file_content(main_r_path), main_r_path)
-                write_file_content(main_r_path, content)
+                if os.path.exists(main_r_path):
+                    content = self.__fix_unicode_parse_error(get_file_content(main_r_path), main_r_path)
+                    write_file_content(main_r_path, content)
 
     def fill_classpaths(self):
         # classpaths:
