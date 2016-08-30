@@ -96,9 +96,7 @@ After changing the version of freeline in build.gradle files, you should run `./
 
 ## Usage
 
-You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands.
-
-Python 2.7+ is required .
+You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands and install Python 2.7+  .
 
 
 On the root dir of your project :
@@ -135,6 +133,7 @@ python freeline.py
 - Android Studio Plugin
 - Annotation Support
 - Multiple Devices Connection Support
+- native so incrment Support
 
 ## Limitations
 - Sync incremental resource pack to the device first time may be a bit slow
