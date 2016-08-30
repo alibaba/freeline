@@ -13,6 +13,10 @@ import com.antfortune.freeline.util.ActivityManager;
 import com.antfortune.freeline.util.AppUtils;
 import com.antfortune.freeline.util.DexUtils;
 import com.antfortune.freeline.util.FileUtils;
+import com.antfortune.freeline.util.ReflectUtil;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import dalvik.system.PathClassLoader;
+import dalvik.system.DexClassLoader;
+import android.os.Build.VERSION;
 
 /**
  * Created by xianying on 16/3/16.
@@ -77,13 +83,14 @@ public class FreelineCore {
                 } else {
                     Log.i(TAG, "start to inject dex...");
                     injectDex(origin);
-
                     Log.i(TAG, "start to inject resources...");
                     injectResources();
                 }
 
                 Log.i(TAG, "start to load hackload.dex...");
                 injectHackDex(app, origin);
+                Log.i(TAG, "start to hack native lib...");
+                injectHackNativeLib(app,origin);
             } catch (Exception e) {
                 printStackTrace(e);
             }
@@ -210,6 +217,41 @@ public class FreelineCore {
         }
     }
 
+    private static void injectHackNativeLib(Context context, PathClassLoader classLoader) {
+        try {
+            Log.e(TAG, " boolean start to hackNativeLib ");
+
+            String refFieldName = "nativeLibraryPathElements";
+            if (VERSION.SDK_INT < 23){
+                refFieldName = "nativeLibraryDirectories";
+            }
+
+            Object pathListObject = ReflectUtil.getField(classLoader,"pathList");
+            Object nativeLibraryPathElementsObject = ReflectUtil.getField(pathListObject,refFieldName);
+
+            Field nativeLibraryPathElementsFiled = ReflectUtil.fieldGetOrg(pathListObject,refFieldName);
+
+
+            DexClassLoader dumbDexClassLoader = new DexClassLoader("",getDynamicInfoTempDir(),getDynamicInfoTempDir(),classLoader.getParent());
+            Object dynamicNativeLibraryPathElements = ReflectUtil.getField(ReflectUtil.getField(dumbDexClassLoader,"pathList"),refFieldName);
+            Object dynamicNativeLibraryPathElement = Array.get(dynamicNativeLibraryPathElements,0);
+
+            int lengthOfNewNativeLibraryPathElements = Array.getLength(nativeLibraryPathElementsObject)+1;
+            Object newNativeLibraryPathElements = Array.newInstance(nativeLibraryPathElementsFiled.getType().getComponentType(),lengthOfNewNativeLibraryPathElements);
+            Array.set(newNativeLibraryPathElements,0,dynamicNativeLibraryPathElement);
+
+            for (int i = 1; i < lengthOfNewNativeLibraryPathElements;i++){
+                Object object = Array.get(nativeLibraryPathElementsObject,i-1);
+                Array.set(newNativeLibraryPathElements,i,object);
+            }
+
+            ReflectUtil.setField(pathListObject,refFieldName,newNativeLibraryPathElements);
+            Log.e(TAG, " success to hackNativeLib "+newNativeLibraryPathElements);
+        }catch (Exception ex){
+            Log.e(TAG, "hackNativeLib failed",ex);
+        }
+    }
+
 
     private static void injectDex(PathClassLoader origin) {
         String dexPath = getDynamicDexPath();
@@ -299,7 +341,7 @@ public class FreelineCore {
         return false;
     }
 
-    private static void updateDynamicTime() {
+    public static void updateDynamicTime() {
         getDynamicInfoSp().edit().putLong("dynamicTime", System.currentTimeMillis()).commit();
     }
 

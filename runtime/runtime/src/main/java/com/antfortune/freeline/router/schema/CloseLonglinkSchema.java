@@ -46,6 +46,9 @@ public class CloseLonglinkSchema implements ISchemaAction {
             }
             response.setStatusCode(200);
         } else {
+            //todo 此处暂时认为so文件改动 后续为.so文件改动做标记
+            Log.i(TAG, "with .so files changed, need to restart the process (activity stack will be reserved)");
+            FreelineCore.restartApplication(null,null,null,null);//.so files changed
             response.setStatusCode(200);
         }
     }

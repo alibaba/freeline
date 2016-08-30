@@ -10,6 +10,7 @@ import com.antfortune.freeline.router.schema.CheckSyncSchema;
 import com.antfortune.freeline.router.schema.CloseLonglinkSchema;
 import com.antfortune.freeline.router.schema.PushDexSchema;
 import com.antfortune.freeline.router.schema.PushFullResourcePackSchema;
+import com.antfortune.freeline.router.schema.PushNativeSchema;
 import com.antfortune.freeline.router.schema.PushResourceSchema;
 import com.antfortune.freeline.router.schema.RestartSchema;
 
@@ -155,6 +156,7 @@ public class LongLinkServer extends EmbedHttpServer {
         sRouter.registerSchema(new PushFullResourcePackSchema());
         sRouter.registerSchema(new PushResourceSchema());
         sRouter.registerSchema(new RestartSchema());
+        sRouter.registerSchema(new PushNativeSchema());
     }
 
 }

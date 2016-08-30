@@ -73,10 +73,36 @@ public class ReflectUtil {
         return field.get(object);
     }
 
+
     public static Object fieldGet(Object object, Class<?> clazz, String fieldName)
             throws Exception {
         Field field = clazz.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field.get(object);
+    }
+	
+	public static Object getField(Object obj, String fieldName)
+            throws NoSuchFieldException, IllegalAccessException {
+        return prepareField(obj.getClass(), fieldName).get(obj);
+    }
+
+    public static void setField(Object obj, String fieldName, Object value)
+            throws NoSuchFieldException, IllegalAccessException {
+        prepareField(obj.getClass(), fieldName).set(obj, value);
+    }
+
+    private static Field prepareField(Class c, String fieldName)
+            throws NoSuchFieldException {
+        while (c != null) {
+            try {
+                Field f = c.getDeclaredField(fieldName);
+                f.setAccessible(true);
+                return f;
+            } catch (Exception e) {
+            } finally {
+                c = c.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException();
     }
 }

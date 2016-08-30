@@ -41,6 +41,7 @@ class GradleIncBuilder(IncrementalBuilder):
         self._is_art = android_tools.get_device_sdk_version_by_adb(Builder.get_adb(self._config)) > 20
         # merge all resources modified files to main resources
         self.__merge_res_files()
+        self._merge_native_files()
 
     def generate_sorted_build_tasks(self):
         """
@@ -75,6 +76,25 @@ class GradleIncBuilder(IncrementalBuilder):
                 if key == 'res' or key == 'assets':
                     main_res[key].extend(files)
         self._changed_files['projects'][self._config['main_project_name']] = main_res
+
+    def _merge_native_files(self):
+        nativeZipPath = os.path.join(self._config['build_cache_dir'],"natives.zip")
+        if os.path.exists(nativeZipPath):
+            os.remove(nativeZipPath)
+
+        libs = []
+        for module, file_dict in self._changed_files['projects'].iteritems():
+            for key, files in file_dict.iteritems():
+                if key == 'libs':
+                    for m in range(len(files)):
+                        print (files[m])
+                        libs.append(files[m])
+
+        if len(libs) > 0 :
+            from zipfile import ZipFile
+            with ZipFile(nativeZipPath,"w") as nativeZip:
+                for m in range(len(libs)):
+                    nativeZip.write(libs[m])
 
     def __is_any_modules_have_res_changed(self):
         for key, value in self._changed_files['projects'].iteritems():

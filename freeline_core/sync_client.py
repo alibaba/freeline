@@ -116,6 +116,9 @@ class SyncClient(object):
     def sync_incremental_res(self):
         raise NotImplementedError  # TODO: sync single res.pack
 
+    def sync_incremental_native(self):
+        raise NotImplementedError
+
     def sync_incremental_dex(self):
         dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
         if os.path.exists(dex_path):
@@ -131,9 +134,11 @@ class SyncClient(object):
             self.debug('no {} exists.'.format(dex_path))
 
     def sync_state(self, is_need_restart):
-        if self._is_need_sync_dex() or self._is_need_sync_res():
+        if self._is_need_sync_dex() or self._is_need_sync_res() or self._is_need_sync_native():
             self.debug('start to sync close longlink...')
             restart_char = 'restart' if is_need_restart else 'no'
+            if self._is_need_sync_native():
+                restart_char = 'restart'
             update_last_sync_ticket(self._cache_dir)
             url = 'http://127.0.0.1:{}/closeLongLink?{}&lastSync={}'.format(self._port, restart_char,
                                                                             get_last_sync_ticket(self._cache_dir))
@@ -166,6 +171,9 @@ class SyncClient(object):
         return os.path.exists(android_tools.get_incremental_dex_path(self._cache_dir))
 
     def _is_need_sync_res(self):
+        raise NotImplementedError
+
+    def _is_need_sync_native(self):
         raise NotImplementedError
 
 

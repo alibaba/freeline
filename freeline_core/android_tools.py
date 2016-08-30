@@ -114,6 +114,9 @@ class AndroidSyncClient(SyncClient):
     def __init__(self, is_art, config):
         SyncClient.__init__(self, is_art, config)
 
+    def sync_incremental_native(self):
+        pass
+
     def sync_incremental_res(self):
         pass
 

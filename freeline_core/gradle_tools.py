@@ -369,6 +369,7 @@ class GradleSyncTask(android_tools.SyncTask):
             # self._client.push_full_res_pack()
             self._client.sync_incremental_res()
             self._client.sync_incremental_dex()
+            self._client.sync_incremental_native()
             self._client.sync_state(self._is_need_restart)
             self._client.close_connection()
         except FreelineException as e:
@@ -413,6 +414,22 @@ class GradleSyncClient(SyncClient):
                 raise FreelineException('You may need a clean build.',
                                         'full resource pack not found: {}'.format(full_pack_path))
 
+    def sync_incremental_native(self):
+        if (self._is_need_sync_native()):
+            self.debug('start to sync native file...')
+            nativeZipPath = os.path.join(self._config['build_cache_dir'],'natives.zip')
+            with open(nativeZipPath,"rb") as fp:
+                url = "http://127.0.0.1:{}/pushNative?restart".format(self._port)
+                self.debug("pushNative: "+url)
+                result,err,code = curl(url,body=fp.read())
+                self.debug("code: {}".format(code))
+                # todo 此处返回-1 暂时先忽略
+                # if code != 0:
+                #     from exceptions import FreelineException
+                #     raise FreelineException("sync native dex failed.",err.message)
+
+
+
     def sync_incremental_res(self):
         mode = 'increment' if self._is_art else 'full'
         can_sync_inc_res = False
@@ -454,6 +471,8 @@ class GradleSyncClient(SyncClient):
                 return True
         return False
 
+    def _is_need_sync_native(self):
+        return os.path.exists(os.path.join(self._config['build_cache_dir'],'natives.zip'))
 
 class GradleCleanCacheTask(android_tools.CleanCacheTask):
     def __init__(self, cache_dir, project_info):
