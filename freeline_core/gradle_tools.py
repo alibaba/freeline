@@ -415,20 +415,18 @@ class GradleSyncClient(SyncClient):
                                         'full resource pack not found: {}'.format(full_pack_path))
 
     def sync_incremental_native(self):
-        if (self._is_need_sync_native()):
+        if self._is_need_sync_native():
             self.debug('start to sync native file...')
-            nativeZipPath = os.path.join(self._config['build_cache_dir'],'natives.zip')
-            with open(nativeZipPath,"rb") as fp:
+            native_zip_path = os.path.join(self._config['build_cache_dir'], 'natives.zip')
+            with open(native_zip_path, "rb") as fp:
                 url = "http://127.0.0.1:{}/pushNative?restart".format(self._port)
                 self.debug("pushNative: "+url)
-                result,err,code = curl(url,body=fp.read())
+                result, err, code = curl(url, body=fp.read())
                 self.debug("code: {}".format(code))
                 # todo 此处返回-1 暂时先忽略
                 # if code != 0:
                 #     from exceptions import FreelineException
                 #     raise FreelineException("sync native dex failed.",err.message)
-
-
 
     def sync_incremental_res(self):
         mode = 'increment' if self._is_art else 'full'
@@ -472,7 +470,8 @@ class GradleSyncClient(SyncClient):
         return False
 
     def _is_need_sync_native(self):
-        return os.path.exists(os.path.join(self._config['build_cache_dir'],'natives.zip'))
+        return os.path.exists(os.path.join(self._config['build_cache_dir'], 'natives.zip'))
+
 
 class GradleCleanCacheTask(android_tools.CleanCacheTask):
     def __init__(self, cache_dir, project_info):
@@ -485,7 +484,7 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
             for fn in files:
                 if fn.endswith('.sync'):
                     os.remove(os.path.join(dirpath, fn))
-                    module = fn.split('.')[0]
+                    module = fn[:fn.rfind('.')]
                     self._refresh_public_files(module)
 
                 if fn.endswith('increment.dex') or fn.endswith('.rflag') or fn.endswith('.restart'):
