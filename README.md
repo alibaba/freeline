@@ -97,6 +97,8 @@ After changing the version of freeline in build.gradle files, you should run `./
 ## Usage
 
 You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands.
+Python 2.7+ is required .
+
 
 On the root dir of your project :
 
@@ -114,7 +116,6 @@ On the root dir of your project :
 
     when if you need a full build in other case , your can force it through adding "-f"
 
-Freeline only support Python 2.7+ for now.
 
 ## Sample Usage
 ````
