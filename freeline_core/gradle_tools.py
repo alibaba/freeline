@@ -681,16 +681,17 @@ def get_project_info(config):
 
     for module in modules:
         if module['name'] in config['project_source_sets']:
-            local_deps = project_info[module['name']]['local_module_dep']
-            for dep in project_info[module['name']]['local_module_dep']:
-                if dep in project_info:
-                    local_deps.extend(project_info[dep]['local_module_dep'])
-            local_deps = list(set(local_deps))
-            project_info[module['name']]['local_module_dep'] = []
-            for item in local_deps:
-                local_dep_name = get_module_name(item)
-                if local_dep_name in project_info:
-                    project_info[module['name']]['local_module_dep'].append(local_dep_name)
+            if 'module_dependencies' not in config:
+                local_deps = project_info[module['name']]['local_module_dep']
+                for dep in project_info[module['name']]['local_module_dep']:
+                    if dep in project_info:
+                        local_deps.extend(project_info[dep]['local_module_dep'])
+                local_deps = list(set(local_deps))
+                project_info[module['name']]['local_module_dep'] = []
+                for item in local_deps:
+                    local_dep_name = get_module_name(item)
+                    if local_dep_name in project_info:
+                        project_info[module['name']]['local_module_dep'].append(local_dep_name)
 
             res_dependencies_path = os.path.join(config['build_cache_dir'], module['name'],
                                                  'resources_dependencies.json')
