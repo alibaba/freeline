@@ -17,6 +17,10 @@ class FreelineExtension {
 
     String buildScriptWorkDirectory = ""
 
+    String packageName = ""
+
+    String launcher = ""
+
     List<String> extraResourceDependencyPaths = []
 
     List<String> excludeResourceDependencyPaths = []

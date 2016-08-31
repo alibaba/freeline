@@ -65,6 +65,7 @@ class FreelineInitializer {
 
         if (FreelineUtils.isWindows()) {
             FileUtils.deleteDirectory(new File(project.rootDir, "freeline_core"))
+            FileUtils.deleteQuietly(new File(project.rootDir, "freeline.py"))
             FileUtils.copyDirectory(new File(freelineDir, "freeline_core"), new File(project.rootDir, "freeline_core"));
             FileUtils.copyFile(new File(freelineDir, "freeline.py"), new File(project.rootDir, "freeline.py"))
         } else {
@@ -86,6 +87,8 @@ class FreelineInitializer {
         def buildScript = extension.buildScript
         def buildScriptWorkDirectory = extension.buildScriptWorkDirectory
         def apkPath = extension.apkPath
+        def packageName = extension.packageName
+        def launcher = extension.launcher
         def extraResourcesDependencies = extension.extraResourceDependencyPaths
         def excludeResourceDependencyPaths = extension.excludeResourceDependencyPaths
 
@@ -107,8 +110,8 @@ class FreelineInitializer {
         projectDescription.build_tools_directory = FreelineUtils.joinPath(projectDescription.sdk_directory, 'build-tools', projectDescription.build_tools_version)
         projectDescription.compile_sdk_version = project.android.compileSdkVersion.toString()
         projectDescription.compile_sdk_directory = FreelineUtils.joinPath(projectDescription.sdk_directory, 'platforms', projectDescription.compile_sdk_version)
-        projectDescription.package = project.android.defaultConfig.applicationId.toString()
-        projectDescription.debug_package = projectDescription.package
+        projectDescription.package = packageName
+        projectDescription.debug_package = packageName
         projectDescription.main_src_directory = []
         project.android.sourceSets.main.java.srcDirs.asList().collect(projectDescription.main_src_directory) { it.absolutePath }
         projectDescription.main_res_directory = []
@@ -116,11 +119,16 @@ class FreelineInitializer {
         projectDescription.main_assets_directory = []
         project.android.sourceSets.main.assets.srcDirs.asList().collect(projectDescription.main_assets_directory) { it.absolutePath }
         projectDescription.main_manifest_path = project.android.sourceSets.main.manifest.srcFile.path
-        projectDescription.launcher = ''
+        projectDescription.launcher = launcher
         projectDescription.apk_path = apkPath
         projectDescription.extra_dep_res_paths = extraResourcesDependencies
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
+
+        if (packageName == null || packageName == '') {
+            projectDescription.package = project.android.defaultConfig.applicationId.toString()
+            projectDescription.debug_package = projectDescription.package
+        }
 
         project.android.buildTypes.each { buildType ->
             if ("debug".equalsIgnoreCase(buildType.name)) {
@@ -138,6 +146,11 @@ class FreelineInitializer {
         if (buildScript == null || buildScript == '') {
             // set default build script
             projectDescription.build_script = FreelineGenerator.generateBuildScript(productFlavor)
+        }
+
+        if (launcher == null || launcher == '') {
+            // get launcher activity name
+            projectDescription.launcher = FreelineParser.getLauncher(projectDescription.main_manifest_path.toString(), projectDescription.package.toString())
         }
 
         // fix debug build-type sourceSets
@@ -174,8 +187,6 @@ class FreelineInitializer {
             }
         }
 
-        // get launcher activity name
-        projectDescription.launcher = FreelineParser.getLauncher(projectDescription.main_manifest_path.toString(), projectDescription.package.toString())
         // get module dependencies
         projectDescription.module_dependencies = findModuleDependencies(project)
 
@@ -212,7 +223,7 @@ class FreelineInitializer {
         project.rootProject.allprojects.each { p ->
             def mapper = ["match" : "", "name": p.name]
             if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
-                mapper.match = "${p.name}-release.aar"
+                mapper.match = "${File.separator}${p.name}-release.aar"
                 mappers.add(mapper)
             } else if (p.plugins.hasPlugin("java")) {
                 mapper.match = "libs${File.separator}${p.name}.jar"
@@ -227,7 +238,9 @@ class FreelineInitializer {
                 if (pro.configurations.getByName("compile") != null) {
                     pro.configurations.compile.asPath.split(":").each { f ->
                         mappers.each { mapper ->
-                            if (f.endsWith(mapper.match)) {
+                            if (f.endsWith(mapper.match.toString())
+                                    && !deps.contains(mapper.name)
+                                    && !pro.name.equalsIgnoreCase(mapper.name.toString())) {
                                 deps.add(mapper.name)
                                 return false
                             }
