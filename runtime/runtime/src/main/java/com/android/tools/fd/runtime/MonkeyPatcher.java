@@ -21,6 +21,7 @@ import static android.os.Build.VERSION_CODES.JELLY_BEAN_MR2;
 import static android.os.Build.VERSION_CODES.KITKAT;
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 import static android.os.Build.VERSION_CODES.M;
+import static android.os.Build.VERSION_CODES.N;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -324,12 +325,14 @@ public class MonkeyPatcher {
                         Method mtm = ContextThemeWrapper.class.getDeclaredMethod("initializeTheme");
                         mtm.setAccessible(true);
                         mtm.invoke(activity);
-                        Method mCreateTheme = AssetManager.class.getDeclaredMethod("createTheme");
-                        mCreateTheme.setAccessible(true);
-                        Object internalTheme = mCreateTheme.invoke(newAssetManager);
-                        Field mTheme = Resources.Theme.class.getDeclaredField("mTheme");
-                        mTheme.setAccessible(true);
-                        mTheme.set(theme, internalTheme);
+                        if (SDK_INT < N) {
+                            Method mCreateTheme = AssetManager.class.getDeclaredMethod("createTheme");
+                            mCreateTheme.setAccessible(true);
+                            Object internalTheme = mCreateTheme.invoke(newAssetManager);
+                            Field mTheme = Resources.Theme.class.getDeclaredField("mTheme");
+                            mTheme.setAccessible(true);
+                            mTheme.set(theme, internalTheme);
+                        }
                     } catch (Throwable e) {
                         Log.e(LOG_TAG, "Failed to update existing theme for activity " + activity,
                                 e);
