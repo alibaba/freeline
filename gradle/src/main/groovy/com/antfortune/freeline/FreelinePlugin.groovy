@@ -34,33 +34,38 @@ class FreelinePlugin implements Plugin<Project> {
             }
             
             project.android.applicationVariants.each { variant ->
-                if (!variant.name.endsWith("debug") && !variant.name.endsWith("Debug")) {
-                    println "variant ${variant.name} is not debug, skip hack process."
-                    return
-                }
-
-                println "find variant ${variant.name} start hack process..."
-
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
                 def hack = extension.hack
                 def productFlavor = extension.productFlavor
                 def excludeHackClasses = extension.excludeHackClasses
                 def forceLowerVersion = extension.foceLowerVersion
 
+                if (!variant.name.endsWith("debug") && !variant.name.endsWith("Debug")) {
+                    println "variant ${variant.name} is not debug, skip hack process."
+                    return
+                } else if (!FreelineUtils.isEmpty(productFlavor) && !variant.name.startsWith(productFlavor)) {
+                    println "variant ${variant.name} is not ${productFlavor}, skip hack process."
+                    return
+                }
+
+                println "find variant ${variant.name} start hack process..."
+
                 if (!hack) {
                     return
                 }
 
-                // add addtional aapt args
-                def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
-                project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
-
                 // force tasks to run
-                project.tasks.findByName("merge${variant.name.capitalize()}Assets").outputs.upToDateWhen { false }
+                def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
+                mergeAssetsTask.outputs.upToDateWhen { false }
 
                 // add freeline generated files to assets
-                project.tasks.findByName("merge${variant.name.capitalize()}Assets").doLast {
+                mergeAssetsTask.doLast {
                     addFreelineGeneratedFiles(project, new File(FreelineGenerator.generateProjectBuildAssetsPath(project.buildDir.absolutePath, productFlavor)), null)
+
+                    // add addtional aapt args
+                    def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
+                    project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
+                    println "Freeline add additionalParameters `-P ${publicKeeperGenPath}` to aaptOptions"
                 }
 
                 // find thrid party libraries' resources dependencies

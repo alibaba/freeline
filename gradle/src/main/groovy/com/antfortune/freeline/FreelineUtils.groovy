@@ -80,4 +80,8 @@ class FreelineUtils {
         return getOsName().startsWith("Windows");
     }
 
+    public static boolean isEmpty(String text) {
+        return text == null || text == '' || text.trim() == ''
+    }
+
 }
