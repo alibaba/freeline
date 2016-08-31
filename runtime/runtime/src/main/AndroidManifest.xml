@@ -4,8 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:vmSafeMode="true"
-        android:label="@string/app_name">
+        android:vmSafeMode="true">
 
         <activity android:name=".MiddlewareActivity"
             android:screenOrientation="portrait" />
