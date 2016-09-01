@@ -2,17 +2,23 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.antfortune.freeline'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.2"
 
     defaultConfig {
         applicationId "com.antfortune.freeline.sample"
         minSdkVersion 14
-        targetSdkVersion 23
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders = [
+            SUPPORT_RTL: false
+        ]
     }
     buildTypes {
+        debug {
+            applicationIdSuffix ".dev"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -38,14 +44,21 @@ android {
         develop {
         }
     }
+
+    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.0.1'
-    compile 'com.antfortune.freeline:runtime:0.5.5'
+    compile 'com.android.support:appcompat-v7:24.2.0'
     compile project(":common")
+    compile project(":pure_java")
     compile project(":ThirdParty:share")
     compile project(":ThirdParty:payment")
+
+    debugCompile project(":runtime:runtime")
+    releaseCompile project(":runtime:runtime-no-op")
+    testCompile project(":runtime:runtime-no-op")
+    monkeyCompile project(":runtime:runtime-no-op")
 }

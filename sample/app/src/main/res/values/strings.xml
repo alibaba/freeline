@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Freeline Sample</string>
+    <string name="app_name">Freeline Sample</string>    会被自动ignore的字符
     <string name="content">Freeline Release Content</string>
 </resources>

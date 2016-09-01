@@ -1,4 +1,5 @@
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Resources</string>
     <string name="resources_library_string">resource library string</string>
+    <string name="buy_kindle">特殊的标签测试<xliff:g id="tag">标签测试</xliff:g></string>
 </resources>
