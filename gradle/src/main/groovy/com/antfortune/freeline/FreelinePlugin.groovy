@@ -2,6 +2,7 @@ package com.antfortune.freeline
 
 import groovy.io.FileType
 import groovy.json.JsonBuilder
+import org.apache.commons.io.FileUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -71,6 +72,24 @@ class FreelinePlugin implements Plugin<Project> {
                 // find thrid party libraries' resources dependencies
                 project.rootProject.allprojects.each { p ->
                     findResourceDependencies(variant, p, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath))
+                }
+
+                // find additional jars
+                def addtionalJars = []
+                if (project.android.hasProperty("libraryRequests")) {
+                    project.android.libraryRequests.each { p ->
+                        def jar_path = FreelineUtils.joinPath(
+                                project.android.sdkDirectory.toString(),
+                                'platforms',
+                                project.android.compileSdkVersion.toString(),
+                                'optional',
+                                p.name + ".jar")
+                        def f = new File(jar_path)
+                        if (f.exists() && f.isFile()) {
+                            addtionalJars.add(jar_path)
+                            println "find additional jar: ${jar_path}"
+                        }
+                    }
                 }
 
                 // modify .class file
@@ -163,6 +182,7 @@ class FreelinePlugin implements Plugin<Project> {
                     }
 
                     if (preDexTask == null) {
+                        jarDependencies.addAll(addtionalJars)  // add all additional jars to final jar dependencies
                         def json = new JsonBuilder(jarDependencies).toPrettyString()
                         project.logger.info(json)
                         FreelineUtils.saveJson(json, FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "jar_dependencies.json"), true);
