@@ -133,7 +133,7 @@ python freeline.py
 - Android Studio Plugin
 - Annotation Support
 - Multiple Devices Connection Support
-- native so incrment Support
+- native so increment Support
 
 ## Limitations
 - Sync incremental resource pack to the device first time may be a bit slow
