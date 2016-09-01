@@ -41,7 +41,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
         for module_name, module_info in self.project_info.iteritems():
             self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
-                                                'config': []}
+                                                'config': [], 'so': [], 'cpp': []}
             self._scan_module_changes(module_name, module_info['path'])
 
         self._mark_changed_flag()
@@ -90,6 +90,18 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             manifest = self._config['project_source_sets'][module_name]['main_manifest_path']
             if self.__check_changes(module_name, manifest, module_cache):
                 self._changed_files[module_name]['manifest'].append(manifest)
+
+            # scan native so
+            if 'main_jniLibs_directory' in self._config['project_source_sets'][module_name]:
+                native_so_dirs = self._config['project_source_sets'][module_name]['main_jniLibs_directory']
+                for native_so_dir in native_so_dirs:
+                    if os.path.exists(native_so_dir):
+                        for dirpath, dirnames, files in os.walk(native_so_dir):
+                            for fn in files:
+                                if fn.endswith(".so"):
+                                    fpath = os.path.join(dirpath, fn)
+                                    if self.__check_changes(module_name, fpath, module_cache):
+                                        self._changed_files[module_name]['libs'].append(fpath)
 
             # scan assets
             assets_dirs = self._config['project_source_sets'][module_name]['main_assets_directory']
@@ -197,6 +209,16 @@ class GenerateFileStatTask(Task):
         if module_name in self._config['project_source_sets']:
             # scan manifest
             self.__save_stat(module_name, self._config['project_source_sets'][module_name]['main_manifest_path'])
+
+            # scan native so
+            if 'main_jniLibs_directory' in self._config['project_source_sets'][module_name]:
+                native_so_dirs = self._config['project_source_sets'][module_name]['main_jniLibs_directory']
+                for native_so_dir in native_so_dirs:
+                    if os.path.exists(native_so_dir):
+                        for dirpath, dirnames, files in os.walk(native_so_dir):
+                            for fn in files:
+                                if fn.endswith(".so"):
+                                    self.__save_stat(module_name, os.path.join(dirpath, fn))
 
             assets_dirs = self._config['project_source_sets'][module_name]['main_assets_directory']
             for assets_dir in assets_dirs:
@@ -423,7 +445,7 @@ class GradleSyncClient(SyncClient):
     def sync_incremental_native(self):
         if self._is_need_sync_native():
             self.debug('start to sync native file...')
-            native_zip_path = os.path.join(self._config['build_cache_dir'], 'natives.zip')
+            native_zip_path = get_sync_native_file_path(self._config['build_cache_dir'])
             with open(native_zip_path, "rb") as fp:
                 url = "http://127.0.0.1:{}/pushNative?restart".format(self._port)
                 self.debug("pushNative: "+url)
@@ -493,7 +515,8 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
                     module = fn[:fn.rfind('.')]
                     self._refresh_public_files(module)
 
-                if fn.endswith('increment.dex') or fn.endswith('.rflag') or fn.endswith('.restart'):
+                if fn.endswith('increment.dex') or fn.endswith('.rflag') or fn.endswith('.restart') or fn.endswith(
+                        'natives.zip'):
                     os.remove(os.path.join(dirpath, fn))
 
     def _refresh_public_files(self, module):
@@ -621,6 +644,10 @@ class BuildBaseResourceTask(Task):
 
 def get_base_resource_path(cache_dir):
     return os.path.join(cache_dir, 'base-res.so')
+
+
+def get_sync_native_file_path(cache_dir):
+    return os.path.join(cache_dir, 'natives.zip')
 
 
 def get_classpath_by_src_path(module, sdir, src_path):

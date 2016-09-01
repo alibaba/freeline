@@ -8,7 +8,7 @@ import android_tools
 from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
-    GradleCleanCacheTask, GradleMergeDexTask
+    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path
 from task import find_root_tasks, find_last_tasks, Task
 from utils import get_file_content, write_file_content, is_windows_system
 from tracing import Tracing
@@ -78,23 +78,19 @@ class GradleIncBuilder(IncrementalBuilder):
         self._changed_files['projects'][self._config['main_project_name']] = main_res
 
     def __merge_native_files(self):
-        native_zip_path = os.path.join(self._config['build_cache_dir'], "natives.zip")
-        if os.path.exists(native_zip_path):
-            os.remove(native_zip_path)
-
-        libs = []
+        so_files = []
         for module, file_dict in self._changed_files['projects'].iteritems():
             for key, files in file_dict.iteritems():
-                if key == 'libs':
+                if key == 'so':
                     for m in range(len(files)):
-                        print (files[m])
-                        libs.append(files[m])
+                        self.debug('append {} to native queue'.format(files[m]))
+                        so_files.append(files[m])
 
-        if len(libs) > 0:
+        if len(so_files) > 0:
             from zipfile import ZipFile
-            with ZipFile(native_zip_path, "w") as nativeZip:
-                for m in range(len(libs)):
-                    nativeZip.write(libs[m])
+            with ZipFile(get_sync_native_file_path(self._config['build_cache_dir']), "w") as nativeZip:
+                for m in range(len(so_files)):
+                    nativeZip.write(so_files[m])
 
     def __is_any_modules_have_res_changed(self):
         for key, value in self._changed_files['projects'].iteritems():
