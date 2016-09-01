@@ -480,7 +480,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             finder = self._finder
 
         r_path = android_tools.find_r_file(finder.get_dst_r_dir(), package_name=package_name)
-        if os.path.exists(r_path):
+        if r_path and os.path.exists(r_path):
             target_dir = os.path.join(self.__get_freeline_backup_r_dir(), package_name.replace('.', os.sep))
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
