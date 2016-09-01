@@ -2,6 +2,7 @@ package com.antfortune.freeline
 
 import groovy.io.FileType
 import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -52,6 +53,21 @@ class FreelinePlugin implements Plugin<Project> {
 
                 if (!hack) {
                     return
+                }
+
+                def apk_paths = []
+                variant.outputs.each { output ->
+                    def path = output.outputFile.absolutePath
+                    if (path.endsWith(".apk")) {
+                        apk_paths.add(output.outputFile.absolutePath)
+                    }
+                }
+                def descriptionFile = new File(FreelineUtils.joinPath(FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'))
+                if (descriptionFile.exists()) {
+                    def description = new JsonSlurper().parseText(descriptionFile.text)
+                    description.apk_path = FreelineUtils.getDefaultApkPath(apk_paths, project.buildDir.absolutePath, project.name, description.product_flavor)
+                    println "find default apk path: ${description.apk_path}"
+                    FreelineUtils.saveJson(new JsonBuilder(description).toPrettyString(), descriptionFile.absolutePath, true)
                 }
 
                 // force tasks to run

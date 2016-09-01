@@ -24,6 +24,21 @@ class FreelineUtils {
         return freelineCacheDir.absolutePath
     }
 
+    public static String getDefaultApkPath(List<String> apks, String buildDir, String projectName, String productFlavor) {
+        if (apks == null || apks.size() == 0) {
+            return FreelineGenerator.generateApkPath(buildDir, projectName, productFlavor)
+        }
+        if (apks.size() == 1) {
+            return apks.get(0)
+        }
+        for (String path : apks) {
+            if (path.contains("-armeabi-")) {
+                return path
+            }
+        }
+        return apks.get(0)
+    }
+
     public static String getBuildCacheDir(String buildDirPath) {
         def buildCacheDir = new File(buildDirPath, Constants.FREELINE_BUILD_CACHE_DIR)
         if (!buildCacheDir.exists() || !buildCacheDir.isDirectory()) {
