@@ -144,7 +144,7 @@ def version():
 
 
 def get_cache_dir():
-    cache_dir_path = os.path.join(os.path.expanduser('~'), '.freeline', 'cache', md5string(os.getcwd()))
+    cache_dir_path = os.path.join(os.path.expanduser('~'), '.freeline', 'cache', md5string(os.getcwd().decode("utf-8")))
     if not os.path.exists(cache_dir_path):
         os.makedirs(cache_dir_path)
     return cache_dir_path
