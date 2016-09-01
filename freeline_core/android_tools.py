@@ -652,6 +652,14 @@ def find_r_file(target_dir, package_name=None):
     return None
 
 
+def find_manifest(target_dir):
+    for dirpath, dirnames, files in os.walk(target_dir):
+        for fn in files:
+            if fn == 'AndroidManifest.xml':
+                return os.path.join(dirpath, fn)
+    return None
+
+
 def merge_public_file_with_old(public_xml_path, ids_xml_path, module, config):
     # rdir = get_res_dir(dirname)
     res_dirs = config['project_source_sets'][module]['main_res_directory']

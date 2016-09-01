@@ -288,10 +288,16 @@ class GradleDirectoryFinder(android_tools.DirectoryFinder):
         if self._config is not None and 'product_flavor' in self._config:
             if self._module_name == self._config['main_project_name']:
                 if self._config['product_flavor'] == '' or self._config['product_flavor'] == 'debug':
-                    return os.path.join(self.get_base_gen_dir(), 'manifests', 'full', 'debug', 'AndroidManifest.xml')
+                    path = os.path.join(self.get_base_gen_dir(), 'manifests', 'full', 'debug', 'AndroidManifest.xml')
                 else:
-                    return os.path.join(self.get_base_gen_dir(), 'manifests', 'full', self._config['product_flavor'],
+                    path = os.path.join(self.get_base_gen_dir(), 'manifests', 'full', self._config['product_flavor'],
                                         'debug', 'AndroidManifest.xml')
+                if os.path.exists(path):
+                    return path
+        path = android_tools.find_manifest(os.path.join(self.get_base_gen_dir(), 'manifests'))
+        if path and os.path.exists(path):
+            Logger.debug("find manifest: {}".format(path))
+            return path
         return android_tools.get_manifest_path(self._module_path)
 
     def get_dst_r_dir(self):
