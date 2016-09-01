@@ -118,6 +118,10 @@ class FreelineInitializer {
         project.android.sourceSets.main.res.srcDirs.asList().collect(projectDescription.main_res_directory) { it.absolutePath }
         projectDescription.main_assets_directory = []
         project.android.sourceSets.main.assets.srcDirs.asList().collect(projectDescription.main_assets_directory) { it.absolutePath }
+        projectDescription.main_jni_directory = []
+        project.android.sourceSets.main.jni.srcDirs.asList().collect(projectDescription.main_jni_directory) { it.absolutePath }
+        projectDescription.main_jniLibs_directory = []
+        project.android.sourceSets.main.jniLibs.srcDirs.asList().collect(projectDescription.main_jniLibs_directory) { it.absolutePath }
         projectDescription.main_manifest_path = project.android.sourceSets.main.manifest.srcFile.path
         projectDescription.launcher = launcher
         projectDescription.apk_path = apkPath
@@ -158,6 +162,8 @@ class FreelineInitializer {
             appendDirs(projectDescription.main_src_directory, project.android.sourceSets.debug.java.srcDirs.asList())
             appendDirs(projectDescription.main_res_directory, project.android.sourceSets.debug.res.srcDirs.asList())
             appendDirs(projectDescription.main_assets_directory, project.android.sourceSets.debug.assets.srcDirs.asList())
+            appendDirs(projectDescription.main_jni_directory, project.android.sourceSets.debug.jni.srcDirs.asList())
+            appendDirs(projectDescription.main_jniLibs_directory, project.android.sourceSets.debug.jniLibs.srcDirs.asList())
         }
 
         projectDescription.project_source_sets = [:]
@@ -167,15 +173,21 @@ class FreelineInitializer {
             sourceSets.main_src_directory = []
             sourceSets.main_res_directory = []
             sourceSets.main_assets_directory = []
+            sourceSets.main_jni_directory = []
+            sourceSets.main_jniLibs_directory = []
             if (pro.hasProperty("android") && pro.android.hasProperty("sourceSets")) {
                 pro.android.sourceSets.main.java.srcDirs.asList().collect(sourceSets.main_src_directory) { it.absolutePath }
                 pro.android.sourceSets.main.res.srcDirs.asList().collect(sourceSets.main_res_directory) { it.absolutePath }
                 pro.android.sourceSets.main.assets.srcDirs.asList().collect(sourceSets.main_assets_directory) { it.absolutePath }
+                pro.android.sourceSets.main.jni.srcDirs.asList().collect(sourceSets.main_jni_directory) { it.absolutePath }
+                pro.android.sourceSets.main.jniLibs.srcDirs.asList().collect(sourceSets.main_jniLibs_directory) { it.absolutePath }
                 sourceSets.main_manifest_path = pro.android.sourceSets.main.manifest.srcFile.path
 
                 appendDirs(sourceSets.main_src_directory, pro.android.sourceSets.debug.java.srcDirs.asList())
                 appendDirs(sourceSets.main_res_directory, pro.android.sourceSets.debug.res.srcDirs.asList())
                 appendDirs(sourceSets.main_assets_directory, pro.android.sourceSets.debug.assets.srcDirs.asList())
+                appendDirs(sourceSets.main_jni_directory, pro.android.sourceSets.debug.jni.srcDirs.asList())
+                appendDirs(sourceSets.main_jniLibs_directory, pro.android.sourceSets.debug.jniLibs.srcDirs.asList())
 
                 projectDescription.project_source_sets[pro.name] = sourceSets
                 projectDescription.modules.add(['name': pro.name, 'path': pro.projectDir.absolutePath])

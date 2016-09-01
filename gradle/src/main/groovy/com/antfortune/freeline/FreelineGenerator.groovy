@@ -1,7 +1,6 @@
 package com.antfortune.freeline
 
 import org.apache.tools.ant.taskdefs.condition.Os
-import org.gradle.api.Project
 
 import java.nio.charset.Charset
 import java.security.MessageDigest

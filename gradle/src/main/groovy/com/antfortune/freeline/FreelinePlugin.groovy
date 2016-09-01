@@ -2,7 +2,6 @@ package com.antfortune.freeline
 
 import groovy.io.FileType
 import groovy.json.JsonBuilder
-import org.apache.commons.io.FileUtils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
