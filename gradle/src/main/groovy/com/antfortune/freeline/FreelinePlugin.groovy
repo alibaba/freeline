@@ -12,6 +12,13 @@ import org.gradle.api.Project
  */
 class FreelinePlugin implements Plugin<Project> {
 
+    public static def getProperty(Project project, String property) {
+        if (project.hasProperty(property)) {
+            return project.getProperties()[property];
+        }
+        return null;
+    }
+
     @Override
     void apply(Project project) {
 
@@ -42,6 +49,8 @@ class FreelinePlugin implements Plugin<Project> {
                 def apkPath = extension.apkPath
                 def excludeHackClasses = extension.excludeHackClasses
                 def forceLowerVersion = extension.foceLowerVersion
+                def freelineBuild = getProperty(project, "freelineBuild");
+
 
                 if (!variant.name.endsWith("debug") && !variant.name.endsWith("Debug")) {
                     println "variant ${variant.name} is not debug, skip hack process."
@@ -53,7 +62,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                 println "find variant ${variant.name} start hack process..."
 
-                if (!hack) {
+                if (!hack || !freelineBuild) {
                     return
                 }
 
