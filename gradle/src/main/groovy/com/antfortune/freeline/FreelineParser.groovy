@@ -4,6 +4,16 @@ package com.antfortune.freeline
  */
 class FreelineParser {
 
+    public static String getPackage(String manifestPath) {
+        def packageName = ""
+        def manifestFile = new File(manifestPath)
+        if (manifestFile.exists() && manifestFile.isFile()) {
+            def manifest = new XmlSlurper(false, false).parse(manifestFile)
+            packageName = manifest."@package"
+        }
+        return packageName
+    }
+
     public static String getLauncher(String manifestPath, String packageName) {
         def launcher = ""
         def manifestFile = new File(manifestPath)
