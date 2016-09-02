@@ -3,6 +3,7 @@ package com.antfortune.freeline
 import groovy.io.FileType
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -226,6 +227,8 @@ class FreelinePlugin implements Plugin<Project> {
                 def target = new File(targetDir, f.name)
                 if (target.exists()) {
                     target.delete()
+                } else {
+                    throw new GradleException("${target.absolutePath} file not found. \nMissing the `productFlavor` configuration?\nYou can try to add `productFlavor` to freeline DSL, for example: \n\n  freeline { \n      hack true \n      productFlavor 'your-flavor' \n  }\n\nThen re-run `python freeline.py` again.\n")
                 }
                 target << f.text
             }
