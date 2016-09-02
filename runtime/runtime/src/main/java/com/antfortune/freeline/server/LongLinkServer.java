@@ -34,6 +34,8 @@ public class LongLinkServer extends EmbedHttpServer {
 
     private static boolean hasDexChange;
 
+    private static boolean hasNativeChange;
+
     private static String bundleName;
 
     private static String dstPath;
@@ -85,6 +87,18 @@ public class LongLinkServer extends EmbedHttpServer {
 
     public static void resetDexChangedFlag() {
         hasDexChange = false;
+    }
+
+    public static void markNativeChanged() {
+        hasNativeChange = true;
+    }
+
+    public static boolean isNativeChanged() {
+        return hasNativeChange;
+    }
+
+    public static void resetNativeChangedFlag() {
+        hasNativeChange = false;
     }
 
     public static void setBundleName(String name) {

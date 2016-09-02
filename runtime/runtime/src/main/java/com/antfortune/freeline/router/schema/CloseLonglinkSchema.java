@@ -32,23 +32,27 @@ public class CloseLonglinkSchema implements ISchemaAction {
         if (forceRestart) {
             Log.i(TAG, "find restart marker, appliacation will restart.");
         }
-        if (LongLinkServer.isDexChanged() || LongLinkServer.isResourcesChanged()) {
-            if (LongLinkServer.isDexChanged() || forceRestart) {
-                Log.i(TAG, "with dex changes, need to restart the process (activity stack will be reserved)");
+        if (LongLinkServer.isDexChanged()
+                || LongLinkServer.isResourcesChanged()
+                || LongLinkServer.isNativeChanged()) {
+            if (LongLinkServer.isDexChanged()
+                    || LongLinkServer.isNativeChanged()
+                    || forceRestart) {
+                if (LongLinkServer.isDexChanged()) {
+                    Log.i(TAG, "with dex changes, need to restart the process (activity stack will be reserved)");
+                } else if (LongLinkServer.isNativeChanged()) {
+                    Log.i(TAG, "with .so files changed, need to restart the process (activity stack will be reserved)");
+                }
                 FreelineCore.restartApplication(LongLinkServer.getBundleName(), LongLinkServer.getDstPath(), LongLinkServer.getDynamicDexPath(), LongLinkServer.getOptDirPath());
                 LongLinkServer.resetDexChangedFlag();
                 LongLinkServer.resetResourcesChangedFlag();
+                LongLinkServer.resetNativeChangedFlag();
             } else if (LongLinkServer.isResourcesChanged()) {
                 FreelineCore.clearResourcesCache();
                 FreelineCore.updateActivity(LongLinkServer.getBundleName(), LongLinkServer.getDstPath());
                 LongLinkServer.resetResourcesChangedFlag();
                 Log.i(TAG, "with only res changes, just recreate the running activity.");
             }
-            response.setStatusCode(200);
-        } else {
-            //todo 此处暂时认为so文件改动 后续为.so文件改动做标记
-            Log.i(TAG, "with .so files changed, need to restart the process (activity stack will be reserved)");
-            FreelineCore.restartApplication(null,null,null,null);//.so files changed
             response.setStatusCode(200);
         }
     }
