@@ -19,6 +19,8 @@ public class FreelineReceiver extends BroadcastReceiver {
 
     public static final String ACTION_KEY = "action";
 
+    public static final String UUID = "uuid";
+
     public static final String SP_KEY = "sp_key";
     public static final String SP_VALUE = "sp_value";
     public static final String DEX_VALUE = "dex_path";
@@ -30,15 +32,20 @@ public class FreelineReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        int type = intent.getIntExtra(ACTION_KEY, -1);
-        Log.i(TAG, "receive action type: " + type);
-        if (type == ACTION_UPDATE_ACTIVITY) {
-            saveDynamicResInfo(intent);
-            ActivityManager.restartActivity();
-        } else if (type == ACTION_RESTART_APPLICATION) {
-            saveDynamicResInfo(intent);
-            applyDynamicDex(intent);
-            ActivityManager.restart(FreelineCore.getApplication(), true);
+        String uuid = intent.getStringExtra(UUID);
+        if (FreelineCore.getUuid().equalsIgnoreCase(uuid)) {
+            int type = intent.getIntExtra(ACTION_KEY, -1);
+            Log.i(TAG, "receive action type: " + type);
+            if (type == ACTION_UPDATE_ACTIVITY) {
+                saveDynamicResInfo(intent);
+                FreelineCore.updateDynamicTime();
+                ActivityManager.restartActivity();
+            } else if (type == ACTION_RESTART_APPLICATION) {
+                saveDynamicResInfo(intent);
+                applyDynamicDex(intent);
+                FreelineCore.updateDynamicTime();
+                ActivityManager.restart(FreelineCore.getApplication(), true);
+            }
         }
     }
 

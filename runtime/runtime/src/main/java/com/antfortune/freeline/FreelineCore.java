@@ -24,6 +24,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -213,7 +215,7 @@ public class FreelineCore {
     }
 
     private static void injectHackNativeLib(Context context, PathClassLoader classLoader) {
-        NativeUtils.injectHackNativeLib(getDynamicInfoTempDir(), classLoader);
+        NativeUtils.injectHackNativeLib(getDynamicNativeDir(), classLoader);
     }
 
 
@@ -254,7 +256,6 @@ public class FreelineCore {
         editor.putString(DYNAMIC_INFO_DEX_PATH_KEY, dexFileStr);
         editor.putString(DYNAMIC_INFO_OPT_PATH_KEY, dexOptDir);
         editor.commit();
-        updateDynamicTime();
         return true;
     }
 
@@ -306,7 +307,9 @@ public class FreelineCore {
     }
 
     public static void updateDynamicTime() {
-        getDynamicInfoSp().edit().putLong("dynamicTime", System.currentTimeMillis()).commit();
+        long dynamicTime = System.currentTimeMillis();
+        Log.i(TAG, "update dynamic time: " + dynamicTime);
+        getDynamicInfoSp().edit().putLong("dynamicTime", dynamicTime).commit();
     }
 
     /***
@@ -324,7 +327,6 @@ public class FreelineCore {
         }
         editor.commit();
         Log.i(TAG, "apply res :" + dynamicRes);
-        updateDynamicTime();
         injectResources();
         return result;
     }
@@ -332,6 +334,14 @@ public class FreelineCore {
 
     public static String getDynamicInfoTempDir() {
         File dir = new File(sApplication.getCacheDir(), "temp");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir.getAbsolutePath();
+    }
+
+    public static String getDynamicNativeDir() {
+        File dir = new File(getDynamicInfoTempDir(), "native");
         if (!dir.exists()) {
             dir.mkdirs();
         }
@@ -348,6 +358,25 @@ public class FreelineCore {
         return dir.getAbsolutePath();
     }
 
+    public static String getUuid() {
+        String pn = getApplication().getPackageName();
+        return generateStringMD5(pn);
+    }
+
+    private static String generateStringMD5(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] bytes = md.digest(input.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte aByte : bytes) {
+                sb.append(Integer.toHexString((aByte & 0xFF) | 0x100).substring(1, 3));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            Log.e(TAG, "MD5 algorithm not found.");
+            return input;
+        }
+    }
 
     public static void clearResourcesCache() {
         if (sDynamic != null) {
@@ -362,6 +391,7 @@ public class FreelineCore {
     public static void updateActivity(String bundleName, String path) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");
+        intent.putExtra(FreelineReceiver.UUID, getUuid());
         intent.putExtra(FreelineReceiver.ACTION_KEY, FreelineReceiver.ACTION_UPDATE_ACTIVITY);
         intent.putExtra(FreelineReceiver.SP_KEY, bundleName);
         intent.putExtra(FreelineReceiver.SP_VALUE, path);
@@ -371,6 +401,7 @@ public class FreelineCore {
     public static void restartApplication(String bundleName, String path, String dexPath, String dirPath) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");
+        intent.putExtra(FreelineReceiver.UUID, getUuid());
         intent.putExtra(FreelineReceiver.ACTION_KEY, FreelineReceiver.ACTION_RESTART_APPLICATION);
         intent.putExtra(FreelineReceiver.SP_KEY, bundleName);
         intent.putExtra(FreelineReceiver.SP_VALUE, path);
@@ -383,6 +414,7 @@ public class FreelineCore {
     public static void saveDynamicInfo(String bundleName, String path) {
         Intent intent = new Intent();
         intent.setAction("android.intent.action.FreelineReceiver");
+        intent.putExtra(FreelineReceiver.UUID, getUuid());
         intent.putExtra(FreelineReceiver.ACTION_KEY, FreelineReceiver.ACTION_SAVE_DYNAMIC_INFO);
         intent.putExtra(FreelineReceiver.SP_KEY, bundleName);
         intent.putExtra(FreelineReceiver.SP_VALUE, path);
