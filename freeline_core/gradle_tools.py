@@ -81,9 +81,10 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             if os.path.isdir(lib_dir_path):
                 for dirpath, dirnames, files in os.walk(lib_dir_path):
                     for fn in files:
-                        fpath = os.path.join(dirpath, fn)
-                        if self.__check_changes(module_name, fpath, module_cache):
-                            self._changed_files[module_name]['libs'].append(fpath)
+                        if fn.endswith(".jar"):
+                            fpath = os.path.join(dirpath, fn)
+                            if self.__check_changes(module_name, fpath, module_cache):
+                                self._changed_files[module_name]['libs'].append(fpath)
 
         if module_name in self._config['project_source_sets']:
             # scan manifest
@@ -101,7 +102,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if fn.endswith(".so"):
                                     fpath = os.path.join(dirpath, fn)
                                     if self.__check_changes(module_name, fpath, module_cache):
-                                        self._changed_files[module_name]['libs'].append(fpath)
+                                        self._changed_files[module_name]['so'].append(fpath)
 
             # scan assets
             assets_dirs = self._config['project_source_sets'][module_name]['main_assets_directory']
@@ -203,7 +204,8 @@ class GenerateFileStatTask(Task):
             if os.path.isdir(lib_dir_path):
                 for dirpath, dirnames, files in os.walk(lib_dir_path):
                     for fn in files:
-                        self.__save_stat(module_name, os.path.join(dirpath, fn))
+                        if fn.endswith(".jar"):
+                            self.__save_stat(module_name, os.path.join(dirpath, fn))
 
         # scan assets
         if module_name in self._config['project_source_sets']:
@@ -517,7 +519,9 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
 
                 if fn.endswith('increment.dex') or fn.endswith('.rflag') or fn.endswith('.restart') or fn.endswith(
                         'natives.zip'):
-                    os.remove(os.path.join(dirpath, fn))
+                    fpath = os.path.join(dirpath, fn)
+                    self.debug("remove cache: {}".format(fpath))
+                    os.remove(fpath)
 
     def _refresh_public_files(self, module):
         finder = GradleDirectoryFinder(module, self._project_info[module]['path'], self._cache_dir,
