@@ -21,7 +21,7 @@ Freeline is also a great basis for over-the-air hotpatching. Deliverying Freelin
 
 FreelineAapt will open source codes later. See wiki to know more about Freeline, only Chinese available now.
 
-[中文原理详细说明](https://yq.aliyun.com/articles/59122?spm=5176.8091938.0.0.1Bw3mU)
+[中文原理说明](https://yq.aliyun.com/articles/59122?spm=5176.8091938.0.0.1Bw3mU)
 
 ## Features
 - Speed up standard android gradle projects with multiple modules;
