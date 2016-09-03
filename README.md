@@ -34,7 +34,7 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 
 See the following table for changes support.
 
-|| Java | drawable, layout, etc. | res/values | so|
+|| Java | drawable, layout, etc. | res/values | native so|
 |:-----:|:----:|:----:|:----:|:----:|
 | add    | √    | √    |√ |   √   |     
 | change    | √    |  √   |√ |   √   | 
