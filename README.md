@@ -13,7 +13,7 @@ Freeline splits the build task into several small tasks that run concurrently. I
 
 Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
 
-Freeline support native so dynamic swap ,you need not full build even C/C++ change. 
+Freeline support native so dynamic swap ,you need not full build even if C/C++ change. 
 
 Freeline will automatically switch between full build and incremental build.
 
