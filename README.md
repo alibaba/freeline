@@ -13,6 +13,8 @@ Freeline splits the build task into several small tasks that run concurrently. I
 
 Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
 
+Freeline support native so dynamic swap ,you need not full build even C/C++ change. 
+
 Freeline will automatically switch between full build and incremental build.
 
 Freeline is also a great basis for over-the-air hotpatching. Deliverying Freeline's incremental output, which can be packed into a zip file and usually less than 100 kb, it is able to take effect to fix crashes or other problems and replace resoucres dynamically. Statistical data over large amount cases show that it is effective for 99% of users. Please note that the OTA patch delivery system is out of scope of this project.
@@ -28,14 +30,15 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 - Build incremental dex and resource pack;
 - Caching resource.arsc support;
 - Running on Windows, Linux and Mac.
+- native so hot swap support;
 
 See the following table for changes support.
 
-|| Java | drawable, layout, etc. | res/values |
-|:-----:|:----:|:----:|:----:|
-| add    | √    | √    |√ |
-| change    | √    |  √   |√ |
-| remove   | √    |   √  |x|
+|| Java | drawable, layout, etc. | res/values | so|
+|:-----:|:----:|:----:|:----:|:----:|
+| add    | √    | √    |√ |   √   |     
+| change    | √    |  √   |√ |   √   | 
+| remove   | √    |   √  |x|   √   | 
 
 
 Freeline has been tested with API versions 17, 19, 22, 23 on the android emulators, a Nexus 6p running marshmallow and a smartisan running Kitkat. Incremental resource patch would be much faster if the android device is running Lolipop or above.
@@ -129,7 +132,6 @@ python freeline.py
 - Android Studio Plugin
 - Annotation Support
 - Multiple Devices Connection Support
-- native so increment Support
 
 ## Limitations
 - Sync incremental resource pack to the device first time may be a bit slow
