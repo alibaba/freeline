@@ -38,7 +38,7 @@ See the following table for changes support.
 |:-----:|:----:|:----:|:----:|:----:|
 | add    | √    | √    |√ |   √   |     
 | change    | √    |  √   |√ |   √   | 
-| remove   | √    |   √  |x|   √   | 
+| remove   | √    |   √  |x|   -   | 
 
 
 Freeline has been tested with API versions 17, 19, 22, 23 on the android emulators, a Nexus 6p running marshmallow and a smartisan running Kitkat. Incremental resource patch would be much faster if the android device is running Lolipop or above.
