@@ -99,9 +99,12 @@ class GradleCleanBuildTask(CleanBuildTask):
         if not cwd or not os.path.isdir(cwd):
             cwd = None
 
-        self.debug(self._config['build_script'])
+        command = self._config['build_script']
+        command += ' --stacktrace'
+        command += ' -P freelineBuild=true'
+        self.debug(command)
         self.debug("Gradle build task is running, please wait a minute...")
-        output, err, code = cexec(self._config['build_script'].split(' '), callback=None, cwd=cwd)
+        output, err, code = cexec(command.split(' '), callback=None, cwd=cwd)
         if code != 0:
             from exceptions import FreelineException
             raise FreelineException('build failed with script: {}'.format(self._config['build_script']),

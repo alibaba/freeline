@@ -130,7 +130,7 @@ class FreelineInitializer {
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
 
         if (packageName == null || packageName == '') {
-            projectDescription.package = project.android.defaultConfig.applicationId.toString()
+            projectDescription.package = getPackageName(project.android.defaultConfig.applicationId.toString(), projectDescription.main_manifest_path)
             projectDescription.debug_package = projectDescription.package
         }
 
@@ -212,6 +212,13 @@ class FreelineInitializer {
         String rootPath = project.rootProject.getRootDir()
         def dir = new File(rootPath, "freeline")
         return dir.exists() && dir.isDirectory()
+    }
+
+    private static String getPackageName(String applicationId, String manifestPath) {
+        if (!FreelineUtils.isEmpty(applicationId) && !"null".equals(applicationId)) {
+            return applicationId
+        }
+        return FreelineParser.getPackage(manifestPath)
     }
 
     private static String getJavaHome() {

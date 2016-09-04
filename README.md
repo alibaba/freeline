@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-0.5.5-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release Version](https://img.shields.io/badge/release-0.6.0-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
@@ -13,13 +13,15 @@ Freeline splits the build task into several small tasks that run concurrently. I
 
 Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
 
+Freeline support dynamic swap native so ,you need not full build even if native so change. 
+
 Freeline will automatically switch between full build and incremental build.
 
 Freeline is also a great basis for over-the-air hotpatching. Deliverying Freeline's incremental output, which can be packed into a zip file and usually less than 100 kb, it is able to take effect to fix crashes or other problems and replace resoucres dynamically. Statistical data over large amount cases show that it is effective for 99% of users. Please note that the OTA patch delivery system is out of scope of this project.
 
 FreelineAapt will open source codes later. See wiki to know more about Freeline, only Chinese available now.
 
-[中文详细说明](https://github.com/alibaba/freeline/wiki)
+[中文原理说明](https://yq.aliyun.com/articles/59122?spm=5176.8091938.0.0.1Bw3mU)
 
 ## Features
 - Speed up standard android gradle projects with multiple modules;
@@ -28,14 +30,15 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 - Build incremental dex and resource pack;
 - Caching resource.arsc support;
 - Running on Windows, Linux and Mac.
+- native so hot swap support;
 
 See the following table for changes support.
 
-|| Java | drawable, layout, etc. | res/values |
-|:-----:|:----:|:----:|:----:|
-| add    | √    | √    |√ |
-| change    | √    |  √   |√ |
-| remove   | √    |   √  |x|
+|| Java | drawable, layout, etc. | res/values | native so|
+|:-----:|:----:|:----:|:----:|:----:|
+| add    | √    | √    |√ |   √   |     
+| change    | √    |  √   |√ |   √   | 
+| remove   | √    |   √  |x|   -   | 
 
 
 Freeline has been tested with API versions 17, 19, 22, 23 on the android emulators, a Nexus 6p running marshmallow and a smartisan running Kitkat. Incremental resource patch would be much faster if the android device is running Lolipop or above.
@@ -49,7 +52,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.5.5'
+        classpath 'com.antfortune.freeline:gradle:0.6.0'
     }
 }
 ````
@@ -66,7 +69,7 @@ android {
 }
 
 dependencies {
-  compile 'com.antfortune.freeline:runtime:0.5.5'
+  compile 'com.antfortune.freeline:runtime:0.6.0'
 }
 ````
 Finally, apply freeline in your application class.
@@ -129,7 +132,6 @@ python freeline.py
 - Android Studio Plugin
 - Annotation Support
 - Multiple Devices Connection Support
-- native so increment Support
 
 ## Limitations
 - Sync incremental resource pack to the device first time may be a bit slow
