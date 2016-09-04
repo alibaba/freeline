@@ -18,6 +18,11 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".dev"
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    output.outputFile = new File(output.outputFile.parent, output.outputFile.name.replace(".apk", "-" + defaultConfig.versionName + ".apk"))
+                }
+            }
         }
         release {
             minifyEnabled false
