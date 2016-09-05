@@ -1,17 +1,15 @@
 <idea-plugin version="2">
     <id>com.micro.freeline.plugin</id>
-    <name>Freeline Run Plugin</name>
+    <name>Plugin4Freeline</name>
     <version>1.0</version>
-    <vendor email="act262@gmail.com" url="http://github.com">Company</vendor>
+    <vendor email="act262@gmail.com" url="http://github.com">Anonymous</vendor>
 
     <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      plugin for <a href="https://github.com/alibaba/freeline">freeline</a>
     ]]></description>
 
     <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
+      use plugin...
     ]]>
     </change-notes>
 
