@@ -19,6 +19,8 @@ public class RunFreelineAction extends AnAction {
         Project currentProject = DataKeys.PROJECT.getData(e.getDataContext());
         FileDocumentManager.getInstance().saveAllDocuments();
 
+        // TODO: 16-9-5  Android SDK环境检测、Python环境检测
+
         File dir = new File(currentProject.getBasePath());
         File file = new File(dir, "freeline.py");
 
@@ -30,17 +32,35 @@ public class RunFreelineAction extends AnAction {
         } else {
             // 未初始化，先下载下来
             // for *unix
-            execCmd("pwd", dir);
-            execCmd("./gradlew initFreeline -Pmirror", dir);
+            execCmd("./gradlew initFreeline -Pmirror", dir, true);
+        }
+    }
+
+    /**
+     * 执行指定命令，是否开启新的线程执行异步操作
+     */
+    private void execCmd(final String command, final File dir, boolean async) {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                execCmd(command, dir);
+            }
+        };
+
+        // 新开一个线程异步执行
+        if (async) {
+            new Thread(runnable).start();
+        } else {
+            runnable.run();
         }
     }
 
     /**
      * 执行命令行
      */
-    private void execCmd(String cmd, File dir) {
+    private void execCmd(String command, File dir) {
         try {
-            Process p = Runtime.getRuntime().exec(cmd, null, dir);
+            Process p = Runtime.getRuntime().exec(command, null, dir);
             InputStream ins = p.getInputStream();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             byte[] buf = new byte[4096];
@@ -65,22 +85,6 @@ public class RunFreelineAction extends AnAction {
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-        }
-    }
-
-    private void execCMD(String command, boolean asyn) {
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        };
-
-        // 新开一个线程异步执行
-        if (asyn) {
-            new Thread(runnable).start();
-        } else {
-            runnable.run();
         }
     }
 
