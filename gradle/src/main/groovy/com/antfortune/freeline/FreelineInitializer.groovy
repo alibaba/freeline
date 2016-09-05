@@ -1,7 +1,6 @@
 package com.antfortune.freeline
 
 import groovy.json.JsonBuilder
-import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import java.security.InvalidParameterException
 
@@ -57,17 +56,17 @@ class FreelineInitializer {
 
         def freelineDir = new File(project.rootDir, "freeline")
         if (freelineDir.exists()) {
-            FileUtils.deleteDirectory(freelineDir)
+            FreelineUtils.deleteDirectory(freelineDir)
             println 'removing existing freeline directory'
         }
         ant.unzip(src: "freeline.zip", dest: project.rootDir.absolutePath)
         println 'unziped freeline.zip.'
 
         if (FreelineUtils.isWindows()) {
-            FileUtils.deleteDirectory(new File(project.rootDir, "freeline_core"))
-            FileUtils.deleteQuietly(new File(project.rootDir, "freeline.py"))
-            FileUtils.copyDirectory(new File(freelineDir, "freeline_core"), new File(project.rootDir, "freeline_core"));
-            FileUtils.copyFile(new File(freelineDir, "freeline.py"), new File(project.rootDir, "freeline.py"))
+            FreelineUtils.deleteQuietly(new File(project.rootDir, "freeline_core"))
+            FreelineUtils.deleteQuietly(new File(project.rootDir, "freeline.py"))
+            FreelineUtils.copyDirectory(new File(freelineDir, "freeline_core"), new File(project.rootDir, "freeline_core"));
+            FreelineUtils.copyFile(new File(freelineDir, "freeline.py"), new File(project.rootDir, "freeline.py"))
         } else {
             Runtime.getRuntime().exec("chmod -R +x freeline")
             Runtime.getRuntime().exec("ln -s freeline/freeline.py freeline.py")
