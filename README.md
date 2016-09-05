@@ -109,7 +109,6 @@ On the root dir of your project :
     freeline will automatically perform a full build on your project as follows:
     - manifest.xml modified
     - build.gradle modified
-    - libs modified
     - connect to other mobile phones after any incremental build
     
     and an incremental build on other change case (java or res modified ),you don't need to pay attention to what you just modified.
