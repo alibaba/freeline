@@ -52,10 +52,10 @@ class FreelinePlugin implements Plugin<Project> {
                 def freelineBuild = getProperty(project, "freelineBuild");
 
 
-                if (!variant.name.endsWith("debug") && !variant.name.endsWith("Debug")) {
+                if (!"debug".equalsIgnoreCase(variant.buildType.name)) {
                     println "variant ${variant.name} is not debug, skip hack process."
                     return
-                } else if (!FreelineUtils.isEmpty(productFlavor) && !variant.name.startsWith(productFlavor)) {
+                } else if (!FreelineUtils.isEmpty(productFlavor) && !productFlavor.toString().equalsIgnoreCase(variant.flavorName)) {
                     println "variant ${variant.name} is not ${productFlavor}, skip hack process."
                     return
                 }
