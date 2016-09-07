@@ -286,7 +286,7 @@ class MergeDexTask(Task):
                 self.debug('merge dex exec: ' + ' '.join(dex_merge_args))
                 output, err, code = cexec(dex_merge_args, callback=None)
                 if code != 0:
-                    raise FreelineException('merge dex failed.', output)
+                    raise FreelineException('merge dex failed: {}'.format(dex_merge_args), output + '\n' + err)
 
     def _get_dexes(self):
         pending_merge_dexes = []
