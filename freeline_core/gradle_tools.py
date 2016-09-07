@@ -40,9 +40,10 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         build_info = self._get_build_info()
 
         for module_name, module_info in self.project_info.iteritems():
-            self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
-                                                'config': [], 'so': [], 'cpp': []}
-            self._scan_module_changes(module_name, module_info['path'])
+            if module_name in self._stat_cache:
+                self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
+                                                    'config': [], 'so': [], 'cpp': []}
+                self._scan_module_changes(module_name, module_info['path'])
 
         self._mark_changed_flag()
 
@@ -581,7 +582,7 @@ class BuildBaseResourceTask(Task):
     def run_aapt(self):
         aapt_args = [Builder.get_aapt(), 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._finder.get_dst_manifest_path()]
+                     '-M', fix_package_name(self._config, self._finder.get_dst_manifest_path())]
 
         for rdir in self._config['project_source_sets'][self._main_module_name]['main_res_directory']:
             if os.path.exists(rdir):
@@ -658,6 +659,26 @@ def get_classpath_by_src_path(module, sdir, src_path):
     if src_path:
         target_dir = os.path.join(module, 'build', 'intermediates', 'classes', 'debug')
         return src_path.replace('.java', '.class').replace(sdir, target_dir)
+
+
+def fix_package_name(config, manifest):
+    if config and config['package'] != config['debug_package']:
+        finder = GradleDirectoryFinder(config['main_project_name'], config['main_project_dir'],
+                                       config['build_cache_dir'], config=config)
+        target_manifest_path = os.path.join(finder.get_backup_dir(), 'AndroidManifest.xml')
+        if os.path.exists(target_manifest_path):
+            return target_manifest_path
+
+        if manifest and os.path.isfile(manifest):
+            Logger.debug('find app has debug package name, freeline will fix the package name in manifest')
+            content = get_file_content(manifest)
+            result = re.sub('package=\"(.*)\"', 'package=\"{}\"'.format(config['package']), content)
+            Logger.debug('change package name from {} to {}'.format(config['debug_package'], config['package']))
+            from utils import write_file_content
+            write_file_content(target_manifest_path, result)
+            Logger.debug('save new manifest to {}'.format(target_manifest_path))
+            return target_manifest_path
+    return manifest
 
 
 def get_all_modules(dir_path):

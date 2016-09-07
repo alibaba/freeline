@@ -8,7 +8,7 @@ import android_tools
 from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
-    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path
+    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name
 from task import find_root_tasks, find_last_tasks, Task
 from utils import get_file_content, write_file_content, is_windows_system
 from tracing import Tracing
@@ -258,7 +258,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def _get_aapt_args(self):
         aapt_args = [self._aapt, 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._finder.get_dst_manifest_path()]
+                     '-M', fix_package_name(self._config, self._finder.get_dst_manifest_path())]
 
         for rdir in self._config['project_source_sets'][self._name]['main_res_directory']:
             if os.path.exists(rdir):
