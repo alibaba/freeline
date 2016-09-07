@@ -22,7 +22,7 @@ class FreelineInjector {
         } else if (file.path.endsWith("classes.jar")) {
             println "find jar: ${file.path}"
             if (file.absolutePath.contains("intermediates" + File.separator + "exploded-aar" + File.separator)
-                    && !file.absolutePath.contains("com.antfortune.android.freeline")
+                    && !file.absolutePath.contains("com.antfortune.freeline")
                     && !file.absolutePath.contains("com.android.support")
                     && isProjectModuleJar(file.absolutePath, modules)) {
                 println "inject jar: ${file.path}"
