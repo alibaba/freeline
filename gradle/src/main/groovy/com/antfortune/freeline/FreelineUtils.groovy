@@ -1,6 +1,7 @@
 package com.antfortune.freeline
 
 import groovy.json.JsonSlurper
+import org.gradle.api.Project
 
 import java.nio.channels.FileChannel
 
@@ -15,6 +16,13 @@ class FreelineUtils {
             path = path.substring(1)
         }
         return path
+    }
+
+    public static def getProperty(Project project, String property) {
+        if (project.hasProperty(property)) {
+            return project.getProperties()[property];
+        }
+        return null;
     }
 
     public static String getFreelineCacheDir(String rootDirPath) {
