@@ -2,18 +2,16 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-0.6.0-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release Version](https://img.shields.io/badge/release-0.6.1-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
-Developed and used by **Ant Fortune（ [about us](https://www.antfortune.com/ "about us") ） Android Team**, Freeline has been significantly saving time in daily work. Inspiring by **Buck** and **Instant Run** but faster than ever, Freeline can finish an incremental build in just a few seconds. No more recompile and reinstall again and again before seeing your modifications, Freeline brings life-changing development experience for Android.
+Developed and used by **Ant Fortune ([about us](https://www.antfortune.com/ "about us")) Android Team**, Freeline has been significantly saving time in daily work. Inspiring by **Buck** and **Instant Run** but faster than ever, Freeline can finish an incremental build in just a few seconds. No more recompile and reinstall again and again before seeing your modifications, Freeline brings life-changing development experience for Android.
 
 ## Freeline Insights
 Freeline splits the build task into several small tasks that run concurrently. It makes full use of the compiled cache files to implement a real incremental build and uses some components of Buck such as dx and DexMerger to speed up the build tasks. Freeline runs a socket server in a separate process on device side, which connects with build tool on developer's machine, so that deployment can still take effects even if the main process crashes.
 
-Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement.
-
-Freeline support dynamic swap native so ,you need not full build even if native so change. 
+Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement. Freeline support dynamic swap native so, you don't need to re-build your project after native so files changed. 
 
 Freeline will automatically switch between full build and incremental build.
 
@@ -29,8 +27,8 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 - Hot deploy even if the main process crashes;
 - Build incremental dex and resource pack;
 - Caching resource.arsc support;
-- Running on Windows, Linux and Mac.
-- native so hot swap support;
+- Running on Windows, Linux and Mac;
+- Native so hot swap support.
 
 See the following table for changes support.
 
@@ -69,7 +67,9 @@ android {
 }
 
 dependencies {
-  compile 'com.antfortune.freeline:runtime:0.6.1'
+  debugCompile 'com.antfortune.freeline:runtime:0.6.1'
+  releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
+  testCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
 }
 ````
 Finally, apply freeline in your application class.
@@ -99,8 +99,7 @@ After changing the version of freeline in build.gradle files, you should run `./
 
 ## Usage
 
-You should add **`JAVA_HOME`** variable in your system environment before executing freeline commands and install Python 2.7+  .
-
+Note, freeline only support Python 2.7+ now, there may be several problems with Python 3.5+.
 
 On the root dir of your project :
 
