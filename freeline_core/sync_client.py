@@ -94,7 +94,7 @@ class SyncClient(object):
         self.debug("apktime path: " + apktime_path)
         sync_value = get_sync_value(apktime_path, self._cache_dir)
         self.debug('your local sync value is: {}'.format(sync_value))
-        uuid = self.get_uuid()
+        uuid = get_apk_created_ticket(apktime_path)
         self.debug('your local uuid value is: {}'.format(uuid))
 
         for i in range(0, 10):
