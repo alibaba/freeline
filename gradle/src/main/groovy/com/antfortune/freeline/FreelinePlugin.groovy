@@ -146,7 +146,8 @@ class FreelinePlugin implements Plugin<Project> {
                         preDexTask = project.tasks.findByName("preDex${variant.name.capitalize()}")
                     }
                 } else {
-                    if (variant.mergedFlavor.minSdkVersion.apiLevel < 21 && variant.mergedFlavor.multiDexEnabled) {
+                    String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
+                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && variant.mergedFlavor.multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("transformClassesWithJarMergingFor${variant.name.capitalize()}")
                     } else {
                         classesProcessTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
@@ -311,6 +312,14 @@ class FreelinePlugin implements Plugin<Project> {
         def resourcesInterceptorTask = project.tasks[resourcesInterceptor]
         resourcesInterceptorTask.dependsOn mergeResourcesTask.taskDependencies.getDependencies(mergeResourcesTask)
         mergeResourcesTask.dependsOn resourcesInterceptorTask
+    }
+
+    private static int getMinSdkVersion(def mergedFlavor, String manifestPath) {
+        if (mergedFlavor.minSdkVersion != null) {
+            return mergedFlavor.minSdkVersion.apiLevel
+        } else {
+            return FreelineParser.getMinSdkVersion(manifestPath)
+        }
     }
 
 }

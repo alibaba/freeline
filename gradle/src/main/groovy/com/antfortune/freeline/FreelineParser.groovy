@@ -57,4 +57,14 @@ class FreelineParser {
         return launcher
     }
 
+    public static int getMinSdkVersion(String manifestPath) {
+        def minSdkVersion = 0
+        def manifestFile = new File(manifestPath)
+        if (manifestFile.exists() && manifestFile.isFile()) {
+            def manifest = new XmlSlurper(false, false).parse(manifestFile)
+            minSdkVersion = manifest."uses-sdk"."@android:minSdkVersion".text()
+        }
+        return Integer.valueOf(minSdkVersion)
+    }
+
 }
