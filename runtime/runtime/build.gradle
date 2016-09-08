@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version '0.6.0'
+version '0.6.1'
 
 android {
     compileSdkVersion 24
@@ -11,8 +11,8 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 24
-        versionCode 5
-        versionName "0.5.5"
+        versionCode 7
+        versionName "0.6.1"
     }
     buildTypes {
         release {
