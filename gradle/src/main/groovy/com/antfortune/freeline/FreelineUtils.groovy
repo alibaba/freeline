@@ -57,6 +57,14 @@ class FreelineUtils {
         return buildAssetsDir.absolutePath
     }
 
+    public static String getBuildBackupDir(String buildDirPath) {
+        def buildBackupDir = new File(getBuildCacheDir(buildDirPath), "freeline-backup")
+        if (!buildBackupDir.exists() || !buildBackupDir.isDirectory()) {
+            buildBackupDir.mkdirs()
+        }
+        return buildBackupDir.absolutePath
+    }
+
     public static def getJson(String url) {
         return new JsonSlurper().parseText(new URL(url).text)
     }

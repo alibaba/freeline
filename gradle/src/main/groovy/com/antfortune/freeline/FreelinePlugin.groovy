@@ -160,6 +160,7 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 classesProcessTask.outputs.upToDateWhen { false }
+                String backUpDirPath = FreelineUtils.getBuildBackupDir(project.buildDir.absolutePath)
 
                 if (preDexTask) {
                     preDexTask.outputs.upToDateWhen { false }
@@ -198,12 +199,14 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
+                                backUpClass(file, backUpDirPath)
                                 FreelineInjector.inject(excludeHackClasses, file, modules)
                             }
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
                             }
                         } else {
+                            backUpClass(f, backUpDirPath)
                             FreelineInjector.inject(excludeHackClasses, f, modules)
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
@@ -223,6 +226,13 @@ class FreelinePlugin implements Plugin<Project> {
                     def hackClassesBeforeDexTask = project.tasks[hackClassesBeforeDex]
                     hackClassesBeforeDexTask.dependsOn classesProcessTask.taskDependencies.getDependencies(classesProcessTask)
                     classesProcessTask.dependsOn hackClassesBeforeDexTask
+                }
+
+                def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
+                if (assembleTask) {
+                    assembleTask.doLast {
+                        rollBackClasses()
+                    }
                 }
             }
         }
@@ -319,6 +329,30 @@ class FreelinePlugin implements Plugin<Project> {
             return mergedFlavor.minSdkVersion.apiLevel
         } else {
             return FreelineParser.getMinSdkVersion(manifestPath)
+        }
+    }
+
+    private static def sBackupMap = [:]
+
+    private static void backUpClass(File file, String backUpDirPath) {
+        String path = file.absolutePath
+        if (!FreelineUtils.isEmpty(path) && path.endsWith(".class") && isNeedBackUp(path)) {
+            File target = new File(backUpDirPath, String.valueOf(System.currentTimeMillis()))
+            FreelineUtils.copyFile(file, target)
+            sBackupMap[file.absolutePath] = target.absolutePath
+            println "back up ${file.absolutePath} to ${target.absolutePath}"
+        }
+    }
+
+    private static boolean isNeedBackUp(String path) {
+        def pattern = ~".*${File.separator}R\\\$?\\w*.class"
+        return pattern.matcher(path).matches()
+    }
+
+    private static void rollBackClasses() {
+        sBackupMap.each { targetPath, sourcePath ->
+            FreelineUtils.copyFile(new File(sourcePath), new File(targetPath))
+            println "roll back ${targetPath}"
         }
     }
 
