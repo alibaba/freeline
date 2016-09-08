@@ -52,7 +52,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.6.0'
+        classpath 'com.antfortune.freeline:gradle:0.6.1'
     }
 }
 ````
@@ -69,7 +69,7 @@ android {
 }
 
 dependencies {
-  compile 'com.antfortune.freeline:runtime:0.6.0'
+  compile 'com.antfortune.freeline:runtime:0.6.1'
 }
 ````
 Finally, apply freeline in your application class.
