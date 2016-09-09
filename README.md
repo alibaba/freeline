@@ -72,6 +72,7 @@ dependencies {
     testCompile 'com.antfortune.freeline:runtime-no-op:0.6.2'
 }
 ````
+
 Finally, apply freeline in your application class.
 
 ````Java
