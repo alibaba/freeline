@@ -338,7 +338,12 @@ class FreelinePlugin implements Plugin<Project> {
     }
 
     private static boolean isNeedBackUp(String path) {
-        def pattern = ~".*${File.separator}R\\\$?\\w*.class"
+        def pattern
+        if (FreelineUtils.isWindows()) {
+            pattern = ~".*\\\\R\\\$?\\w*.class"
+        } else {
+            pattern = ~".*/R\\\$?\\w*.class"
+        }
         return pattern.matcher(path).matches()
     }
 
