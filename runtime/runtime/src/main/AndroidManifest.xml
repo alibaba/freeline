@@ -10,6 +10,7 @@
             android:screenOrientation="portrait" />
         
         <service android:name=".FreelineService"
+            android:exported="true"
             android:process=":freeline" />
         <service android:name=".FreelineService$InnerService"
             android:process=":freeline" />
