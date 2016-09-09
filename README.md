@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-0.6.1-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release Version](https://img.shields.io/badge/release-0.6.2-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
@@ -50,7 +50,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.6.1'
+        classpath 'com.antfortune.freeline:gradle:0.6.2'
     }
 }
 ````
@@ -67,9 +67,9 @@ android {
 }
 
 dependencies {
-  debugCompile 'com.antfortune.freeline:runtime:0.6.1'
-  releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
-  testCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
+    debugCompile 'com.antfortune.freeline:runtime:0.6.2'
+    releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.2'
+    testCompile 'com.antfortune.freeline:runtime-no-op:0.6.2'
 }
 ````
 Finally, apply freeline in your application class.
