@@ -1,12 +1,12 @@
 <idea-plugin version="2">
     <id>intellij.freeline.plugin</id>
-    <name>Plugin4Freeline</name>
+    <name>Freeline for IDEA</name>
     <version>1.0</version>
     <category>Build</category>
-    <vendor email="act262@gmail.com" url="http://github.com">Anonymous</vendor>
+    <vendor email="act262@gmail.com" url="http://github.com/act262">Anonymous</vendor>
 
     <description><![CDATA[
-      plugin for <a href="https://github.com/alibaba/freeline">freeline</a>
+     a plugin for <a href="https://github.com/alibaba/freeline">freeline</a>
     ]]></description>
 
     <change-notes><![CDATA[
@@ -25,14 +25,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <toolWindow
-                id="Buck"
-                anchor="bottom"
-                icon="/icons/ic_free.jpg"
-                factoryClass="com.antfortune.freeline.plugin.ui.BuckToolWindowFactory"/>
-
         <!--<projectService-->
-        <!--serviceImplementation="com.antfortune.freeline.plugin.ui.BuckUIManager"/>-->
     </extensions>
 
     <actions>
@@ -45,12 +38,6 @@
                 <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>
             </action>
-
-            <action id="freeline.Setting" class="com.antfortune.freeline.plugin.actions.SettingAction"
-                    text="Freeline Setting"
-                    description="params setting" icon="/icons/status_bar.png">
-                <add-to-group group-id="ToolsMenu" anchor="first"/>
-            </action>
         </group>
 
         <!-- ToolBar -->
@@ -58,10 +45,4 @@
             <separator/>
         </group>
     </actions>
-
-    <application-components>
-        <component>
-            <implementation-class>com.antfortune.freeline.plugin.SettingComponent</implementation-class>
-        </component>
-    </application-components>
 </idea-plugin>
