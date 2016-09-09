@@ -66,11 +66,6 @@ android {
     }
 }
 
-dependencies {
-  debugCompile 'com.antfortune.freeline:runtime:0.6.1'
-  releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
-  testCompile 'com.antfortune.freeline:runtime-no-op:0.6.1'
-}
 ````
 Finally, apply freeline in your application class.
 

@@ -17,6 +17,12 @@ class FreelinePlugin implements Plugin<Project> {
 
         project.extensions.create("freeline", FreelineExtension, project)
 
+        project.dependencies {
+            debugCompile 'com.antfortune.freeline:runtime:0.6.2'
+            releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.2'
+            testCompile 'com.antfortune.freeline:runtime-no-op:0.6.2'
+        }
+
         project.rootProject.task("initFreeline") << {
             FreelineInitializer.initFreeline(project)
         }
