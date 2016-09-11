@@ -1,31 +1,28 @@
 package com.antfortune.freeline.plugin.configuration;
 
 import com.antfortune.freeline.plugin.utils.SystemUtil;
+import com.intellij.execution.CantRunException;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
 import com.intellij.execution.configurations.*;
 import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleManager;
+import com.intellij.execution.ui.ConsoleView;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Freeline run configuration implementation
  *
  * @author act262@gmail.com
  */
-class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfigurationModule> {
+class FreeRunConfiguration extends RunConfigurationBase {
 
     FreeRunConfiguration(@NotNull Project project, @NotNull ConfigurationFactory factory, String name) {
-        super(name, new JavaRunConfigurationModule(project, false), factory);
+        super(project, factory, name);
     }
 
     @NotNull
@@ -48,11 +45,6 @@ class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfiguration
         return new FreeRunState(executionEnvironment);
     }
 
-    @Override
-    public Collection<Module> getValidModules() {
-        Module[] modules = ModuleManager.getInstance(getProject()).getModules();
-        return Arrays.asList(modules);
-    }
 
     /**
      * RunState
@@ -66,6 +58,9 @@ class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfiguration
         @NotNull
         @Override
         protected ProcessHandler startProcess() throws ExecutionException {
+            if (!SystemUtil.hasInitFreeline(getProject())) {
+                throw new CantRunException("Not yet initialized freeline code");
+            }
             // here just run one command: python freeline.py
             GeneralCommandLine commandLine = new GeneralCommandLine();
             ExecutionEnvironment environment = getEnvironment();
@@ -75,5 +70,15 @@ class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfiguration
             return new OSProcessHandler(commandLine);
         }
 
+        @Nullable
+        @Override
+        protected ConsoleView createConsole(@NotNull Executor executor) throws ExecutionException {
+            ConsoleView console = super.createConsole(executor);
+            // before run new task,clean log
+            if (console != null) {
+                console.clear();
+            }
+            return console;
+        }
     }
 }
