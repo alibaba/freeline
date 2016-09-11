@@ -1,0 +1,51 @@
+<idea-plugin version="2" url="http://github.com/alibaba/freeline">
+    <id>intellij.freeline.plugin</id>
+    <name>Freeline for IDEA</name>
+    <version>1.0</version>
+    <category>Build</category>
+    <vendor email="act262@gmail.com" url="http://github.com/act262">Anonymous</vendor>
+
+    <description><![CDATA[
+     a plugin for <a href="https://github.com/alibaba/freeline">freeline</a>
+    ]]></description>
+
+    <change-notes><![CDATA[
+      basic use freeline
+    ]]>
+    </change-notes>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+    <idea-version since-build="141.0"/>
+
+    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!-- Freeline Run Configuration Type define -->
+        <configurationType implementation="com.antfortune.freeline.plugin.configuration.FreeConfigurationType"
+                           id="com.antfortune.freeline.config"/>
+
+    </extensions>
+
+    <actions>
+
+        <!-- Menu -->
+        <group id="freeline.Menu">
+            <action id="freeline.Build" class="com.antfortune.freeline.plugin.actions.BuildAction" text="Build Freeline"
+                    description="Run Freeline script command line" icon="/icons/ic_free.jpg">
+                <add-to-group group-id="BuildMenu" anchor="last"/>
+                <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>
+            </action>
+        </group>
+
+        <!-- ToolBar -->
+        <group id="freeline.BuildGroup">
+            <separator/>
+        </group>
+    </actions>
+</idea-plugin>
