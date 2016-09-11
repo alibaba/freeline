@@ -13,31 +13,11 @@ import java.io.File;
 import java.util.ArrayList;
 
 /**
- * Created by zcx on 16-9-5.
+ * build or init freeline action
  *
  * @author act262@gmail.com
  */
 public class BuildAction extends AnAction {
-
-    @Override
-    public void actionPerformed(AnActionEvent e) {
-        Project currentProject = DataKeys.PROJECT.getData(e.getDataContext());
-        FileDocumentManager.getInstance().saveAllDocuments();
-
-        // TODO: 16-9-5  Android SDK环境检测、Python环境检测
-//        if (!SystemUtil.hasPython()) {
-//            System.out.println("Not found python");
-//            return;
-//        }
-//        if (!SystemUtil.hasAndroidSDK()) {
-//            System.out.println("Not found Android_HOME");
-//            return;
-//        }
-
-        File dir = new File(currentProject.getBasePath());
-
-        run(dir, e);
-    }
 
     public static void run(File dir, AnActionEvent e) {
         File file = new File(dir, "freeline.py");
@@ -67,6 +47,26 @@ public class BuildAction extends AnAction {
             cmds.add("-Pmirror");
         }
         Util.execCmd(cmds, dir, true);
+    }
+
+    @Override
+    public void actionPerformed(AnActionEvent e) {
+        Project currentProject = DataKeys.PROJECT.getData(e.getDataContext());
+        FileDocumentManager.getInstance().saveAllDocuments();
+
+        // TODO: 16-9-5  Android SDK环境检测、Python环境检测
+//        if (!SystemUtil.hasPython()) {
+//            System.out.println("Not found python");
+//            return;
+//        }
+//        if (!SystemUtil.hasAndroidSDK()) {
+//            System.out.println("Not found Android_HOME");
+//            return;
+//        }
+
+        File dir = new File(currentProject.getBasePath());
+
+        run(dir, e);
     }
 
     private void showTip() {

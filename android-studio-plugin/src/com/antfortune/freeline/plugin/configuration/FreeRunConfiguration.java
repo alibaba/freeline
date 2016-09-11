@@ -1,5 +1,6 @@
 package com.antfortune.freeline.plugin.configuration;
 
+import com.antfortune.freeline.plugin.utils.SystemUtil;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
 import com.intellij.execution.configurations.*;
@@ -36,7 +37,9 @@ class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfiguration
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
-        // TODO: 2016/9/11 0011 check statue
+        if (!SystemUtil.hasInitFreeline(getProject())) {
+            throw new RuntimeConfigurationException("Not yet initialize freeline code", "Warning");
+        }
     }
 
     @Nullable
@@ -71,5 +74,6 @@ class FreeRunConfiguration extends ModuleBasedConfiguration<JavaRunConfiguration
             commandLine.addParameters("freeline.py");
             return new OSProcessHandler(commandLine);
         }
+
     }
 }
