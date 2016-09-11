@@ -323,6 +323,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         aapt_args.append(self._finder.get_dst_res_pack_path(self._name))
         aapt_args.append('--debug-mode')
         aapt_args.append('--auto-add-overlay')
+        aapt_args.append('--no-version-vectors')
 
         if len(final_changed_list_chain) > 0 and self._is_art:
             aapt_args.append('--buildIncrement')

@@ -633,6 +633,7 @@ class BuildBaseResourceTask(Task):
         aapt_args.append('-F')
         aapt_args.append(base_resource_path)
         aapt_args.append('--debug-mode')
+        aapt_args.append('--no-version-vectors')
         aapt_args.append('--resoucres-md5-cache-path')
         aapt_args.append(os.path.join(self._config['build_cache_dir'], "arsc_cache.dat"))
         aapt_args.append('--ignore-assets')
