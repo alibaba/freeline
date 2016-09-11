@@ -1,4 +1,4 @@
-<idea-plugin version="2">
+<idea-plugin version="2" url="http://github.com/alibaba/freeline">
     <id>intellij.freeline.plugin</id>
     <name>Freeline for IDEA</name>
     <version>1.0</version>
@@ -25,7 +25,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <!--<projectService-->
+        <!-- Freeline Run Configuration Type define -->
+        <configurationType implementation="com.antfortune.freeline.plugin.configuration.FreeConfigurationType"
+                           id="com.antfortune.freeline.config"/>
+
     </extensions>
 
     <actions>
