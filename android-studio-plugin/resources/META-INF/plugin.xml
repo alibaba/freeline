@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <idea-plugin version="2" url="http://github.com/alibaba/freeline">
     <id>intellij.freeline.plugin</id>
     <name>Freeline for IDEA</name>
@@ -48,4 +49,65 @@
             <separator/>
         </group>
     </actions>
+=======
+<idea-plugin version="2">
+  <id>com.apkfuns.plugin.freeline</id>
+  <name>Freeline Plugin</name>
+  <version>1.0.1</version>
+  <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
+
+  <description><![CDATA[
+      android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br>
+    ]]></description>
+
+  <change-notes><![CDATA[
+      <ul>
+        <li>
+          <b>1.0.1</b><br/>
+          fix bug
+        </li>
+        <li>
+          <b>1.0.0</b><br/>
+          run Freeline with debug and Force
+        </li>
+      </ul>
+    ]]>
+  </change-notes>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="141.0"/>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <!-- uncomment to enable plugin in all products
+  <depends>com.intellij.modules.lang</depends>
+  -->
+
+  <depends>org.jetbrains.android</depends>
+  <depends>org.jetbrains.plugins.terminal</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+
+  <actions>
+    <action id="Plugin_FreeLine_Run" class="actions.FreeLineRunAction"
+            text="Run FreeLine" description="Run FreeLine"
+            icon="/icons/icon.png">
+      <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
+    </action>
+    <group id="Plugin_FreeLine_Tools" text="FreeLine" description="FreeLine" popup="true">
+      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run FreeLine Debug" description="Run FreeLine Debug">
+      </action>
+      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run FreeLine Force" description="Run FreeLine Force">
+      </action>
+      <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Update" description="Check Update">
+      </action>
+      <action id="Plugin_FreeLine_Update_Zip" class="actions.ZipUpdateAction" text="Update Freeline.zip" description="Update Freeline.zip">
+      </action>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+  </actions>
+
+>>>>>>> plugin 1.0.0
 </idea-plugin>
