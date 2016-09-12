@@ -36,7 +36,7 @@
         <!-- Menu -->
         <group id="freeline.Menu">
             <action id="freeline.Build" class="com.antfortune.freeline.plugin.actions.BuildAction" text="Build Freeline"
-                    description="Run Freeline script command line" icon="/icons/ic_free.jpg">
+                    description="Run Freeline script command line" icon="/icons/ic_free.png">
                 <add-to-group group-id="BuildMenu" anchor="last"/>
                 <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>

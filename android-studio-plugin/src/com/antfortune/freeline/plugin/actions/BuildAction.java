@@ -1,5 +1,6 @@
 package com.antfortune.freeline.plugin.actions;
 
+import com.antfortune.freeline.plugin.utils.FreeIcons;
 import com.antfortune.freeline.plugin.utils.SystemUtil;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
@@ -13,7 +14,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKeys;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -88,7 +88,7 @@ public class BuildAction extends AnAction {
         toolWindow = toolWindowManager.registerToolWindow(TOOL_ID, true, ToolWindowAnchor.BOTTOM);
         toolWindow.setTitle("free....");
         toolWindow.setShowStripeButton(true);
-        toolWindow.setIcon(IconLoader.getIcon("/icons/ic_free.jpg"));
+        toolWindow.setIcon(FreeIcons.ICON_TOOL_WINDOW);
         toolWindow.getContentManager().addContent(new ContentImpl(consoleView.getComponent(), "", true));
         toolWindow.show(null);
     }
