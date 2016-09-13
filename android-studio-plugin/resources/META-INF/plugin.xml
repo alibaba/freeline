@@ -27,7 +27,12 @@
 
         <!-- Freeline Run Configuration Type define -->
         <configurationType implementation="com.antfortune.freeline.plugin.configuration.FreeConfigurationType"
-                           id="com.antfortune.freeline.config"/>
+                           id="com.antfortune.freeline.plugin.config.FreeRunType"/>
+
+        <!-- Freeline project UI service -->
+        <projectService serviceImplementation="com.antfortune.freeline.plugin.ui.FreeUIManager"
+                        serviceInterface="com.antfortune.freeline.plugin.ui.FreeUIManager"
+                        id="com.antfortune.freeline.plugin.service.FreeUIManager"/>
 
     </extensions>
 
@@ -36,7 +41,7 @@
         <!-- Menu -->
         <group id="freeline.Menu">
             <action id="freeline.Build" class="com.antfortune.freeline.plugin.actions.BuildAction" text="Build Freeline"
-                    description="Run Freeline script command line" icon="/icons/ic_free.jpg">
+                    description="Run Freeline script command line" icon="/icons/ic_free.png">
                 <add-to-group group-id="BuildMenu" anchor="last"/>
                 <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>
