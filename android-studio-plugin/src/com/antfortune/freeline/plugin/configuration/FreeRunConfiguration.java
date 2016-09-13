@@ -1,6 +1,6 @@
 package com.antfortune.freeline.plugin.configuration;
 
-import com.antfortune.freeline.plugin.utils.SystemUtil;
+import com.antfortune.freeline.plugin.utils.FreeUtil;
 import com.intellij.execution.CantRunException;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
@@ -34,7 +34,7 @@ class FreeRunConfiguration extends RunConfigurationBase {
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
-        if (!SystemUtil.hasInitFreeline(getProject())) {
+        if (!FreeUtil.hadInitFreeline(getProject())) {
             throw new RuntimeConfigurationException("Not yet initialize freeline code", "Warning");
         }
     }
@@ -58,7 +58,7 @@ class FreeRunConfiguration extends RunConfigurationBase {
         @NotNull
         @Override
         protected ProcessHandler startProcess() throws ExecutionException {
-            if (!SystemUtil.hasInitFreeline(getProject())) {
+            if (!FreeUtil.hadInitFreeline(getProject())) {
                 throw new CantRunException("Not yet initialized freeline code");
             }
             // here just run one command: python freeline.py
