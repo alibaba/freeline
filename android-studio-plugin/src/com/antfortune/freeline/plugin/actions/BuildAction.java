@@ -28,7 +28,7 @@ public class BuildAction extends AnAction {
             @Override
             public void run() {
                 // build or init project
-                FreeUtil.buildOrInit(project);
+                FreeUtil.initOrBuild(project);
             }
         });
     }
