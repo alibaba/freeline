@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKeys;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 
@@ -16,8 +15,6 @@ import com.intellij.openapi.project.Project;
  */
 public class BuildAction extends AnAction {
 
-    private static final Logger LOG = Logger.getInstance(BuildAction.class);
-
     @Override
     public void actionPerformed(AnActionEvent e) {
         Project currentProject = DataKeys.PROJECT.getData(e.getDataContext());
@@ -26,7 +23,7 @@ public class BuildAction extends AnAction {
         performBuild(currentProject);
     }
 
-    private void performBuild(Project project) {
+    private void performBuild(final Project project) {
         ApplicationManager.getApplication().executeOnPooledThread(new Runnable() {
             @Override
             public void run() {

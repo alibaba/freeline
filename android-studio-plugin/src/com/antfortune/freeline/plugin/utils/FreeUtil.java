@@ -71,8 +71,8 @@ public class FreeUtil {
     }
 
     /* process command line */
-    private static void processCommandline(Project project, GeneralCommandLine commandLine) throws ExecutionException {
-        OSProcessHandler processHandler = new OSProcessHandler(commandLine);
+    private static void processCommandline(final Project project, GeneralCommandLine commandLine) throws ExecutionException {
+        final OSProcessHandler processHandler = new OSProcessHandler(commandLine);
         ProcessTerminatedListener.attach(processHandler);
         processHandler.startNotify();
 
