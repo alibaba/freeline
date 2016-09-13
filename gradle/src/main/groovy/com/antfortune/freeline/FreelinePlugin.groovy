@@ -293,21 +293,25 @@ class FreelinePlugin implements Plugin<Project> {
             mergeResourcesTask.inputs.files.files.each { f ->
                 if (f.exists() && f.isDirectory()) {
                     def path = f.absolutePath
+                    println "find resource path: ${path}"
                     if (path.contains("exploded-aar")) {
                         def marker = false
                         mappers.each { mapper ->
                             if (path.contains(mapper.match)) {
                                 mapper.path.collect(resourcesDependencies.local_resources) {it}
+                                println "add local resource: ${path}"
                                 marker = true
                                 return false
                             }
                         }
                         if (!marker) {
                             resourcesDependencies.library_resources.add(path)
+                            println "add library resource: ${path}"
                         }
                     } else {
                         if (!projectResDirs.contains(path)) {
                             resourcesDependencies.library_resources.add(path)
+                            println "add library resource: ${path}"
                         }
                     }
                 }
