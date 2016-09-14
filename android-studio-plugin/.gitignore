@@ -1,1 +1,7 @@
 *.iml
+classes/
+out/
+.idea/
+build/
+.gradle/
+*.properties

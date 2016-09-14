@@ -1,0 +1,24 @@
+buildscript {
+    repositories {
+//        mavenCentral()
+        maven { url 'http://dl.bintray.com/jetbrains/intellij-plugin-service' }
+    }
+}
+
+plugins {
+    id "org.jetbrains.intellij" version "0.1.10"
+}
+
+apply plugin: 'idea'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'java'
+
+intellij {
+//    version 'IU-16.2.4' //IntelliJ IDEA dependency
+//    plugins 'coverage' //Bundled plugin dependencies
+//    plugins 'android'
+    pluginName 'Freeline for IDEA'
+}
+
+group 'org.antfortune.freeline.idea.plugin'
+version '1.0' // Plugin version
