@@ -3,24 +3,29 @@ package models;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
+import utils.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by pengwei on 16/9/11.
  */
-public class GradleVersionEntity {
+public class GradleDependencyEntity {
     private String groupId;
     private String artifactId;
     private String version;
+    private String updateTime;
 
     public String getGroupId() {
         return groupId;
     }
 
-    public GradleVersionEntity setGroupId(String groupId) {
+    public GradleDependencyEntity setGroupId(String groupId) {
         this.groupId = groupId;
         return this;
     }
@@ -29,7 +34,7 @@ public class GradleVersionEntity {
         return artifactId;
     }
 
-    public GradleVersionEntity setArtifactId(String artifactId) {
+    public GradleDependencyEntity setArtifactId(String artifactId) {
         this.artifactId = artifactId;
         return this;
     }
@@ -38,7 +43,25 @@ public class GradleVersionEntity {
         return version;
     }
 
-    public GradleVersionEntity setVersion(String version) {
+    public String getUpdateTime() {
+        if (Utils.notEmpty(updateTime)) {
+            SimpleDateFormat df = new SimpleDateFormat("yyyyMMddhhmmss");
+            try {
+                Date date = df.parse(updateTime);
+                return date.toString();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+        return "";
+    }
+
+    public GradleDependencyEntity setUpdateTime(String updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
+
+    public GradleDependencyEntity setVersion(String version) {
         this.version = version;
         return this;
     }
@@ -49,8 +72,8 @@ public class GradleVersionEntity {
      * @param text
      * @return
      */
-    public static GradleVersionEntity parse(String text) {
-        GradleVersionEntity entity = new GradleVersionEntity();
+    public static GradleDependencyEntity parse(String text) {
+        GradleDependencyEntity entity = new GradleDependencyEntity();
         XmlPullParserFactory f = null;
         try {
             f = XmlPullParserFactory.newInstance();
@@ -71,6 +94,9 @@ public class GradleVersionEntity {
                     if (name.equals("version")) {
                         entity.setVersion(xmlPullParser.nextText());
                     }
+                    if (name.equals("lastUpdated")) {
+                        entity.setUpdateTime(xmlPullParser.nextText());
+                    }
                 } else if (eventType == XmlPullParser.END_TAG) {
 
                 } else if (eventType == XmlPullParser.TEXT) {
@@ -88,10 +114,11 @@ public class GradleVersionEntity {
 
     @Override
     public String toString() {
-        return "GradleVersionEntity{" +
+        return "GradleDependencyEntity{" +
                 "groupId='" + groupId + '\'' +
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
+                ", updateTime='" + updateTime + '\'' +
                 '}';
     }
 }

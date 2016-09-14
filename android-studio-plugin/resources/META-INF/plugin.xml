@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.1</version>
+  <version>1.0.3</version>
   <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
 
   <description><![CDATA[
@@ -11,7 +11,7 @@
   <change-notes><![CDATA[
       <ul>
         <li>
-          <b>1.0.1</b><br/>
+          <b>1.0.2</b><br/>
           fix bug
         </li>
         <li>
@@ -33,6 +33,8 @@
 
   <depends>org.jetbrains.android</depends>
   <depends>org.jetbrains.plugins.terminal</depends>
+  <depends>org.jetbrains.plugins.gradle</depends>
+  <depends>org.intellij.groovy</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <!-- Add your extensions here -->
@@ -45,13 +47,16 @@
       <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
     </action>
     <group id="Plugin_FreeLine_Tools" text="FreeLine" description="FreeLine" popup="true">
-      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run FreeLine Debug" description="Run FreeLine Debug">
+      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run FreeLine Debug" description="Run FreeLine Debug"
+      icon="/icons/debug.png">
       </action>
-      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run FreeLine Force" description="Run FreeLine Force">
+      <separator/>
+      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run FreeLine Force" description="Run FreeLine Force"
+              icon="/icons/play2.png">
       </action>
-      <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Update" description="Check Update">
-      </action>
-      <action id="Plugin_FreeLine_Update_Zip" class="actions.ZipUpdateAction" text="Update Freeline.zip" description="Update Freeline.zip">
+      <separator/>
+      <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Freeline Update" description="Check Update"
+              icon="/icons/gradlesync.png">
       </action>
       <add-to-group group-id="BuildMenu" anchor="last"/>
     </group>

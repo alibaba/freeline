@@ -3,6 +3,7 @@ package actions;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.SimpleToolWindowPanel;
 import com.intellij.openapi.wm.ToolWindow;
@@ -38,11 +39,13 @@ public abstract class BaseAction extends AnAction {
 
     /**
      * 检查FreeLine是否存在
+     *
      * @return
      */
     protected boolean checkFreeLineExist() {
         File pyFile = new File(projectDir, "freeline.py");
-        if (pyFile.exists()) {
+        File pyDirectory = new File(projectDir, "freeline");
+        if (pyFile.exists() && pyDirectory.exists() && pyDirectory.isDirectory()) {
             return true;
         }
         NotificationUtils.errorNotification("please install FreeLine first");
@@ -104,4 +107,18 @@ public abstract class BaseAction extends AnAction {
         }
         executeShell(build.toString());
     }
+
+    /**
+     * 异步执行
+     * @param runnable
+     */
+    protected void asyncTask(Runnable runnable) {
+        ApplicationManager.getApplication().executeOnPooledThread(runnable);
+    }
+
+    protected void invokeLater(Runnable runnable) {
+        ApplicationManager.getApplication().invokeLater(runnable);
+    }
+
+
 }

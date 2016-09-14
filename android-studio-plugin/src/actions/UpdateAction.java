@@ -1,198 +1,221 @@
 package actions;
 
+import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
+import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
+import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.wm.WindowManager;
-import models.GradleVersionEntity;
-import org.apache.commons.io.FileUtils;
+import com.intellij.openapi.command.CommandProcessor;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
+import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListenerAdapter;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.search.FilenameIndex;
+import com.intellij.psi.search.GlobalSearchScope;
+import models.GradleDependencyEntity;
+import models.GetServerCallback;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.plugins.gradle.util.GradleConstants;
+import utils.GradleUtil;
 import utils.NotificationUtils;
 import utils.StreamUtil;
-import views.UpdateDialog;
+import utils.Utils;
+import views.CheckUpdateDialog;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by pengwei on 16/9/11.
  */
-public class UpdateAction extends BaseAction {
-
-    private List<File> gradleFileList = new ArrayList<>();
-    public static String[] excludeFolder = {".idea", ".git", ".svn", "build", "gradle"};
-    private String reg = "(classpath 'com.antfortune.freeline:gradle:.+?'|\\w+?ompile 'com.antfortune.freeline:runtime.+?')";
-    private Pattern p = Pattern.compile(reg);
-    private String localVersion;
+public class UpdateAction extends BaseAction implements GetServerCallback {
 
     @Override
     public void actionPerformed() {
         if (checkFreeLineExist()) {
-            ApplicationManager.getApplication().executeOnPooledThread(new Runnable() {
-                @Override
-                public void run() {
-                    getLocalGradleVersion();
-                    String result = getLastVersion();
-                    if (result != null) {
-                        GradleVersionEntity entity = GradleVersionEntity.parse(result);
-                        versionUpdate(entity);
-                    } else {
-                        NotificationUtils.errorNotification("check update failure");
+            asyncTask(new GetServerVersion(this));
+        } else {
+            GradleUtil.executeTask(anActionEvent, "initFreeline -Pmirror");
+        }
+    }
+
+    /**
+     * 更新操作
+     *
+     * @param newVersion
+     * @param gradleBuildModels
+     */
+    protected void updateAction(String newVersion, Map<GradleBuildModel,
+            List<ArtifactDependencyModel>> gradleBuildModels) {
+        CommandProcessor.getInstance().runUndoTransparentAction(new Runnable() {
+            @Override
+            public void run() {
+                ApplicationManager.getApplication().runWriteAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (GradleBuildModel file : gradleBuildModels.keySet()) {
+                            List<ArtifactDependencyModel> models = gradleBuildModels.get(file);
+                            for (ArtifactDependencyModel dependencyModel : models) {
+                                if (isClasspathLibrary(dependencyModel)) {
+                                    dependencyModel.setVersion(newVersion);
+                                }
+                                if (isDependencyLibrary(dependencyModel)) {
+                                    file.dependencies().remove(dependencyModel);
+                                }
+                            }
+                            file.applyChanges();
+                        }
+                        GradleUtil.startSync(currentProject, gradleSyncListenerAdapter);
                     }
+                });
+            }
+        });
+    }
+
+    /**
+     * gradle sync监听
+     */
+    private GradleSyncListener.Adapter gradleSyncListenerAdapter = new GradleSyncListener.Adapter() {
+        @Override
+        public void syncSucceeded(@NotNull Project project) {
+            GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
+                @Override
+                public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
+                    super.onTaskOutput(id, text, stdOut);
                 }
             });
         }
-    }
+
+        @Override
+        public void syncFailed(@NotNull Project project, @NotNull String errorMessage) {
+            super.syncFailed(project, errorMessage);
+            NotificationUtils.errorNotification("Gradle Sync Failure :" + errorMessage);
+        }
+    };
 
     /**
-     * 获取本地gradle文件
-     *
-     * @return
-     */
-    private void getLocalGradleVersion() {
-        gradleFileList.clear();
-        File root = projectDir;
-        if (root != null) {
-            getFile(root, 0);
-        }
-    }
-
-    /**
-     * 列出1-2级目录
-     *
-     * @param file
-     * @param level
-     */
-    private void getFile(File file, int level) {
-        if (level > 2) {
-            return;
-        }
-        if (file.getName().equals("build.gradle")) {
-            gradleFileList.add(file);
-            return;
-        }
-        for (String exclude : excludeFolder) {
-            if (exclude.equals(file.getName())) {
-                return;
-            }
-        }
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            for (File cFile : files) {
-                getFile(cFile, level + 1);
-            }
-        }
-    }
-
-    /**
-     * 提示新版本
+     * 处理结果
      *
      * @param entity
+     * @param gradleBuildModels
      */
-    private void versionUpdate(GradleVersionEntity entity) {
-        localVersion = null;
-        final Map<String, String> map = new HashMap<>();
-        if (entity == null || entity.getVersion() == null) {
-            NotificationUtils.errorNotification("check update failure.");
-            return;
-        }
-
-        for (File file : gradleFileList) {
-            StringBuilder builder = new StringBuilder();
-            try {
-                String fileContent = FileUtils.readFileToString(file);
-                Matcher m = p.matcher(fileContent);
-                while (m.find()) {
-                    if (m.group(1).contains("com.antfortune.freeline:gradle:")) {
-                        localVersion = m.group(1).split(":")[2].replace("'", "");
+    private void resultHandle(GradleDependencyEntity entity, Map<GradleBuildModel,
+            List<ArtifactDependencyModel>> gradleBuildModels) {
+        String localVersion = null;
+        StringBuilder builder = new StringBuilder();
+        for (GradleBuildModel file : gradleBuildModels.keySet()) {
+            List<ArtifactDependencyModel> models = gradleBuildModels.get(file);
+            for (ArtifactDependencyModel dependencyModel : models) {
+                if (isClasspathLibrary(dependencyModel) || isDependencyLibrary(dependencyModel)) {
+                    if (isClasspathLibrary(dependencyModel)) {
+                        localVersion = dependencyModel.version();
                     }
-                    builder.append(m.group(1)).append("\n");
+                    builder.append(dependencyModel.configurationName()).append(" '")
+                            .append(dependencyModel.group()).append(":")
+                            .append(dependencyModel.name()).append(":")
+                            .append(dependencyModel.version()).append("'")
+                            .append("<br/>");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (builder.toString().trim() != "") {
-                map.put(file.getPath(), builder.toString());
             }
         }
-        if (localVersion == null) {
-            NotificationUtils.errorNotification("please install FreeLine first");
-            return;
-        }
-        int res = localVersion.compareTo(entity.getVersion());
-        if (res < 0) {
-            UpdateDialog dialog = new UpdateDialog();
-            dialog.setOkActionListener(new ActionListener() {
+        if (Utils.notEmpty(localVersion)) {
+            int compare = localVersion.compareTo(entity.getVersion());
+            CheckUpdateDialog dialog = new CheckUpdateDialog();
+            dialog.getButtonOK().setEnabled(compare < 0);
+            dialog.setServerVersion(entity.getGroupId() + ":"
+                    + entity.getArtifactId() + ":" + entity.getVersion());
+            dialog.setServerUpdateTime(entity.getUpdateTime());
+            dialog.setLocalVersion(builder.toString());
+            dialog.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    updateLocal(entity.getVersion(), localVersion, map.keySet());
+                    updateAction(entity.getVersion(), gradleBuildModels);
                     dialog.dispose();
                 }
             });
-            dialog.pack();
-            dialog.setLocationRelativeTo(WindowManager.getInstance().getFrame(anActionEvent.getProject()));
-            dialog.setServerVersion(entity.getGroupId() + ":" + entity.getArtifactId() + ":" + entity.getVersion());
-            for (String key : map.keySet()) {
-                dialog.addGradleContent(key, map.get(key));
-            }
-            dialog.setVisible(true);
-        } else if (res > 0) {
-            NotificationUtils.infoNotification("Your version seems too high");
+            dialog.showDialog();
         } else {
-            NotificationUtils.infoNotification("Local version is up to date");
+            NotificationUtils.infoNotification("please add freeline dependency first");
         }
     }
 
-    /**
-     * 更新本地版本
-     *
-     * @param newVersion
-     * @param oldVersion
-     * @param fileList
-     */
-    private void updateLocal(String newVersion, String oldVersion, Set<String> fileList) {
-        for (String file : fileList) {
-            File gradleFile = new File(file);
-            if (gradleFile.exists()) {
-                try {
-                    String content = FileUtils.readFileToString(gradleFile);
-                    content = content.replaceAll("'com.antfortune.freeline:gradle:.+?'", "'com.antfortune.freeline:gradle:" + newVersion + "'")
-                            .replaceAll("\\w+?ompile 'com.antfortune.freeline:runtime.+?'", "");
-                    FileUtils.writeStringToFile(gradleFile, content, false);
-                } catch (IOException e) {
-                    e.printStackTrace();
+    private boolean isClasspathLibrary(ArtifactDependencyModel model) {
+        return model.configurationName().equals("classpath") &&
+                model.group().equals("com.antfortune.freeline") && model.name().equals("gradle");
+    }
+
+    private boolean isDependencyLibrary(ArtifactDependencyModel model) {
+        return model.configurationName().endsWith("ompile") &&
+                model.group().equals("com.antfortune.freeline") && model.name().startsWith("runtime");
+    }
+
+    @Override
+    public void onSuccess(GradleDependencyEntity entity) {
+        invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                Collection<VirtualFile> gradleFiles = FilenameIndex.getVirtualFilesByName(currentProject,
+                        GradleConstants.DEFAULT_SCRIPT_NAME, GlobalSearchScope.allScope(currentProject));
+                Map<GradleBuildModel, List<ArtifactDependencyModel>> fileListMap = new HashMap<>();
+                for (VirtualFile file : gradleFiles) {
+                    GradleBuildModel model = GradleBuildModel.parseBuildFile(file, currentProject);
+                    if (model != null) {
+                        List<ArtifactDependencyModel> classPaths = model.buildscript().dependencies().artifacts();
+                        List<ArtifactDependencyModel> depends = model.dependencies().artifacts();
+                        classPaths.addAll(depends);
+                        fileListMap.put(model, classPaths);
+                    }
                 }
+                resultHandle(entity, fileListMap);
+            }
+        });
+    }
+
+    @Override
+    public void onFailure(String errMsg) {
+        NotificationUtils.errorNotification("Update Freeline Failure: " + errMsg);
+    }
+
+    /**
+     * 获取服务器最新版本
+     */
+    private class GetServerVersion implements Runnable {
+        private GetServerCallback callback;
+
+        public GetServerVersion(GetServerCallback callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void run() {
+            if (this.callback == null) {
+                return;
+            }
+            try {
+                URL url = new URL("http://jcenter.bintray.com/com/antfortune/freeline/gradle/maven-metadata.xml");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(5 * 1000);
+                conn.setRequestMethod("GET");
+                InputStream inStream = conn.getInputStream();
+                String result = StreamUtil.inputStream2String(inStream);
+                if (result != null && result.trim().length() != 0) {
+                    GradleDependencyEntity entity = GradleDependencyEntity.parse(result);
+                    if (entity != null && Utils.notEmpty(entity.getVersion())
+                            && Utils.notEmpty(entity.getGroupId())) {
+                        this.callback.onSuccess(entity);
+                    } else {
+                        this.callback.onFailure("analytic failure");
+                    }
+                } else {
+                    this.callback.onFailure("response empty");
+                }
+            } catch (IOException e) {
+                this.callback.onFailure(e.getMessage());
             }
         }
-        NotificationUtils.infoNotification("freeline gradle update success");
-    }
-
-    /**
-     * 获取最后的版本
-     *
-     * @return
-     */
-    private String getLastVersion() {
-        try {
-            URL url = new URL("http://jcenter.bintray.com/com/antfortune/freeline/gradle/maven-metadata.xml");
-            HttpURLConnection conn = null;
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(5 * 1000);
-            conn.setRequestMethod("GET");
-            InputStream inStream = conn.getInputStream();
-            String result = StreamUtil.inputStream2String(inStream);
-            return result;
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }
