@@ -3,7 +3,10 @@ package utils;
 import com.github.rjeschke.txtmark.Run;
 import com.jediterm.terminal.ui.UIUtil;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Created by pengwei on 16/9/11.
@@ -37,5 +40,38 @@ public final class Utils {
         } catch (IOException e) {
         }
         return null;
+    }
+
+    public static boolean notEmpty(String text) {
+        return (text != null && text.trim().length() != 0);
+    }
+
+    /**
+     * 打开浏览器
+     *
+     * @param url
+     */
+    public static void openUrl(String url) {
+        if (UIUtil.isWindows) {
+            try {
+                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                URI uri = new URI(url);
+                Desktop desktop = null;
+                if (Desktop.isDesktopSupported()) {
+                    desktop = Desktop.getDesktop();
+                }
+                if (desktop != null)
+                    desktop.browse(uri);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
