@@ -1,17 +1,18 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
 
   <description><![CDATA[
       android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br>
+      <a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a>
     ]]></description>
 
   <change-notes><![CDATA[
       <ul>
       <li>
-          <b>1.0.4</b><br/>
+          <b>1.0.5</b><br/>
           fix android studio 2.2 RC Crash
         </li>
         <li>
@@ -46,11 +47,15 @@
 
   <actions>
     <action id="Plugin_FreeLine_Run" class="actions.FreeLineRunAction"
-            text="Run FreeLine" description="Run FreeLine"
+            text="Run Freeline" description="Run Freeline"
             icon="/icons/icon.png">
       <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
     </action>
-    <group id="Plugin_FreeLine_Tools" text="FreeLine" description="FreeLine" popup="true">
+    <group>
+      <separator/>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+    <group id="Plugin_FreeLine_Tools" text="Freeline" description="Freeline" popup="true">
       <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug" description="Run FreeLine Debug"
       icon="/icons/debug.png">
       </action>
@@ -62,6 +67,10 @@
       <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Freeline Update" description="Check Update"
               icon="/icons/gradlesync.png">
       </action>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+    <group>
+      <separator/>
       <add-to-group group-id="BuildMenu" anchor="last"/>
     </group>
   </actions>
