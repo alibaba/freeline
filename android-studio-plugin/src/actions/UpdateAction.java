@@ -40,7 +40,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
         if (checkFreeLineExist()) {
             asyncTask(new GetServerVersion(this));
         } else {
-            GradleUtil.executeTask(anActionEvent, "initFreeline -Pmirror");
+            GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", null);
         }
     }
 
@@ -60,7 +60,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
                     public void run() {
                         for (GradleBuildModel file : gradleBuildModels.keySet()) {
                             List<ArtifactDependencyModel> models = gradleBuildModels.get(file);
-                            for (ArtifactDependencyModel dependencyModel1: models) {
+                            for (ArtifactDependencyModel dependencyModel1 : models) {
                                 ArtifactDependencyModelWrapper dependencyModel = new ArtifactDependencyModelWrapper(dependencyModel1);
                                 if (isClasspathLibrary(dependencyModel)) {
                                     dependencyModel1.setVersion(newVersion);
