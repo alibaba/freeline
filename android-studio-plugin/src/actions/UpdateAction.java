@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
+import models.ArtifactDependencyModelWrapper;
 import models.GradleDependencyEntity;
 import models.GetServerCallback;
 import org.jetbrains.annotations.NotNull;
@@ -59,12 +60,13 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
                     public void run() {
                         for (GradleBuildModel file : gradleBuildModels.keySet()) {
                             List<ArtifactDependencyModel> models = gradleBuildModels.get(file);
-                            for (ArtifactDependencyModel dependencyModel : models) {
+                            for (ArtifactDependencyModel dependencyModel1: models) {
+                                ArtifactDependencyModelWrapper dependencyModel = new ArtifactDependencyModelWrapper(dependencyModel1);
                                 if (isClasspathLibrary(dependencyModel)) {
-                                    dependencyModel.setVersion(newVersion);
+                                    dependencyModel1.setVersion(newVersion);
                                 }
                                 if (isDependencyLibrary(dependencyModel)) {
-                                    file.dependencies().remove(dependencyModel);
+                                    file.dependencies().remove(dependencyModel1);
                                 }
                             }
                             file.applyChanges();
@@ -109,7 +111,8 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
         StringBuilder builder = new StringBuilder();
         for (GradleBuildModel file : gradleBuildModels.keySet()) {
             List<ArtifactDependencyModel> models = gradleBuildModels.get(file);
-            for (ArtifactDependencyModel dependencyModel : models) {
+            for (ArtifactDependencyModel dependencyModel1 : models) {
+                ArtifactDependencyModelWrapper dependencyModel = new ArtifactDependencyModelWrapper(dependencyModel1);
                 if (isClasspathLibrary(dependencyModel) || isDependencyLibrary(dependencyModel)) {
                     if (isClasspathLibrary(dependencyModel)) {
                         localVersion = dependencyModel.version();
@@ -143,12 +146,12 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
         }
     }
 
-    private boolean isClasspathLibrary(ArtifactDependencyModel model) {
+    private boolean isClasspathLibrary(ArtifactDependencyModelWrapper model) {
         return model.configurationName().equals("classpath") &&
                 model.group().equals("com.antfortune.freeline") && model.name().equals("gradle");
     }
 
-    private boolean isDependencyLibrary(ArtifactDependencyModel model) {
+    private boolean isDependencyLibrary(ArtifactDependencyModelWrapper model) {
         return model.configurationName().endsWith("ompile") &&
                 model.group().equals("com.antfortune.freeline") && model.name().startsWith("runtime");
     }
