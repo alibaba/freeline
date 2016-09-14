@@ -26,7 +26,7 @@ class FreeConfigurationFactory extends ConfigurationFactory {
 
     @Override
     public boolean isApplicable(@NotNull Project project) {
-        // 只在初始化了Freeline相关代码才可以通过这里运行
+        // enabled only had init project
         return FreeUtil.hadInitFreeline(project);
     }
 

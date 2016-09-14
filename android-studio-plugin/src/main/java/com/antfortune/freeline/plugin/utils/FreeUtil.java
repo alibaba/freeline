@@ -21,6 +21,7 @@ import java.io.File;
  *
  * @author act262@gmail.com
  */
+@SuppressWarnings("WeakerAccess")
 public class FreeUtil {
 
     /**
@@ -33,6 +34,8 @@ public class FreeUtil {
             build(project);
         } else {
             initFree(project);
+            // TODO: 2016/9/14 0014 how to use it
+//            FreelineInitializer.initFreeline(null);
         }
     }
 
@@ -59,7 +62,7 @@ public class FreeUtil {
         // init freeline core file
         if (SystemUtil.isWindows()) {
             commandLine.setExePath("cmd");
-//            commandLine.addParameter("-c");
+            commandLine.addParameter("-c");
             commandLine.addParameter("gradlew.bat");
         } else {
             commandLine.setExePath("/bin/sh");

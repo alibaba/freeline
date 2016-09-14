@@ -1,5 +1,7 @@
 apply plugin: 'com.jfrog.bintray'
-apply plugin: 'com.github.dcendents.android-maven'
+//apply plugin: 'com.github.dcendents.android-maven'
+//apply plugin: 'maven-publish'
+apply plugin: 'maven'
 
 def mavenDesc = 'Freeline is an incremental build tool for Android platform.'
 def siteUrl = 'https://github.com/alibaba/freeline'
