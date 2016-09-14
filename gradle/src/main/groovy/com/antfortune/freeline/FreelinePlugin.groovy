@@ -83,6 +83,15 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 }
 
+                // add generate task
+                FreelineConfigGenerateTask generateTask = project.tasks.create("generate${variant.name.capitalize()}FreelineConfig", FreelineConfigGenerateTask)
+                def freelineGenerateOutputDir = new File("$project.buildDir/generated/freeline")
+                def manifestPath = project.android.sourceSets.main.manifest.srcFile.path
+                generateTask.packageName = FreelineParser.getPackageName(project.android.defaultConfig.applicationId.toString(), manifestPath)
+                generateTask.applicationClass = FreelineParser.getApplication(manifestPath, generateTask.packageName)
+                generateTask.outputDir = freelineGenerateOutputDir
+                variant.registerJavaGeneratingTask(generateTask, freelineGenerateOutputDir)
+
                 // force tasks to run
                 def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
                 mergeAssetsTask.outputs.upToDateWhen { false }
