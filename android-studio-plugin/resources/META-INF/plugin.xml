@@ -58,7 +58,7 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
 
   <description><![CDATA[
@@ -67,6 +67,10 @@
 
   <change-notes><![CDATA[
       <ul>
+      <li>
+          <b>1.0.4</b><br/>
+          fix android studio 2.2 RC Crash
+        </li>
         <li>
           <b>1.0.2</b><br/>
           fix bug
@@ -104,11 +108,11 @@
       <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
     </action>
     <group id="Plugin_FreeLine_Tools" text="FreeLine" description="FreeLine" popup="true">
-      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run FreeLine Debug" description="Run FreeLine Debug"
+      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug" description="Run FreeLine Debug"
       icon="/icons/debug.png">
       </action>
       <separator/>
-      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run FreeLine Force" description="Run FreeLine Force"
+      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force" description="Run FreeLine Force"
               icon="/icons/play2.png">
       </action>
       <separator/>
