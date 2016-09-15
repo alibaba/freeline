@@ -1,24 +1,32 @@
 package views;
 
-import com.intellij.openapi.util.IconLoader;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created by pengwei on 16/9/14.
  */
 public class ImageJPanel extends JPanel {
 
-    private ImageIcon icon;
+    private BufferedImage image;
 
     public void setImagePath(String path) {
-        icon = new ImageIcon(path);
+        try {
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream(path);
+            image = ImageIO.read(is);
+        } catch (IOException e) {
+
+        }
     }
 
     @Override
     public void paint(Graphics g) {
         super.paint(g);
-        g.drawImage(icon.getImage(), 0, 0, getWidth(), getHeight(), null, null);
+        g.drawImage(image, 0, 0, getWidth(), getHeight(), null, null);
     }
 }
