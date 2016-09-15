@@ -27,7 +27,7 @@ public class CheckUpdateDialog extends JDialog {
         container.setLayout(null);
         ImageJPanel panel = new ImageJPanel();
         panel.setBounds(0, 0, MAX_WIDTH, 120);
-        panel.setImagePath("/Users/baidu/git/freeline/android-studio-plugin/resources/icons/bg_update.png");
+        panel.setImagePath("/icons/bg_update.png");
         container.add(panel);
         JPanel updateContent = new JPanel();
         updateContent.setBounds(20, 130, MAX_WIDTH, 500);
