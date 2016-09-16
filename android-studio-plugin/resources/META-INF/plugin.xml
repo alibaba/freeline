@@ -1,16 +1,22 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.5.2</version>
+  <version>1.0.6</version>
   <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
 
   <description><![CDATA[
-      android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br>
-      <a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a>
+      android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br/><br/>
+      <img src='http://qiniu.apkfuns.com/54F6776E-B1A4-4693-8858-53E030DD9312.png' width='420' height='200'/> <br/>
+      <img src='http://qiniu.apkfuns.com/8A1FA6B7-83EE-4749-9C40-311DD0182638.png' width='420' height='200'/><br/>
+      <br/><a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a>
     ]]></description>
 
   <change-notes><![CDATA[
       <ul>
+      <li>
+          <b>1.0.6</b><br/>
+          add Freeline ToolWindow and some tools
+        </li>
       <li>
           <b>1.0.5</b><br/>
           fix android studio 2.2 RC Crash
@@ -42,13 +48,14 @@
   <depends>org.intellij.groovy</depends>
 
   <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
+    <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.OpenTerminal"
+                factoryClass="views.FreelineToolWindowFactory" secondary="false"/>
   </extensions>
 
   <actions>
     <action id="Plugin_FreeLine_Run" class="actions.FreeLineRunAction"
             text="Run Freeline" description="Run Freeline"
-            icon="/icons/icon.png">
+            icon="PluginIcons.FreelineIcon">
       <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
     </action>
     <group>
@@ -57,15 +64,15 @@
     </group>
     <group id="Plugin_FreeLine_Tools" text="Freeline" description="Freeline" popup="true">
       <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug" description="Run FreeLine Debug"
-      icon="/icons/debug.png">
+      icon="PluginIcons.StartDebugger">
       </action>
       <separator/>
       <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force" description="Run FreeLine Force"
-              icon="/icons/play2.png">
+              icon="PluginIcons.QuickfixBulb">
       </action>
       <separator/>
       <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Freeline Update" description="Check Update"
-              icon="/icons/gradlesync.png">
+              icon="PluginIcons.GradleSync">
       </action>
       <add-to-group group-id="BuildMenu" anchor="last"/>
     </group>
@@ -74,5 +81,12 @@
       <add-to-group group-id="BuildMenu" anchor="last"/>
     </group>
   </actions>
+
+  <project-components>
+    <component>
+      <interface-class>views.FreelineTerminal</interface-class>
+      <implementation-class>views.FreelineTerminal</implementation-class>
+    </component>
+  </project-components>
 
 </idea-plugin>

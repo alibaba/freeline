@@ -2,6 +2,7 @@ package actions;
 
 import utils.NotificationUtils;
 import utils.Utils;
+import views.FreelineTerminal;
 
 /**
  * Created by pengwei on 16/9/11.
@@ -14,13 +15,15 @@ public class FreeLineRunAction extends BaseAction {
             if (python == null) {
                 NotificationUtils.errorNotification("command 'python' not found");
             } else {
-                executeShell(new String[]{python, "freeline.py", getArgs()});
+                FreelineTerminal.getInstance(currentProject).executeShell(new String[]{
+                        python, "freeline.py", getArgs()});
             }
         }
     }
 
     /**
      * 设置参数
+     *
      * @return
      */
     protected String getArgs() {
