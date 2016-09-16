@@ -1,9 +1,9 @@
 package utils;
 
-import com.github.rjeschke.txtmark.Run;
 import com.jediterm.terminal.ui.UIUtil;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -12,6 +12,8 @@ import java.net.URISyntaxException;
  * Created by pengwei on 16/9/11.
  */
 public final class Utils {
+
+    public static final String BREAK_LINE = System.getProperty("line.separator");
 
     /**
      * 获取python安装目录
@@ -32,7 +34,7 @@ public final class Utils {
                 process = Runtime.getRuntime().exec(new String[]{"whereis", "python"});
                 if (process != null && process.getInputStream() != null) {
                     String result = StreamUtil.inputStream2String(process.getInputStream());
-                    if (result != null && result.trim() != "") {
+                    if (notEmpty(result)) {
                         return result;
                     }
                 }
@@ -74,4 +76,21 @@ public final class Utils {
             }
         }
     }
+
+    /**
+     * 模拟键盘输入
+     * @param r
+     * @param key
+     */
+    public static void keyPressWithCtrl(Robot r, int key) {
+        if (r == null) {
+            return;
+        }
+        r.keyPress(KeyEvent.VK_CONTROL);
+        r.keyPress(key);
+        r.keyRelease(key);
+        r.keyRelease(KeyEvent.VK_CONTROL);
+        r.delay(100);
+    }
+
 }
