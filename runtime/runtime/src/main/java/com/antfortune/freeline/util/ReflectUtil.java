@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 
 public class ReflectUtil {
 
-    public static Object invokeMethod(String className, String methodName,Class[] cls,
+    public static Object invokeMethod(String className, String methodName, Class[] cls,
                                       Object[] args) throws Exception {
         Class clazz = Class.forName(className);
         return invokeMethod(clazz, null, methodName, cls, args);
@@ -26,9 +26,9 @@ public class ReflectUtil {
                                       Object[] args) throws Exception {
         Method method;
         if (null == cls) {
-            method = clazz.getMethod(methodName);
+            method = clazz.getDeclaredMethod(methodName);
         } else {
-            method = clazz.getMethod(methodName, cls);
+            method = clazz.getDeclaredMethod(methodName, cls);
         }
 
         method.setAccessible(true);
@@ -46,8 +46,7 @@ public class ReflectUtil {
         return field;
     }
 
-    public static Field fieldGetOrg(Object object, Class<?> clazz, String name) throws Exception
-    {
+    public static Field fieldGetOrg(Object object, Class<?> clazz, String name) throws Exception {
         Field field = clazz.getDeclaredField(name);
         field.setAccessible(true);
         return field;
@@ -80,8 +79,14 @@ public class ReflectUtil {
         field.setAccessible(true);
         return field.get(object);
     }
-	
-	public static Object getField(Object obj, String fieldName)
+
+    public static Object getStaticFieldValue(Class<?> clazz, String fieldName) throws Exception {
+        Field field = clazz.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(fieldName);
+    }
+
+    public static Object getField(Object obj, String fieldName)
             throws NoSuchFieldException, IllegalAccessException {
         return prepareField(obj.getClass(), fieldName).get(obj);
     }
