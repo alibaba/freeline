@@ -29,6 +29,8 @@ class FreelineExtension {
 
     boolean foceLowerVersion = false
 
+    boolean applicationProxy = true
+
     FreelineExtension(Project project) {
     }
 }
