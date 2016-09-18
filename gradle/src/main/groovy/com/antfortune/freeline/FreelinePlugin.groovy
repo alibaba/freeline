@@ -209,8 +209,8 @@ class FreelinePlugin implements Plugin<Project> {
                             f.eachFileRecurse(FileType.FILES) { file ->
                                 backUpClass(file, backUpDirPath)
                                 FreelineInjector.inject(excludeHackClasses, file, modules)
-                                if (f.path.endsWith(".jar")) {
-                                    jarDependencies.add(f.path)
+                                if (file.path.endsWith(".jar")) {
+                                    jarDependencies.add(file.path)
                                 }
                             }
                         } else {
