@@ -85,6 +85,11 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 }
 
+                // add addtional aapt args
+                def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
+                project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
+                println "Freeline add additionalParameters `-P ${publicKeeperGenPath}` to aaptOptions"
+
                 // add generate task
                 FreelineConfigGenerateTask generateTask = project.tasks.create("generate${variant.name.capitalize()}FreelineConfig", FreelineConfigGenerateTask)
                 def freelineGenerateOutputDir = new File("$project.buildDir/generated/freeline")
@@ -114,11 +119,6 @@ class FreelinePlugin implements Plugin<Project> {
                 // add freeline generated files to assets
                 mergeAssetsTask.doLast {
                     addFreelineGeneratedFiles(project, new File(FreelineGenerator.generateProjectBuildAssetsPath(project.buildDir.absolutePath, productFlavor)), null)
-
-                    // add addtional aapt args
-                    def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
-                    project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
-                    println "Freeline add additionalParameters `-P ${publicKeeperGenPath}` to aaptOptions"
                 }
 
                 // find thrid party libraries' resources dependencies
