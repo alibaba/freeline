@@ -1,8 +1,10 @@
 package com.antfortune.freeline
 
+import com.android.build.gradle.api.ApkVariant
 import groovy.io.FileType
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import groovy.xml.XmlUtil
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -41,7 +43,7 @@ class FreelinePlugin implements Plugin<Project> {
                 throw new RuntimeException("You should add freeline DSL to your main module's build.gradle before execute gradle command.")
             }
             
-            project.android.applicationVariants.each { variant ->
+            project.android.applicationVariants.each { ApkVariant variant ->
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
                 def hack = extension.hack
                 def productFlavor = extension.productFlavor
@@ -95,6 +97,19 @@ class FreelinePlugin implements Plugin<Project> {
                 // force tasks to run
                 def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
                 mergeAssetsTask.outputs.upToDateWhen { false }
+
+                if (extension.applicationProxy) {
+                    variant.outputs.each { output ->
+                        output.processManifest.outputs.upToDateWhen { false }
+                        output.processManifest.doLast {
+                            def manifestOutFile = output.processManifest.manifestOutputFile
+                            if (manifestOutFile.exists()) {
+                                println "find manifest file path: ${manifestOutFile.absolutePath}"
+                                replaceApplication(manifestOutFile.absolutePath)
+                            }
+                        }
+                    }
+                }
 
                 // add freeline generated files to assets
                 mergeAssetsTask.doLast {
@@ -334,6 +349,15 @@ class FreelinePlugin implements Plugin<Project> {
         def resourcesInterceptorTask = project.tasks[resourcesInterceptor]
         resourcesInterceptorTask.dependsOn mergeResourcesTask.taskDependencies.getDependencies(mergeResourcesTask)
         mergeResourcesTask.dependsOn resourcesInterceptorTask
+    }
+
+    private static void replaceApplication(String manifestPath) {
+        def manifestFile = new File(manifestPath)
+        def manifest = new XmlSlurper(false, false).parse(manifestFile)
+        manifest.application."@android:name" = "com.antfortune.freeline.FreelineApplication"
+
+        manifestFile.delete()
+        manifestFile << XmlUtil.serialize(manifest)
     }
 
     private static int getMinSdkVersion(def mergedFlavor, String manifestPath) {
