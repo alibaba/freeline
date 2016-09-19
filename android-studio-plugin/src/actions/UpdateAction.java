@@ -129,8 +129,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
             int compare = localVersion.compareTo(entity.getVersion());
             CheckUpdateDialog dialog = new CheckUpdateDialog();
             dialog.getButtonOK().setEnabled(compare < 0);
-            dialog.setServerVersion(entity.getGroupId() + ":"
-                    + entity.getArtifactId() + ":" + entity.getVersion());
+            dialog.setServerVersion(entity.getGroupId(), entity.getArtifactId(), entity.getVersion());
             dialog.setServerUpdateTime(entity.getUpdateTime());
             dialog.setLocalVersion(builder.toString());
             dialog.addActionListener(new ActionListener() {
