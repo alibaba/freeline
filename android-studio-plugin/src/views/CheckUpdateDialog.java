@@ -96,6 +96,14 @@ public class CheckUpdateDialog extends JDialog {
         serverVersionTx.setText(version);
     }
 
+    public void setServerVersion(String groupId, String artifactId, String version) {
+        String serverVersionText = groupId + ":" + artifactId + ":" + version;
+        if (version.split("\\.").length == 4) {
+            serverVersionText += "&nbsp;&nbsp;<font color=red>(Not Release Version)</font>";
+        }
+        setServerVersion("<html>" + serverVersionText + "</html>");
+    }
+
     public void setServerUpdateTime(String time) {
         serverUpdateTimeTx.setText(time);
     }
