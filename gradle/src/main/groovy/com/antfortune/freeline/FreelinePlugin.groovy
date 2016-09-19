@@ -1,6 +1,5 @@
 package com.antfortune.freeline
 
-import com.android.build.gradle.api.ApkVariant
 import groovy.io.FileType
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
@@ -43,7 +42,7 @@ class FreelinePlugin implements Plugin<Project> {
                 throw new RuntimeException("You should add freeline DSL to your main module's build.gradle before execute gradle command.")
             }
             
-            project.android.applicationVariants.each { ApkVariant variant ->
+            project.android.applicationVariants.each { variant ->
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
                 def hack = extension.hack
                 def productFlavor = extension.productFlavor
@@ -149,7 +148,8 @@ class FreelinePlugin implements Plugin<Project> {
                 if (!forceLowerVersion) {
                     project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
                         if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
-                            if (it.moduleVersion.startsWith("1")) {
+                            if (!it.moduleVersion.startsWith("1.5")
+                                    && !it.moduleVersion.startsWith("2")) {
                                 isLowerVersion = true
                                 return false
                             }
