@@ -174,8 +174,9 @@ class FreelinePlugin implements Plugin<Project> {
 
                 def classesProcessTask
                 def preDexTask
+                boolean multiDexEnabled = isMultiDexEnabled(project, variant)
                 if (isLowerVersion) {
-                    if (variant.mergedFlavor.multiDexEnabled) {
+                    if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
                     } else {
                         classesProcessTask = project.tasks.findByName("dex${variant.name.capitalize()}")
@@ -183,7 +184,7 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 } else {
                     String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
-                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && variant.mergedFlavor.multiDexEnabled) {
+                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("transformClassesWithJarMergingFor${variant.name.capitalize()}")
                     } else {
                         classesProcessTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
@@ -410,8 +411,18 @@ class FreelinePlugin implements Plugin<Project> {
     }
 
     private static boolean isProguardEnable(Project project, def variant) {
-        def proguardTask = project.tasks.getByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+        def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
         return proguardTask != null
+    }
+
+    private static boolean isMultiDexEnabled(Project project, def variant) {
+        if (variant.buildType.multiDexEnabled != null) {
+            return variant.buildType.multiDexEnabled
+        }
+        if (variant.mergedFlavor.multiDexEnabled != null) {
+            return variant.mergedFlavor.multiDexEnabled
+        }
+        return project.android.defaultConfig.multiDexEnabled
     }
 
 }
