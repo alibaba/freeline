@@ -73,6 +73,10 @@ class FreelinePlugin implements Plugin<Project> {
                     return
                 }
 
+                if (isProguardEnable(project, variant)) {
+                    throw new RuntimeException("Freeline doesn't support proguard now, please disable proguard config then re-run freeline.")
+                }
+
                 // find the default apk
                 if (FreelineUtils.isEmpty(apkPath)) {
                     def apk_paths = []
@@ -403,6 +407,11 @@ class FreelinePlugin implements Plugin<Project> {
             FreelineUtils.copyFile(new File(sourcePath as String), new File(targetPath as String))
             println "roll back ${targetPath}"
         }
+    }
+
+    private static boolean isProguardEnable(Project project, def variant) {
+        def proguardTask = project.tasks.getByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+        return proguardTask != null
     }
 
 }
