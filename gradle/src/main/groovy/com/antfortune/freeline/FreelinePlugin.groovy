@@ -101,6 +101,8 @@ class FreelinePlugin implements Plugin<Project> {
                 // force tasks to run
                 def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
                 mergeAssetsTask.outputs.upToDateWhen { false }
+                def manifestTask = project.tasks.findByName("process${variant.name.capitalize()}Manifest")
+                manifestTask.outputs.upToDateWhen { false }
 
                 if (extension.applicationProxy) {
                     variant.outputs.each { output ->
@@ -109,7 +111,7 @@ class FreelinePlugin implements Plugin<Project> {
                             def manifestOutFile = output.processManifest.manifestOutputFile
                             if (manifestOutFile.exists()) {
                                 println "find manifest file path: ${manifestOutFile.absolutePath}"
-                                replaceApplication(manifestOutFile.absolutePath)
+                                replaceApplication(manifestOutFile.absolutePath as String)
                             }
                         }
                     }
