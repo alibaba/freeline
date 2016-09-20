@@ -334,8 +334,8 @@ class FreelinePlugin implements Plugin<Project> {
                         }
                     } else {
                         if (!projectResDirs.contains(path)) {
-                            resourcesDependencies.library_resources.add(path)
-                            println "add library resource: ${path}"
+                            resourcesDependencies.local_resources.add(path)
+                            println "add local resource: ${path}"
                         }
                     }
                 }

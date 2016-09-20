@@ -758,9 +758,35 @@ def get_project_info(config):
             if os.path.exists(res_dependencies_path):
                 res_dependencies = load_json_cache(res_dependencies_path)
             project_info[module['name']]['dep_res_path'] = res_dependencies['library_resources']
-            project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
+
+            if 'module_dependencies' not in config:
+                project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
+            else:
+                local_res_deps = []
+                local_res_deps.extend(res_dependencies['local_resources'])
+                deps = project_info[module['name']]['local_module_dep']
+                deps = find_all_dependent_modules(deps, deps, config)
+                for m in deps:
+                    deppath = os.path.join(config['build_cache_dir'], m, 'resources_dependencies.json')
+                    if os.path.exists(deppath):
+                        dep = load_json_cache(deppath)
+                        if 'local_resources' in dep:
+                            local_res_deps.extend(dep['local_resources'])
+                project_info[module['name']]['local_dep_res_path'] = list(set(local_res_deps))
 
     return project_info
+
+
+def find_all_dependent_modules(arr, modules, config):
+    deps = []
+    for m in modules:
+        deps.extend(config['module_dependencies'][m])
+
+    if len(deps) == 0:
+        return arr
+    else:
+        arr.extend(deps)
+        return find_all_dependent_modules(arr, deps, config)
 
 
 def get_module_name(module):
