@@ -52,7 +52,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
 
 
-                if (!"debug".equalsIgnoreCase(variant.buildType.name)) {
+                if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
                     return
                 } else if (!FreelineUtils.isEmpty(productFlavor) && !productFlavor.toString().equalsIgnoreCase(variant.flavorName)) {
@@ -197,7 +197,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                         preDexTask.inputs.files.files.each { f ->
                             if (f.path.endsWith(".jar")) {
-                                FreelineInjector.inject(excludeHackClasses, f, modules)
+                                FreelineInjector.inject(excludeHackClasses, f as File, modules)
                                 jarDependencies.add(f.path)
                             }
                         }
@@ -212,6 +212,7 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 def hackClassesBeforeDex = "hackClassesBeforeDex${variant.name.capitalize()}"
+                def backupMap = [:]
                 project.task(hackClassesBeforeDex) << {
                     def jarDependencies = []
                     def modules = []
@@ -222,15 +223,15 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
-                                backUpClass(file, backUpDirPath)
-                                FreelineInjector.inject(excludeHackClasses, file, modules)
+                                backUpClass(backupMap, file as File, backUpDirPath as String)
+                                FreelineInjector.inject(excludeHackClasses, file as File, modules)
                                 if (file.path.endsWith(".jar")) {
                                     jarDependencies.add(file.path)
                                 }
                             }
                         } else {
-                            backUpClass(f, backUpDirPath)
-                            FreelineInjector.inject(excludeHackClasses, f, modules)
+                            backUpClass(backupMap, f as File, backUpDirPath as String)
+                            FreelineInjector.inject(excludeHackClasses, f as File, modules)
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
                             }
@@ -254,7 +255,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
                 if (assembleTask) {
                     assembleTask.doLast {
-                        rollBackClasses()
+                        rollBackClasses(backupMap)
                     }
                 }
             }
@@ -321,7 +322,7 @@ class FreelinePlugin implements Plugin<Project> {
                     if (path.contains("exploded-aar")) {
                         def marker = false
                         mappers.each { mapper ->
-                            if (path.contains(mapper.match)) {
+                            if (path.contains(mapper.match as String)) {
                                 mapper.path.collect(resourcesDependencies.local_resources) {it}
                                 println "add local resource: ${path}"
                                 marker = true
@@ -368,14 +369,12 @@ class FreelinePlugin implements Plugin<Project> {
         }
     }
 
-    private static def sBackupMap = [:]
-
-    private static void backUpClass(File file, String backUpDirPath) {
+    private static void backUpClass(def backupMap, File file, String backUpDirPath) {
         String path = file.absolutePath
         if (!FreelineUtils.isEmpty(path) && path.endsWith(".class") && isNeedBackUp(path)) {
             File target = new File(backUpDirPath, String.valueOf(System.currentTimeMillis()))
             FreelineUtils.copyFile(file, target)
-            sBackupMap[file.absolutePath] = target.absolutePath
+            backupMap[file.absolutePath] = target.absolutePath
             println "back up ${file.absolutePath} to ${target.absolutePath}"
         }
     }
@@ -390,9 +389,9 @@ class FreelinePlugin implements Plugin<Project> {
         return pattern.matcher(path).matches()
     }
 
-    private static void rollBackClasses() {
-        sBackupMap.each { targetPath, sourcePath ->
-            FreelineUtils.copyFile(new File(sourcePath), new File(targetPath))
+    private static void rollBackClasses(def backupMap) {
+        backupMap.each { targetPath, sourcePath ->
+            FreelineUtils.copyFile(new File(sourcePath as String), new File(targetPath as String))
             println "roll back ${targetPath}"
         }
     }
