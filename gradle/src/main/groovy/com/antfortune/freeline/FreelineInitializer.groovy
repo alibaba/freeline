@@ -18,14 +18,18 @@ class FreelineInitializer {
         def mirror = project.hasProperty("mirror")
         def snapshot = project.hasProperty("snapshot")
         def freelineVersion = FreelineUtils.getProperty(project, "freelineVersion")
+        def cdnUrl = FreelineUtils.getProperty(project, "freelineCdnUrl")
+        if (FreelineUtils.isEmpty(cdnUrl as String)) {
+            cdnUrl = CDN_URL
+        }
 
         def url
         if (snapshot) {
             println "[NOTE] Download freeline snapshot enabled..."
-            url = "${CDN_URL}/snapshot.zip"
+            url = "${cdnUrl}/snapshot.zip"
         } else if (freelineVersion) {
             println "[NOTE] Download freeline dependency for specific version ${freelineVersion}..."
-            url = "${CDN_URL}/freeline-v${freelineVersion}.zip"
+            url = "${cdnUrl}/freeline-v${freelineVersion}.zip"
         } else {
             def json = FreelineUtils.getJson(LATEST_RELEASE_URL)
             if (json == null || json == '') {
@@ -35,7 +39,7 @@ class FreelineInitializer {
 
             if (mirror) {
                 println "[NOTE] Download freeline dependency from mirror..."
-                url = "${CDN_URL}/${json.assets[0].name}"
+                url = "${cdnUrl}/${json.assets[0].name}"
             } else {
                 url = json.assets[0].browser_download_url
             }
