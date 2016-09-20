@@ -13,15 +13,22 @@ import org.gradle.api.Project
  */
 class FreelinePlugin implements Plugin<Project> {
 
+    String freelineVersion = "0.6.3"
+
     @Override
     void apply(Project project) {
 
         project.extensions.create("freeline", FreelineExtension, project)
 
-        project.dependencies {
-            debugCompile 'com.antfortune.freeline:runtime:0.6.3'
-            releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.3'
-            testCompile 'com.antfortune.freeline:runtime-no-op:0.6.3'
+        if (FreelineUtils.getProperty(project, "disableAutoDependency")) {
+            println "freeline auto-dependency disabled"
+        } else {
+            println "freeline auto add runtime dependencies: ${freelineVersion}"
+            project.dependencies {
+                debugCompile "com.antfortune.freeline:runtime:${freelineVersion}"
+                releaseCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+                testCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+            }
         }
 
         project.rootProject.task("initFreeline") << {

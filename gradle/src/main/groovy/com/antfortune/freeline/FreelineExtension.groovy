@@ -31,6 +31,8 @@ class FreelineExtension {
 
     boolean applicationProxy = true
 
+    boolean autoDependency = true
+
     FreelineExtension(Project project) {
     }
 }

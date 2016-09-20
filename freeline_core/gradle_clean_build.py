@@ -102,6 +102,8 @@ class GradleCleanBuildTask(CleanBuildTask):
         command = self._config['build_script']
         command += ' --stacktrace'
         command += ' -P freelineBuild=true'
+        if 'auto_dependency' in self._config and not self._config['auto_dependency']:
+            command += ' -PdisableAutoDependency=true'
         self.debug(command)
         self.debug("Gradle build task is running, please wait a minute...")
         output, err, code = cexec(command.split(' '), callback=None, cwd=cwd)

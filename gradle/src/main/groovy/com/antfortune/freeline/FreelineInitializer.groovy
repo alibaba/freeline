@@ -94,12 +94,14 @@ class FreelineInitializer {
         def launcher = extension.launcher
         def extraResourcesDependencies = extension.extraResourceDependencyPaths
         def excludeResourceDependencyPaths = extension.excludeResourceDependencyPaths
+        def autoDependency = extension.autoDependency
 
         def projectDescription = [:]
 
         projectDescription.project_type = 'gradle'
         projectDescription.java_home = getJavaHome()
         projectDescription.freeline_cache_dir = FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath)
+        projectDescription.auto_dependency = autoDependency
         projectDescription.product_flavor = productFlavor
         projectDescription.build_script = buildScript
         projectDescription.build_script_work_directory = buildScriptWorkDirectory
