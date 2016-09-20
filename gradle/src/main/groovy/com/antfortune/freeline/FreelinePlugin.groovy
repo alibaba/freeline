@@ -56,8 +56,8 @@ class FreelinePlugin implements Plugin<Project> {
                 def apkPath = extension.apkPath
                 def excludeHackClasses = extension.excludeHackClasses
                 def forceLowerVersion = extension.foceLowerVersion
+                def applicationProxy = extension.applicationProxy
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
-
 
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
@@ -115,7 +115,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def manifestTask = project.tasks.findByName("process${variant.name.capitalize()}Manifest")
                 manifestTask.outputs.upToDateWhen { false }
 
-                if (extension.applicationProxy) {
+                if (applicationProxy) {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
@@ -174,10 +174,12 @@ class FreelinePlugin implements Plugin<Project> {
 
                 def classesProcessTask
                 def preDexTask
+                def multiDexListTask
                 boolean multiDexEnabled = isMultiDexEnabled(project, variant)
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
+                        multiDexListTask = project.tasks.findByName("create${variant.name.capitalize()}MainDexClassList")
                     } else {
                         classesProcessTask = project.tasks.findByName("dex${variant.name.capitalize()}")
                         preDexTask = project.tasks.findByName("preDex${variant.name.capitalize()}")
@@ -186,6 +188,7 @@ class FreelinePlugin implements Plugin<Project> {
                     String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
                     if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("transformClassesWithJarMergingFor${variant.name.capitalize()}")
+                        multiDexListTask = project.tasks.findByName("transformClassesWithMultidexlistFor${variant.name.capitalize()}")
                     } else {
                         classesProcessTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
                     }
@@ -264,6 +267,15 @@ class FreelinePlugin implements Plugin<Project> {
                     def hackClassesBeforeDexTask = project.tasks[hackClassesBeforeDex]
                     hackClassesBeforeDexTask.dependsOn classesProcessTask.taskDependencies.getDependencies(classesProcessTask)
                     classesProcessTask.dependsOn hackClassesBeforeDexTask
+                }
+
+                if (multiDexEnabled && applicationProxy) {
+                    def mainDexListFile = new File("${project.buildDir}/intermediates/multi-dex/${variant.dirName}/maindexlist.txt")
+                    if (multiDexListTask) {
+                        multiDexListTask.doLast {
+                            mainDexListFile << '\n' + 'com/antfortune/freeline/FreelineConfig.class'
+                        }
+                    }
                 }
 
                 def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
