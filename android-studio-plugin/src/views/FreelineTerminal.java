@@ -48,7 +48,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     }
 
     public JBTabbedTerminalWidget getTerminalWidget() {
-        ToolWindow window = ToolWindowManager.getInstance(myProject).getToolWindow(FreelineToolWindowFactory.TOOL_WINDOW_ID);
+        ToolWindow window = getToolWindow();
         window.show(null);
         if (myTerminalWidget == null) {
             JComponent parentPanel =  window.getContentManager().getContents()[0].getComponent();
@@ -73,9 +73,23 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     /**
      * 在terminal输入shell
      */
-    public void sendString(String shell) {
+    private void sendString(String shell) {
         if (getCurrentSession() != null) {
             getCurrentSession().getTerminalStarter().sendString(shell);
+        }
+    }
+
+    public void initAndExecute(String[] shell) {
+        ToolWindow toolWindow = getToolWindow();
+        if (toolWindow.isActive()) {
+            executeShell(shell);
+        } else {
+            toolWindow.activate(new Runnable() {
+                @Override
+                public void run() {
+                    executeShell(shell);
+                }
+            });
         }
     }
 
@@ -141,6 +155,10 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
             }
         });
         toolWindow.show(null);
+    }
+
+    private ToolWindow getToolWindow() {
+        return ToolWindowManager.getInstance(myProject).getToolWindow(FreelineToolWindowFactory.TOOL_WINDOW_ID);
     }
 
     /**
@@ -255,7 +273,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         private FreelineTerminal terminal;
 
         public RunAction(FreelineTerminal terminal) {
-            super("Run Freeline", "Run Freeline", PluginIcons.Execute);
+            super("Run Freeline", "Run Freeline", PluginIcons.FreelineIcon);
             this.terminal = terminal;
         }
 

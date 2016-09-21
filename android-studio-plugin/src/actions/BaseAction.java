@@ -20,6 +20,7 @@ public abstract class BaseAction extends AnAction {
 
     @Override
     public final void actionPerformed(AnActionEvent anActionEvent) {
+        ApplicationManager.getApplication().saveAll();
         this.anActionEvent = anActionEvent;
         this.currentProject = DataKeys.PROJECT.getData(anActionEvent.getDataContext());
         this.projectDir = new File(currentProject.getBasePath());
