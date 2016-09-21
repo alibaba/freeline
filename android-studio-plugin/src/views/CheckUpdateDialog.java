@@ -15,9 +15,9 @@ public class CheckUpdateDialog extends JDialog {
     private JButton buttonOK;
     private JButton buttonCancel;
     private JPanel container;
-    private MyLabel serverVersionTx = new MyLabel();
-    private MyLabel serverUpdateTimeTx = new MyLabel();
-    private MyLabel localVersionTx = new MyLabel();
+    private MulLabel serverVersionTx = new MulLabel();
+    private MulLabel serverUpdateTimeTx = new MulLabel();
+    private MulLabel localVersionTx = new MulLabel();
 
     public CheckUpdateDialog() {
         setContentPane(contentPane);
@@ -39,7 +39,7 @@ public class CheckUpdateDialog extends JDialog {
         updateContent.add(new JTitle("Local Version"));
         updateContent.add(localVersionTx);
         updateContent.add(new JTitle("Official Website"));
-        MyLabel website = new MyLabel("<a href='#'>github.com/alibaba/freeline</a>", true);
+        MulLabel website = new MulLabel("<a href='#'>github.com/alibaba/freeline</a>", true);
         website.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -47,8 +47,8 @@ public class CheckUpdateDialog extends JDialog {
             }
         });
         updateContent.add(website);
-        updateContent.add(new MyLabel("注:点击更新后会自动gradle sync并下载最新freeline.zip工具包"));
-        updateContent.add(new MyLabel("NOTE: Click update automatically gradle sync and download the latest freeline.zip Kit"));
+        updateContent.add(new MulLabel("注:点击更新后会自动gradle sync并下载最新freeline.zip工具包"));
+        updateContent.add(new MulLabel("NOTE: Click update automatically gradle sync and download the latest freeline.zip Kit"));
         setResizable(false);
         setLocationCenter();
         buttonCancel.addActionListener(new ActionListener() {

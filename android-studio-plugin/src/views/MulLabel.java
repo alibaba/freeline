@@ -5,17 +5,17 @@ import javax.swing.*;
 /**
  * Created by pengwei on 16/9/14.
  */
-public class MyLabel extends JLabel {
+public class MulLabel extends JLabel {
 
-    public MyLabel() {
+    public MulLabel() {
         this("");
     }
 
-    public MyLabel(String text) {
+    public MulLabel(String text) {
         this(text, false);
     }
 
-    public MyLabel(String text, boolean html) {
+    public MulLabel(String text, boolean html) {
         super(text);
         if (html) {
             setText("<html>" + text + "</html>");
