@@ -79,11 +79,11 @@ class SyncClient(object):
         if self._port == 0:
             self.check_device_connection()
             self.check_installation()
-            self.debug('package {} not found. Please make sure your application is properly running in your device, '
-                       'freeline will start a clean build'.format(self._config['package']))
+            message = 'Freeline server in app {} not found. Please make sure your application is properly running in ' \
+                      'your device.'.format(self._config['package'])
+            self.debug(message)
             from exceptions import NoDeviceFoundException
-            raise NoDeviceFoundException('Package {} is not found.'.format(self._config['package']),
-                                         NO_DEVICE_FOUND_MESSAGE)
+            raise NoDeviceFoundException(message, NO_DEVICE_FOUND_MESSAGE)
         self.debug('find device port: {}'.format(self._port))
 
     def close_connection(self):
