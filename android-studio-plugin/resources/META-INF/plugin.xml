@@ -1,20 +1,28 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.6.3</version>
-  <vendor email="pengwei1024@gmail.com" url="http://www.apkfuns.com">舞影凌风</vendor>
+  <version>1.0.7</version>
+  <vendor email="" url="https://github.com/alibaba/freeline/tree/as_plugin/android-studio-plugin">act262、舞影凌风</vendor>
 
   <description><![CDATA[
       android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br/><br/>
       <img src='http://qiniu.apkfuns.com/54F6776E-B1A4-4693-8858-53E030DD9312.png' width='420' height='200'/> <br/>
       <img src='http://qiniu.apkfuns.com/8A1FA6B7-83EE-4749-9C40-311DD0182638.png' width='420' height='200'/><br/>
-      <br/><a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a>
+      <br/>
+
+      <br/><b>Contributors</b><br/>
+      <a href='http://github.com/act262'>act262</a>、
+      <a href='http://github.com/pengwei1024'>舞影凌风</a>、
+
+      <br/><br/>
+      <br/><b>ISSUES</b><br/>
+      <a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a><br/><br/>
     ]]></description>
 
   <change-notes><![CDATA[
       <ul>
       <li>
-          <b>1.0.6</b><br/>
+          <b>1.0.7</b><br/>
           add Freeline ToolWindow and some tools
         </li>
       <li>
