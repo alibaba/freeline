@@ -1,9 +1,11 @@
 package com.antfortune.freeline
 
+import com.antfortune.freeline.versions.StaticVersionComparator
+import com.antfortune.freeline.versions.VersionParser
 import groovy.json.JsonBuilder
 import org.gradle.api.Project
-import java.security.InvalidParameterException
 
+import java.security.InvalidParameterException
 /**
  * Created by huangyong on 16/7/19.
  */
@@ -35,6 +37,20 @@ class FreelineInitializer {
             if (json == null || json == '') {
                 println "Download Error: failed to get json from ${LATEST_RELEASE_URL}"
                 return
+            }
+
+            String latestVersion = json.name
+            String freelineGradleVersion = getFreelineGradleVersion(project)
+            int result = isFreelineGradleVersionNeedToBeUpdated(freelineGradleVersion, latestVersion)
+            if (result < 0) {
+                throw new RuntimeException("Your local freeline version ${freelineGradleVersion} is lower than " +
+                        "the lastest release version ${latestVersion}. Please update the freeline version in " +
+                        "build.gradle. If you still want the specific version of freeline, you can execute the " +
+                        "initial command with the extra parameter `-PfreelineVersion={your-wanted-version}`. " +
+                        "eg: `gradlew initFreeline -PfreelineVersion=${freelineGradleVersion}`")
+            } else if (result > 0) {
+                println "[WARNING] Your local freeline version ${freelineGradleVersion} is greater than the " +
+                        "lastest release version ${latestVersion}."
             }
 
             if (mirror) {
@@ -81,6 +97,28 @@ class FreelineInitializer {
         }
 
         generateProjectDescription(project)
+    }
+
+    private static int isFreelineGradleVersionNeedToBeUpdated(String freelineGradleVersion, String lastestVersion) {
+        if (FreelineUtils.isEmpty(freelineGradleVersion) || FreelineUtils.isEmpty(lastestVersion)) {
+            return 0
+        }
+        // Use custom class to avoid java.lang.NoClassDefFoundError in lower gradle version.
+        VersionParser versionParser = new VersionParser()
+        int result = new StaticVersionComparator().compare(versionParser.transform(freelineGradleVersion),
+                versionParser.transform(lastestVersion))
+        return result
+    }
+
+    private static String getFreelineGradleVersion(Project project) {
+        String moduleVersion = null
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.antfortune.freeline" && it.moduleName == "gradle") {
+                moduleVersion = it.moduleVersion
+                return false
+            }
+        }
+        return moduleVersion
     }
 
 
