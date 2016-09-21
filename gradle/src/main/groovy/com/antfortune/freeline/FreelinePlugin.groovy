@@ -417,13 +417,19 @@ class FreelinePlugin implements Plugin<Project> {
 
     private static void rollBackClasses(def backupMap) {
         backupMap.each { targetPath, sourcePath ->
-            FreelineUtils.copyFile(new File(sourcePath as String), new File(targetPath as String))
-            println "roll back ${targetPath}"
+            File sourceFile = new File(sourcePath as String)
+            if (sourceFile.exists()) {
+                FreelineUtils.copyFile(sourceFile, new File(targetPath as String))
+                println "roll back ${targetPath}"
+            }
         }
     }
 
     private static boolean isProguardEnable(Project project, def variant) {
         def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+        if (proguardTask == null) {
+            proguardTask = project.tasks.findByName("proguard${variant.name.capitalize()}")
+        }
         return proguardTask != null
     }
 
