@@ -4,14 +4,34 @@ package com.antfortune.freeline
  */
 class FreelineParser {
 
+    public static String getPackageName(String applicationId, String manifestPath) {
+        if (!FreelineUtils.isEmpty(applicationId) && !"null".equals(applicationId)) {
+            return applicationId
+        }
+        return getPackage(manifestPath)
+    }
+
     public static String getPackage(String manifestPath) {
         def packageName = ""
         def manifestFile = new File(manifestPath)
         if (manifestFile.exists() && manifestFile.isFile()) {
             def manifest = new XmlSlurper(false, false).parse(manifestFile)
-            packageName = manifest."@package"
+            packageName = manifest."@package".text()
         }
         return packageName
+    }
+
+    public static String getApplication(String manifestPath, String packageName) {
+        def application = ""
+        def manifestFile = new File(manifestPath)
+        if (manifestFile.exists() && manifestFile.isFile()) {
+            def manifest = new XmlSlurper(false, false).parse(manifestFile)
+            application = manifest.application."@android:name".text()
+            if (application != null && application.startsWith(".")) {
+                application = packageName + application
+            }
+        }
+        return application
     }
 
     public static String getLauncher(String manifestPath, String packageName) {
@@ -55,6 +75,16 @@ class FreelineParser {
             }
         }
         return launcher
+    }
+
+    public static int getMinSdkVersion(String manifestPath) {
+        def minSdkVersion = 0
+        def manifestFile = new File(manifestPath)
+        if (manifestFile.exists() && manifestFile.isFile()) {
+            def manifest = new XmlSlurper(false, false).parse(manifestFile)
+            minSdkVersion = manifest."uses-sdk"."@android:minSdkVersion".text()
+        }
+        return Integer.valueOf(minSdkVersion)
     }
 
 }

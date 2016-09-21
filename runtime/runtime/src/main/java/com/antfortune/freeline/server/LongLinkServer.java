@@ -4,6 +4,7 @@ package com.antfortune.freeline.server;
 import android.content.Context;
 import android.util.Log;
 
+import com.antfortune.freeline.FreelineCore;
 import com.antfortune.freeline.router.Router;
 import com.antfortune.freeline.router.schema.CheckResourceSchema;
 import com.antfortune.freeline.router.schema.CheckSyncSchema;
@@ -157,7 +158,7 @@ public class LongLinkServer extends EmbedHttpServer {
                 Log.d(TAG, "Freeline.increment server running on port " + (PORT_FROM + i));
                 break;
             } catch (Exception e) {
-                e.printStackTrace();
+                FreelineCore.printStackTrace(e);
             }
         }
     }

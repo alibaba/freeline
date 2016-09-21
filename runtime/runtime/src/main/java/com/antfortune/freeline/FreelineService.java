@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.antfortune.freeline.router.Router;
@@ -31,16 +32,20 @@ public class FreelineService extends Service {
     public void onCreate() {
         super.onCreate();
         this.am = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        LongLinkServer.start(this.getApplication(), Router.getInstance());
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(LOG_TAG, "onStartCommand Received start id " + startId + ", intent: " + intent);
-        try {
-            setForegroundService();
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "setForegroundService fail", e);
+        LongLinkServer.start(this.getApplication(), Router.getInstance());
+
+        String marker = intent.getStringExtra("wakeup");
+        if (TextUtils.isEmpty(marker)) {
+            try {
+                setForegroundService();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "setForegroundService fail", e);
+            }
         }
         return START_STICKY;
     }

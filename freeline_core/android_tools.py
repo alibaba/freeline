@@ -286,7 +286,7 @@ class MergeDexTask(Task):
                 self.debug('merge dex exec: ' + ' '.join(dex_merge_args))
                 output, err, code = cexec(dex_merge_args, callback=None)
                 if code != 0:
-                    raise FreelineException('merge dex failed.', output)
+                    raise FreelineException('merge dex failed: {}'.format(dex_merge_args), output + '\n' + err)
 
     def _get_dexes(self):
         pending_merge_dexes = []
@@ -474,13 +474,21 @@ class AndroidIncBuildInvoker(object):
             new_md5 = get_md5(new_r_file)
             if not old_md5:
                 mark_r_changed_flag(self._name, self._cache_dir)
+                AndroidIncBuildInvoker.fix_for_windows(new_r_file)
                 self._changed_files['src'].append(new_r_file)
                 self.debug('find R.java changed (origin R.java not exists)')
             else:
                 if new_md5 != old_md5:
                     mark_r_changed_flag(self._name, self._cache_dir)
+                    AndroidIncBuildInvoker.fix_for_windows(new_r_file)
                     self._changed_files['src'].append(new_r_file)
                     self.debug('find R.java changed (md5 value is different from origin R.java)')
+
+    @staticmethod
+    def fix_for_windows(path):
+        if is_windows_system():
+            buf = fix_unicode_parse_error(get_file_content(path), path)
+            write_file_content(path, buf)
 
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
@@ -687,6 +695,13 @@ def get_manifest_path(dir_path):
         return manifest_path
     manifest_path = os.path.join(dir_path, 'src', 'main', 'AndroidManifest.xml')
     return manifest_path if os.path.isfile(manifest_path) else None
+
+
+def fix_unicode_parse_error(content, path):
+    if content is not None and is_windows_system():
+        Logger.debug("avoid windows unicode error for {}".format(path))
+        return content.replace(r"\u", r"d")
+    return content
 
 
 def is_res_sub_dir(dir_name):

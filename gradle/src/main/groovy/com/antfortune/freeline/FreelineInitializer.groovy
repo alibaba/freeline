@@ -1,47 +1,66 @@
 package com.antfortune.freeline
 
+import com.antfortune.freeline.versions.StaticVersionComparator
+import com.antfortune.freeline.versions.VersionParser
 import groovy.json.JsonBuilder
 import org.gradle.api.Project
-import java.security.InvalidParameterException
 
+import java.security.InvalidParameterException
 /**
  * Created by huangyong on 16/7/19.
  */
 class FreelineInitializer {
 
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/alibaba/freeline/releases/latest";
+    private static final String CDN_URL = "http://obr0ndq7a.bkt.clouddn.com/freeline";
 
     public static void initFreeline(Project project) {
         println "Freeline init process start..."
 
         def mirror = project.hasProperty("mirror")
         def snapshot = project.hasProperty("snapshot")
-
-        if (mirror) {
-            println "[NOTE] Download freeline dependency from mirror..."
-        }
-
-        if (snapshot) {
-            println "[NOTE] Download freeline snapshot enabled..."
-        }
-
-        def json = FreelineUtils.getJson(LATEST_RELEASE_URL)
-        if (json == null || json == '') {
-            println "Download Error: failed to get json from ${LATEST_RELEASE_URL}"
-            return
+        def freelineVersion = FreelineUtils.getProperty(project, "freelineVersion")
+        def cdnUrl = FreelineUtils.getProperty(project, "freelineCdnUrl")
+        if (FreelineUtils.isEmpty(cdnUrl as String)) {
+            cdnUrl = CDN_URL
         }
 
         def url
         if (snapshot) {
-            url = "http://obr0ndq7a.bkt.clouddn.com/freeline/snapshot.zip"
+            println "[NOTE] Download freeline snapshot enabled..."
+            url = "${cdnUrl}/snapshot.zip"
+        } else if (freelineVersion) {
+            println "[NOTE] Download freeline dependency for specific version ${freelineVersion}..."
+            url = "${cdnUrl}/freeline-v${freelineVersion}.zip"
         } else {
+            def json = FreelineUtils.getJson(LATEST_RELEASE_URL)
+            if (json == null || json == '') {
+                println "Download Error: failed to get json from ${LATEST_RELEASE_URL}"
+                return
+            }
+
+            String latestVersion = json.name
+            String freelineGradleVersion = getFreelineGradleVersion(project)
+            int result = isFreelineGradleVersionNeedToBeUpdated(freelineGradleVersion, latestVersion)
+            if (result < 0) {
+                throw new RuntimeException("Your local freeline version ${freelineGradleVersion} is lower than " +
+                        "the lastest release version ${latestVersion}. Please update the freeline version in " +
+                        "build.gradle. If you still want the specific version of freeline, you can execute the " +
+                        "initial command with the extra parameter `-PfreelineVersion={your-wanted-version}`. " +
+                        "eg: `gradlew initFreeline -PfreelineVersion=${freelineGradleVersion}`")
+            } else if (result > 0) {
+                println "[WARNING] Your local freeline version ${freelineGradleVersion} is greater than the " +
+                        "lastest release version ${latestVersion}."
+            }
+
             if (mirror) {
-                url = "http://obr0ndq7a.bkt.clouddn.com/freeline/${json.assets[0].name}"
+                println "[NOTE] Download freeline dependency from mirror..."
+                url = "${cdnUrl}/${json.assets[0].name}"
             } else {
                 url = json.assets[0].browser_download_url
             }
         }
-        println "Downloading lastest release from ${url}"
+        println "Downloading release pack from ${url}"
         println "Please wait a minute..."
         def downloadFile = new File(project.rootDir, "freeline.zip.tmp")
         if (downloadFile.exists()) {
@@ -80,6 +99,28 @@ class FreelineInitializer {
         generateProjectDescription(project)
     }
 
+    private static int isFreelineGradleVersionNeedToBeUpdated(String freelineGradleVersion, String lastestVersion) {
+        if (FreelineUtils.isEmpty(freelineGradleVersion) || FreelineUtils.isEmpty(lastestVersion)) {
+            return 0
+        }
+        // Use custom class to avoid java.lang.NoClassDefFoundError in lower gradle version.
+        VersionParser versionParser = new VersionParser()
+        int result = new StaticVersionComparator().compare(versionParser.transform(freelineGradleVersion),
+                versionParser.transform(lastestVersion))
+        return result
+    }
+
+    private static String getFreelineGradleVersion(Project project) {
+        String moduleVersion = null
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.antfortune.freeline" && it.moduleName == "gradle") {
+                moduleVersion = it.moduleVersion
+                return false
+            }
+        }
+        return moduleVersion
+    }
+
 
     public static void generateProjectDescription(Project project) {
         def extension = project.extensions.findByName("freeline") as FreelineExtension
@@ -91,12 +132,14 @@ class FreelineInitializer {
         def launcher = extension.launcher
         def extraResourcesDependencies = extension.extraResourceDependencyPaths
         def excludeResourceDependencyPaths = extension.excludeResourceDependencyPaths
+        def autoDependency = extension.autoDependency
 
         def projectDescription = [:]
 
         projectDescription.project_type = 'gradle'
         projectDescription.java_home = getJavaHome()
         projectDescription.freeline_cache_dir = FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath)
+        projectDescription.auto_dependency = autoDependency
         projectDescription.product_flavor = productFlavor
         projectDescription.build_script = buildScript
         projectDescription.build_script_work_directory = buildScriptWorkDirectory
@@ -120,7 +163,7 @@ class FreelineInitializer {
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
 
         if (packageName == null || packageName == '') {
-            projectDescription.package = getPackageName(project.android.defaultConfig.applicationId.toString(), projectDescription.main_manifest_path)
+            projectDescription.package = FreelineParser.getPackageName(project.android.defaultConfig.applicationId.toString(), projectDescription.main_manifest_path)
             projectDescription.debug_package = projectDescription.package
         }
 
@@ -258,13 +301,6 @@ class FreelineInitializer {
         String rootPath = project.rootProject.getRootDir()
         def dir = new File(rootPath, "freeline")
         return dir.exists() && dir.isDirectory()
-    }
-
-    private static String getPackageName(String applicationId, String manifestPath) {
-        if (!FreelineUtils.isEmpty(applicationId) && !"null".equals(applicationId)) {
-            return applicationId
-        }
-        return FreelineParser.getPackage(manifestPath)
     }
 
     private static String getJavaHome() {
