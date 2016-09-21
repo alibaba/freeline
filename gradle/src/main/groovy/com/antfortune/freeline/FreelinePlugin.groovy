@@ -3,6 +3,7 @@ package com.antfortune.freeline
 import groovy.io.FileType
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import groovy.xml.XmlUtil
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -12,15 +13,22 @@ import org.gradle.api.Project
  */
 class FreelinePlugin implements Plugin<Project> {
 
+    String freelineVersion = "0.6.3"
+
     @Override
     void apply(Project project) {
 
         project.extensions.create("freeline", FreelineExtension, project)
 
-        project.dependencies {
-            debugCompile 'com.antfortune.freeline:runtime:0.6.3'
-            releaseCompile 'com.antfortune.freeline:runtime-no-op:0.6.3'
-            testCompile 'com.antfortune.freeline:runtime-no-op:0.6.3'
+        if (FreelineUtils.getProperty(project, "disableAutoDependency")) {
+            println "freeline auto-dependency disabled"
+        } else {
+            println "freeline auto add runtime dependencies: ${freelineVersion}"
+            project.dependencies {
+                debugCompile "com.antfortune.freeline:runtime:${freelineVersion}"
+                releaseCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+                testCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+            }
         }
 
         project.rootProject.task("initFreeline") << {
@@ -48,10 +56,10 @@ class FreelinePlugin implements Plugin<Project> {
                 def apkPath = extension.apkPath
                 def excludeHackClasses = extension.excludeHackClasses
                 def forceLowerVersion = extension.foceLowerVersion
+                def applicationProxy = extension.applicationProxy
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
 
-
-                if (!"debug".equalsIgnoreCase(variant.buildType.name)) {
+                if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
                     return
                 } else if (!FreelineUtils.isEmpty(productFlavor) && !productFlavor.toString().equalsIgnoreCase(variant.flavorName)) {
@@ -63,6 +71,10 @@ class FreelinePlugin implements Plugin<Project> {
 
                 if (!hack || !freelineBuild) {
                     return
+                }
+
+                if (isProguardEnable(project, variant)) {
+                    throw new RuntimeException("Freeline doesn't support proguard now, please disable proguard config then re-run freeline.")
                 }
 
                 // find the default apk
@@ -83,18 +95,42 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 }
 
+                // add addtional aapt args
+                def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
+                project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
+                println "Freeline add additionalParameters `-P ${publicKeeperGenPath}` to aaptOptions"
+
+                // add generate task
+                FreelineConfigGenerateTask generateTask = project.tasks.create("generate${variant.name.capitalize()}FreelineConfig", FreelineConfigGenerateTask)
+                def freelineGenerateOutputDir = new File("$project.buildDir/generated/freeline")
+                def manifestPath = project.android.sourceSets.main.manifest.srcFile.path
+                generateTask.packageName = FreelineParser.getPackageName(project.android.defaultConfig.applicationId.toString(), manifestPath)
+                generateTask.applicationClass = FreelineParser.getApplication(manifestPath, generateTask.packageName)
+                generateTask.outputDir = freelineGenerateOutputDir
+                variant.registerJavaGeneratingTask(generateTask, freelineGenerateOutputDir)
+
                 // force tasks to run
                 def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
                 mergeAssetsTask.outputs.upToDateWhen { false }
+                def manifestTask = project.tasks.findByName("process${variant.name.capitalize()}Manifest")
+                manifestTask.outputs.upToDateWhen { false }
+
+                if (applicationProxy) {
+                    variant.outputs.each { output ->
+                        output.processManifest.outputs.upToDateWhen { false }
+                        output.processManifest.doLast {
+                            def manifestOutFile = output.processManifest.manifestOutputFile
+                            if (manifestOutFile.exists()) {
+                                println "find manifest file path: ${manifestOutFile.absolutePath}"
+                                replaceApplication(manifestOutFile.absolutePath as String)
+                            }
+                        }
+                    }
+                }
 
                 // add freeline generated files to assets
                 mergeAssetsTask.doLast {
                     addFreelineGeneratedFiles(project, new File(FreelineGenerator.generateProjectBuildAssetsPath(project.buildDir.absolutePath, productFlavor)), null)
-
-                    // add addtional aapt args
-                    def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
-                    project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
-                    println "Freeline add additionalParameters `-P ${publicKeeperGenPath}` to aaptOptions"
                 }
 
                 // find thrid party libraries' resources dependencies
@@ -125,7 +161,8 @@ class FreelinePlugin implements Plugin<Project> {
                 if (!forceLowerVersion) {
                     project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
                         if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
-                            if (it.moduleVersion.startsWith("1")) {
+                            if (!it.moduleVersion.startsWith("1.5")
+                                    && !it.moduleVersion.startsWith("2")) {
                                 isLowerVersion = true
                                 return false
                             }
@@ -137,17 +174,21 @@ class FreelinePlugin implements Plugin<Project> {
 
                 def classesProcessTask
                 def preDexTask
+                def multiDexListTask
+                boolean multiDexEnabled = isMultiDexEnabled(project, variant)
                 if (isLowerVersion) {
-                    if (variant.mergedFlavor.multiDexEnabled) {
+                    if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
+                        multiDexListTask = project.tasks.findByName("create${variant.name.capitalize()}MainDexClassList")
                     } else {
                         classesProcessTask = project.tasks.findByName("dex${variant.name.capitalize()}")
                         preDexTask = project.tasks.findByName("preDex${variant.name.capitalize()}")
                     }
                 } else {
                     String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
-                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && variant.mergedFlavor.multiDexEnabled) {
+                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("transformClassesWithJarMergingFor${variant.name.capitalize()}")
+                        multiDexListTask = project.tasks.findByName("transformClassesWithMultidexlistFor${variant.name.capitalize()}")
                     } else {
                         classesProcessTask = project.tasks.findByName("transformClassesWithDexFor${variant.name.capitalize()}")
                     }
@@ -173,7 +214,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                         preDexTask.inputs.files.files.each { f ->
                             if (f.path.endsWith(".jar")) {
-                                FreelineInjector.inject(excludeHackClasses, f, modules)
+                                FreelineInjector.inject(excludeHackClasses, f as File, modules)
                                 jarDependencies.add(f.path)
                             }
                         }
@@ -188,6 +229,7 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 def hackClassesBeforeDex = "hackClassesBeforeDex${variant.name.capitalize()}"
+                def backupMap = [:]
                 project.task(hackClassesBeforeDex) << {
                     def jarDependencies = []
                     def modules = []
@@ -198,15 +240,15 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
-                                backUpClass(file, backUpDirPath)
-                                FreelineInjector.inject(excludeHackClasses, file, modules)
-                            }
-                            if (f.path.endsWith(".jar")) {
-                                jarDependencies.add(f.path)
+                                backUpClass(backupMap, file as File, backUpDirPath as String)
+                                FreelineInjector.inject(excludeHackClasses, file as File, modules)
+                                if (file.path.endsWith(".jar")) {
+                                    jarDependencies.add(file.path)
+                                }
                             }
                         } else {
-                            backUpClass(f, backUpDirPath)
-                            FreelineInjector.inject(excludeHackClasses, f, modules)
+                            backUpClass(backupMap, f as File, backUpDirPath as String)
+                            FreelineInjector.inject(excludeHackClasses, f as File, modules)
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
                             }
@@ -227,10 +269,19 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.dependsOn hackClassesBeforeDexTask
                 }
 
+                if (multiDexEnabled && applicationProxy) {
+                    def mainDexListFile = new File("${project.buildDir}/intermediates/multi-dex/${variant.dirName}/maindexlist.txt")
+                    if (multiDexListTask) {
+                        multiDexListTask.doLast {
+                            mainDexListFile << '\n' + 'com/antfortune/freeline/FreelineConfig.class'
+                        }
+                    }
+                }
+
                 def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
                 if (assembleTask) {
                     assembleTask.doLast {
-                        rollBackClasses()
+                        rollBackClasses(backupMap)
                     }
                 }
             }
@@ -293,21 +344,25 @@ class FreelinePlugin implements Plugin<Project> {
             mergeResourcesTask.inputs.files.files.each { f ->
                 if (f.exists() && f.isDirectory()) {
                     def path = f.absolutePath
+                    println "find resource path: ${path}"
                     if (path.contains("exploded-aar")) {
                         def marker = false
                         mappers.each { mapper ->
-                            if (path.contains(mapper.match)) {
+                            if (path.contains(mapper.match as String)) {
                                 mapper.path.collect(resourcesDependencies.local_resources) {it}
+                                println "add local resource: ${path}"
                                 marker = true
                                 return false
                             }
                         }
                         if (!marker) {
                             resourcesDependencies.library_resources.add(path)
+                            println "add library resource: ${path}"
                         }
                     } else {
                         if (!projectResDirs.contains(path)) {
-                            resourcesDependencies.library_resources.add(path)
+                            resourcesDependencies.local_resources.add(path)
+                            println "add local resource: ${path}"
                         }
                     }
                 }
@@ -323,6 +378,15 @@ class FreelinePlugin implements Plugin<Project> {
         mergeResourcesTask.dependsOn resourcesInterceptorTask
     }
 
+    private static void replaceApplication(String manifestPath) {
+        def manifestFile = new File(manifestPath)
+        def manifest = new XmlSlurper(false, false).parse(manifestFile)
+        manifest.application."@android:name" = "com.antfortune.freeline.FreelineApplication"
+
+        manifestFile.delete()
+        manifestFile << XmlUtil.serialize(manifest)
+    }
+
     private static int getMinSdkVersion(def mergedFlavor, String manifestPath) {
         if (mergedFlavor.minSdkVersion != null) {
             return mergedFlavor.minSdkVersion.apiLevel
@@ -331,14 +395,12 @@ class FreelinePlugin implements Plugin<Project> {
         }
     }
 
-    private static def sBackupMap = [:]
-
-    private static void backUpClass(File file, String backUpDirPath) {
+    private static void backUpClass(def backupMap, File file, String backUpDirPath) {
         String path = file.absolutePath
         if (!FreelineUtils.isEmpty(path) && path.endsWith(".class") && isNeedBackUp(path)) {
             File target = new File(backUpDirPath, String.valueOf(System.currentTimeMillis()))
             FreelineUtils.copyFile(file, target)
-            sBackupMap[file.absolutePath] = target.absolutePath
+            backupMap[file.absolutePath] = target.absolutePath
             println "back up ${file.absolutePath} to ${target.absolutePath}"
         }
     }
@@ -353,11 +415,26 @@ class FreelinePlugin implements Plugin<Project> {
         return pattern.matcher(path).matches()
     }
 
-    private static void rollBackClasses() {
-        sBackupMap.each { targetPath, sourcePath ->
-            FreelineUtils.copyFile(new File(sourcePath), new File(targetPath))
+    private static void rollBackClasses(def backupMap) {
+        backupMap.each { targetPath, sourcePath ->
+            FreelineUtils.copyFile(new File(sourcePath as String), new File(targetPath as String))
             println "roll back ${targetPath}"
         }
+    }
+
+    private static boolean isProguardEnable(Project project, def variant) {
+        def proguardTask = project.tasks.findByName("transformClassesAndResourcesWithProguardFor${variant.name.capitalize()}")
+        return proguardTask != null
+    }
+
+    private static boolean isMultiDexEnabled(Project project, def variant) {
+        if (variant.buildType.multiDexEnabled != null) {
+            return variant.buildType.multiDexEnabled
+        }
+        if (variant.mergedFlavor.multiDexEnabled != null) {
+            return variant.mergedFlavor.multiDexEnabled
+        }
+        return project.android.defaultConfig.multiDexEnabled
     }
 
 }

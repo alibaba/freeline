@@ -79,10 +79,15 @@ class FreelineInjector {
                         is = jar.getInputStream(jarEntry)
                         jos.putNextEntry(zipEntry)
 
-                        def bytes = hackClass(is)
-                        jos.write(bytes)
+                        if (entryName.endsWith(".class")) {
+                            println "inject jar class: ${entryName}"
+                            jos.write(hackClass(is))
+                        } else {
+                            println "skip jar entry: ${entryName}"
+                            jos.write(readBytes(is))
+                        }
                     } catch (Exception e) {
-
+                        println "inject jar with exception: ${e.getMessage()}"
                     } finally {
                         if (is != null) {
                             is.close()
@@ -109,6 +114,21 @@ class FreelineInjector {
         ClassVisitor cv = new FreelineClassVisitor(Opcodes.ASM4, cw)
         cr.accept(cv, 0)
         return cw.toByteArray()
+    }
+
+    private static byte[] readBytes(InputStream is) {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        int nRead;
+        byte[] data = new byte[16384];
+
+        while ((nRead = is.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+
+        buffer.flush();
+
+        return buffer.toByteArray();
     }
 
 }
