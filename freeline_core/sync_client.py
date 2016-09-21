@@ -12,7 +12,9 @@ from utils import cexec, curl, get_file_content, write_file_content
 
 NO_DEVICE_FOUND_MESSAGE = """\tPlease make sure your application is properly running in your device.
 \tCheck follow steps:
-\t1. If freeline is not added to your app's denpendencies, modifiy your dependency and run `python freeline.py -f`."""
+\t1. Make sure the versions `python freeline.py -v`, freeline-gradle and freeline-runtime are the same;
+\t2. Make sure there is no network proxy.
+\tMore about this can see: https://github.com/alibaba/freeline/issues/152"""
 
 
 class SyncClient(object):
