@@ -4,7 +4,7 @@ import android.app.Application;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.android.tools.fd.runtime.MonkeyPatcher;
+import com.antfortune.freeline.resources.MonkeyPatcher;
 import com.antfortune.freeline.FreelineCore;
 import com.antfortune.freeline.IDynamic;
 import com.antfortune.freeline.util.ActivityManager;

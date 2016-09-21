@@ -41,7 +41,7 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
                         Label l0 = new Label();
                         super.visitJumpInsn(IFEQ, l0);
                         super.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-                        super.visitLdcInsn(Type.getType("Lcom/micro/freeline/hackload/ClassVerifier;"));
+                        super.visitLdcInsn(Type.getType("Lorg/micro/freeline/hackload/ClassVerifier;"));
                         super.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
                         super.visitLabel(l0);
                     }

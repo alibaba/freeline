@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+import sys
 from argparse import ArgumentParser
 
 from freeline_core.dispatcher import Dispatcher
@@ -34,6 +35,10 @@ def get_parser():
 
 
 def main():
+    if sys.version_info > (3, 0):
+        print 'Freeline only support Python 2.7+ now. Please use the correct version of Python for freeline.'
+        exit()
+
     parser = get_parser()
     args = parser.parse_args()
     freeline = Freeline()

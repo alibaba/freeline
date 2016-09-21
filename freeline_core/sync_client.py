@@ -65,8 +65,9 @@ class SyncClient(object):
         self._port = self.scan_device_port()
 
         if self._port == 0:
-            self.wake_up()
             for i in range(1, 25):
+                need_protection = i <= 1
+                self.wake_up(need_protection=need_protection)
                 self._port = self.scan_device_port()
                 if self._port != 0:
                     break
@@ -93,7 +94,7 @@ class SyncClient(object):
         self.debug("apktime path: " + apktime_path)
         sync_value = get_sync_value(apktime_path, self._cache_dir)
         self.debug('your local sync value is: {}'.format(sync_value))
-        uuid = self.get_uuid()
+        uuid = get_apk_created_ticket(apktime_path)
         self.debug('your local uuid value is: {}'.format(uuid))
 
         for i in range(0, 10):
@@ -164,9 +165,17 @@ class SyncClient(object):
         else:
             return md5string(self._config['package'])
 
-    def wake_up(self):
-        cexec([self._adb, 'shell', 'am', 'start', '-n', '{}/{}'.format(self._config['package'],
-                                                                       self._config['launcher'])], callback=None)
+    def wake_up(self, need_protection=False):
+        package = self._config['package']
+        if 'debug_package' in self._config:
+            package = self._config['debug_package']
+
+        wake_up_args = [self._adb, 'shell', 'am', 'startservice', '-n',
+                        '{}/{}'.format(package, 'com.antfortune.freeline.FreelineService')]
+        if not need_protection:
+            wake_up_args.extend(['-e', 'wakeup', 'marker'])
+        self.debug('wake up Service: {}'.format(' '.join(wake_up_args)))
+        cexec(wake_up_args, callback=None)
 
     def _check_screen_status(self):
         commands = [self._adb, 'shell', 'dumpsys', 'input_method']

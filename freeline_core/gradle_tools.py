@@ -40,9 +40,10 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         build_info = self._get_build_info()
 
         for module_name, module_info in self.project_info.iteritems():
-            self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
-                                                'config': [], 'so': [], 'cpp': []}
-            self._scan_module_changes(module_name, module_info['path'])
+            if module_name in self._stat_cache:
+                self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
+                                                    'config': [], 'so': [], 'cpp': []}
+                self._scan_module_changes(module_name, module_info['path'])
 
         self._mark_changed_flag()
 
@@ -581,7 +582,7 @@ class BuildBaseResourceTask(Task):
     def run_aapt(self):
         aapt_args = [Builder.get_aapt(), 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._finder.get_dst_manifest_path()]
+                     '-M', fix_package_name(self._config, self._finder.get_dst_manifest_path())]
 
         for rdir in self._config['project_source_sets'][self._main_module_name]['main_res_directory']:
             if os.path.exists(rdir):
@@ -632,6 +633,7 @@ class BuildBaseResourceTask(Task):
         aapt_args.append('-F')
         aapt_args.append(base_resource_path)
         aapt_args.append('--debug-mode')
+        aapt_args.append('--no-version-vectors')
         aapt_args.append('--resoucres-md5-cache-path')
         aapt_args.append(os.path.join(self._config['build_cache_dir'], "arsc_cache.dat"))
         aapt_args.append('--ignore-assets')
@@ -658,6 +660,26 @@ def get_classpath_by_src_path(module, sdir, src_path):
     if src_path:
         target_dir = os.path.join(module, 'build', 'intermediates', 'classes', 'debug')
         return src_path.replace('.java', '.class').replace(sdir, target_dir)
+
+
+def fix_package_name(config, manifest):
+    if config and config['package'] != config['debug_package']:
+        finder = GradleDirectoryFinder(config['main_project_name'], config['main_project_dir'],
+                                       config['build_cache_dir'], config=config)
+        target_manifest_path = os.path.join(finder.get_backup_dir(), 'AndroidManifest.xml')
+        if os.path.exists(target_manifest_path):
+            return target_manifest_path
+
+        if manifest and os.path.isfile(manifest):
+            Logger.debug('find app has debug package name, freeline will fix the package name in manifest')
+            content = get_file_content(manifest)
+            result = re.sub('package=\"(.*)\"', 'package=\"{}\"'.format(config['package']), content)
+            Logger.debug('change package name from {} to {}'.format(config['debug_package'], config['package']))
+            from utils import write_file_content
+            write_file_content(target_manifest_path, result)
+            Logger.debug('save new manifest to {}'.format(target_manifest_path))
+            return target_manifest_path
+    return manifest
 
 
 def get_all_modules(dir_path):
@@ -736,9 +758,35 @@ def get_project_info(config):
             if os.path.exists(res_dependencies_path):
                 res_dependencies = load_json_cache(res_dependencies_path)
             project_info[module['name']]['dep_res_path'] = res_dependencies['library_resources']
-            project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
+
+            if 'module_dependencies' not in config:
+                project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
+            else:
+                local_res_deps = []
+                local_res_deps.extend(res_dependencies['local_resources'])
+                deps = project_info[module['name']]['local_module_dep']
+                deps = find_all_dependent_modules(deps, deps, config)
+                for m in deps:
+                    deppath = os.path.join(config['build_cache_dir'], m, 'resources_dependencies.json')
+                    if os.path.exists(deppath):
+                        dep = load_json_cache(deppath)
+                        if 'local_resources' in dep:
+                            local_res_deps.extend(dep['local_resources'])
+                project_info[module['name']]['local_dep_res_path'] = list(set(local_res_deps))
 
     return project_info
+
+
+def find_all_dependent_modules(arr, modules, config):
+    deps = []
+    for m in modules:
+        deps.extend(config['module_dependencies'][m])
+
+    if len(deps) == 0:
+        return arr
+    else:
+        arr.extend(deps)
+        return find_all_dependent_modules(arr, deps, config)
 
 
 def get_module_name(module):

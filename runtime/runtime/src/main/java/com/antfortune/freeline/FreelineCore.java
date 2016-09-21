@@ -359,8 +359,7 @@ public class FreelineCore {
     }
 
     public static String getUuid() {
-        String pn = getApplication().getPackageName();
-        return generateStringMD5(pn);
+        return String.valueOf(getApkBuildFlag());
     }
 
     private static String generateStringMD5(String input) {

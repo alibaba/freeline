@@ -14,6 +14,8 @@ import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.content.impl.ContentImpl;
 
+import java.io.File;
+
 /**
  * Freeline Utility
  *
@@ -21,11 +23,16 @@ import com.intellij.ui.content.impl.ContentImpl;
  */
 public class FreeUtil {
 
-    public static void buildOrInit(Project project) {
-        // TODO: 2016/9/12 0012 重复操作、超时处理
+    // TODO: 2016/9/13 0013 need refactor tool window
+    private final static String TOOL_ID = "Freeline Console";
 
+    /**
+     * auto select init or run freeline project
+     */
+    public static void initOrBuild(Project project) {
+        // TODO: 2016/9/14 0014 need to handle timeout or frequently operation
         // execute freeline script
-        if (SystemUtil.hasInitFreeline(project)) {
+        if (hadInitFreeline(project)) {
             build(project);
         } else {
             initFree(project);
@@ -55,9 +62,11 @@ public class FreeUtil {
         // init freeline core file
         if (SystemUtil.isWindows()) {
             commandLine.setExePath("cmd");
+            commandLine.addParameter("/c");
             commandLine.addParameter("gradlew.bat");
         } else {
             commandLine.setExePath("/bin/sh");
+            commandLine.addParameter("-c");
             commandLine.addParameter("./gradlew");
         }
         commandLine.addParameters("initFreeline", "-Pmirror");
@@ -71,8 +80,8 @@ public class FreeUtil {
     }
 
     /* process command line */
-    private static void processCommandline(Project project, GeneralCommandLine commandLine) throws ExecutionException {
-        OSProcessHandler processHandler = new OSProcessHandler(commandLine);
+    private static void processCommandline(final Project project, GeneralCommandLine commandLine) throws ExecutionException {
+        final OSProcessHandler processHandler = new OSProcessHandler(commandLine);
         ProcessTerminatedListener.attach(processHandler);
         processHandler.startNotify();
 
@@ -85,6 +94,7 @@ public class FreeUtil {
     }
 
     /* process attach to console,show the log */
+    // TODO: 2016/9/14 0014 need refactor console method
     private static void processConsole(Project project, ProcessHandler processHandler) {
         ConsoleView consoleView = FreeUIManager.getInstance(project).getConsoleView(project);
         consoleView.clear();
@@ -109,5 +119,20 @@ public class FreeUtil {
         toolWindow.show(null);
     }
 
-    private final static String TOOL_ID = "Freeline Console";
+    /**
+     * if had init freeline return true
+     */
+    public static boolean hadInitFreeline(Project project) {
+        if (project != null) {
+            String projectPath = project.getBasePath();
+            // freeline directory
+            File freelineDir = new File(projectPath, "freeline");
+            // freeline.py file
+            File freeline_py = new File(projectPath, "freeline.py");
+            if (freelineDir.exists() && freeline_py.exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

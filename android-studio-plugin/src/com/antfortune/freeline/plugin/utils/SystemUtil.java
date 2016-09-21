@@ -1,9 +1,6 @@
 package com.antfortune.freeline.plugin.utils;
 
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.SystemInfo;
-
-import java.io.File;
 
 /**
  * System Utility Wrapper
@@ -30,16 +27,4 @@ public class SystemUtil {
         return !System.getenv("ANDROID_HOME").isEmpty();
     }
 
-    /**
-     * 当前项目是否初始化过了Freeline
-     */
-    public static boolean hasInitFreeline(Project project) {
-        if (project != null) {
-            File file = new File(project.getBasePath(), "freeline.py");
-            if (file.exists()) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
