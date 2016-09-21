@@ -3,7 +3,7 @@ apply plugin: 'java'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version '0.6.0'
+version '0.6.3'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -20,9 +20,20 @@ buildscript {
 }
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
     compile gradleApi()
+    compile 'com.squareup:javapoet:1.7.0'
+    compile 'com.github.javaparser:javaparser-core:2.4.0'
+
+}
+
+jar {
+    from {
+        configurations.compile.findResults {
+            it.absolutePath.contains('javapoet') ||  it.absolutePath.contains('javaparser-core') ? zipTree(it) : null
+        }
+    }
 }

@@ -1,56 +1,100 @@
-<idea-plugin version="2" url="http://github.com/alibaba/freeline">
-    <id>intellij.freeline.plugin</id>
-    <name>Freeline for IDEA</name>
-    <version>1.0</version>
-    <category>Build</category>
-    <vendor email="act262@gmail.com" url="http://github.com/act262">Anonymous</vendor>
+<idea-plugin version="2">
+  <id>com.apkfuns.plugin.freeline</id>
+  <name>Freeline Plugin</name>
+  <version>1.0.7</version>
+  <vendor email="" url="https://github.com/alibaba/freeline/tree/as_plugin/android-studio-plugin">act262、舞影凌风</vendor>
 
-    <description><![CDATA[
-     a plugin for <a href="https://github.com/alibaba/freeline">freeline</a>
+  <description><![CDATA[
+      android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br/><br/>
+      <img src='http://qiniu.apkfuns.com/54F6776E-B1A4-4693-8858-53E030DD9312.png' width='420' height='200'/> <br/>
+      <img src='http://qiniu.apkfuns.com/8A1FA6B7-83EE-4749-9C40-311DD0182638.png' width='420' height='200'/><br/>
+      <br/>
+
+      <br/><b>Contributors</b><br/>
+      <a href='http://github.com/act262'>act262</a>、
+      <a href='http://github.com/pengwei1024'>舞影凌风</a>、
+
+      <br/><br/>
+      <br/><b>ISSUES</b><br/>
+      <a href='https://github.com/alibaba/freeline/issues'>Submit Suggestions or Bugs</a><br/><br/>
     ]]></description>
 
-    <change-notes><![CDATA[
-      basic use freeline
+  <change-notes><![CDATA[
+      <ul>
+      <li>
+          <b>1.0.7</b><br/>
+          add Freeline ToolWindow and some tools
+        </li>
+      <li>
+          <b>1.0.5</b><br/>
+          fix android studio 2.2 RC Crash
+        </li>
+        <li>
+          <b>1.0.2</b><br/>
+          fix bug
+        </li>
+        <li>
+          <b>1.0.0</b><br/>
+          run Freeline with debug and Force
+        </li>
+      </ul>
     ]]>
-    </change-notes>
+  </change-notes>
 
-    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="141.0"/>
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="141.0"/>
 
-    <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
-         on how to target different products -->
-    <!-- uncomment to enable plugin in all products
-    <depends>com.intellij.modules.lang</depends>
-    -->
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <!-- uncomment to enable plugin in all products
+  <depends>com.intellij.modules.lang</depends>
+  -->
 
-    <extensions defaultExtensionNs="com.intellij">
+  <depends>org.jetbrains.android</depends>
+  <depends>org.jetbrains.plugins.terminal</depends>
+  <depends>org.jetbrains.plugins.gradle</depends>
+  <depends>org.intellij.groovy</depends>
 
-        <!-- Freeline Run Configuration Type define -->
-        <configurationType implementation="com.antfortune.freeline.plugin.configuration.FreeConfigurationType"
-                           id="com.antfortune.freeline.plugin.config.FreeRunType"/>
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.OpenTerminal"
+                factoryClass="views.FreelineToolWindowFactory" secondary="false"/>
+  </extensions>
 
-        <!-- Freeline project UI service -->
-        <projectService serviceImplementation="com.antfortune.freeline.plugin.ui.FreeUIManager"
-                        serviceInterface="com.antfortune.freeline.plugin.ui.FreeUIManager"
-                        id="com.antfortune.freeline.plugin.service.FreeUIManager"/>
+  <actions>
+    <action id="Plugin_FreeLine_Run" class="actions.FreeLineRunAction"
+            text="Run Freeline" description="Run Freeline"
+            icon="PluginIcons.FreelineIcon">
+      <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
+    </action>
+    <group>
+      <separator/>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+    <group id="Plugin_FreeLine_Tools" text="Freeline" description="Freeline" popup="true">
+      <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug" description="Run FreeLine Debug"
+      icon="PluginIcons.StartDebugger">
+      </action>
+      <separator/>
+      <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force" description="Run FreeLine Force"
+              icon="PluginIcons.QuickfixBulb">
+      </action>
+      <separator/>
+      <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Freeline Update" description="Check Update"
+              icon="PluginIcons.GradleSync">
+      </action>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+    <group>
+      <separator/>
+      <add-to-group group-id="BuildMenu" anchor="last"/>
+    </group>
+  </actions>
 
-    </extensions>
+  <project-components>
+    <component>
+      <interface-class>views.FreelineTerminal</interface-class>
+      <implementation-class>views.FreelineTerminal</implementation-class>
+    </component>
+  </project-components>
 
-    <actions>
-
-        <!-- Menu -->
-        <group id="freeline.Menu">
-            <action id="freeline.Build" class="com.antfortune.freeline.plugin.actions.BuildAction" text="Build Freeline"
-                    description="Run Freeline script command line" icon="/icons/ic_free.png">
-                <add-to-group group-id="BuildMenu" anchor="last"/>
-                <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
-                <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>
-            </action>
-        </group>
-
-        <!-- ToolBar -->
-        <group id="freeline.BuildGroup">
-            <separator/>
-        </group>
-    </actions>
 </idea-plugin>

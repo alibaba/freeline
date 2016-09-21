@@ -8,7 +8,7 @@ import android_tools
 from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
-    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path
+    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name
 from task import find_root_tasks, find_last_tasks, Task
 from utils import get_file_content, write_file_content, is_windows_system
 from tracing import Tracing
@@ -258,7 +258,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def _get_aapt_args(self):
         aapt_args = [self._aapt, 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
-                     '-M', self._finder.get_dst_manifest_path()]
+                     '-M', fix_package_name(self._config, self._finder.get_dst_manifest_path())]
 
         for rdir in self._config['project_source_sets'][self._name]['main_res_directory']:
             if os.path.exists(rdir):
@@ -323,6 +323,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         aapt_args.append(self._finder.get_dst_res_pack_path(self._name))
         aapt_args.append('--debug-mode')
         aapt_args.append('--auto-add-overlay')
+        aapt_args.append('--no-version-vectors')
 
         if len(final_changed_list_chain) > 0 and self._is_art:
             aapt_args.append('--buildIncrement')
@@ -351,7 +352,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         self.debug('modify {}'.format(main_r_fpath))
         buf = GradleIncBuildInvoker.remove_final_tag(get_file_content(main_r_fpath))
-        buf = self.__fix_unicode_parse_error(buf, main_r_fpath)
+        buf = android_tools.fix_unicode_parse_error(buf, main_r_fpath)
         write_file_content(main_r_fpath, buf)
 
         target_main_r_dir = os.path.join(self.__get_freeline_backup_r_dir(),
@@ -391,7 +392,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 main_r_path = os.path.join(self._finder.get_backup_dir(),
                                            self._module_info['packagename'].replace('.', os.sep), 'R.java')
                 if os.path.exists(main_r_path):
-                    content = self.__fix_unicode_parse_error(get_file_content(main_r_path), main_r_path)
+                    content = android_tools.fix_unicode_parse_error(get_file_content(main_r_path), main_r_path)
                     write_file_content(main_r_path, content)
 
     def fill_classpaths(self):
@@ -488,7 +489,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 content = get_file_content(target_path)
                 content = GradleIncBuildInvoker.remove_final_tag(content)
                 content = GradleIncBuildInvoker.extend_main_r(content, self._config['package'])
-                content = self.__fix_unicode_parse_error(content, target_path)
+                content = android_tools.fix_unicode_parse_error(content, target_path)
                 write_file_content(target_path, content)
 
             return target_path
@@ -502,12 +503,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     if res_path.startswith(rdir) or rdir in res_path:
                         return module
         return None
-
-    def __fix_unicode_parse_error(self, content, path):
-        if content is not None and is_windows_system():
-            self.debug("avoid windows unicode error for {}".format(path))
-            return content.replace(r"\u", r"d")
-        return content
 
     @staticmethod
     def remove_final_tag(content):

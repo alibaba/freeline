@@ -6,9 +6,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
 import android.os.SystemClock;
+import android.util.Log;
 import android.widget.TextView;
 
 public class MiddlewareActivity extends Activity {
+    private static final String TAG = "Freeline.MiddlewareAct";
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
     private static final long RESET_WAIT = 1000L;
     private long createTime;
@@ -16,6 +18,7 @@ public class MiddlewareActivity extends Activity {
     private int back;
     private final Runnable reset = new Runnable() {
         public void run() {
+            Log.d(TAG, "kill process: " + Process.myPid());
             Process.killProcess(Process.myPid());
         }
 
