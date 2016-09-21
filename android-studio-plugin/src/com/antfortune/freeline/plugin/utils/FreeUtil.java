@@ -23,6 +23,9 @@ import java.io.File;
  */
 public class FreeUtil {
 
+    // TODO: 2016/9/13 0013 need refactor tool window
+    private final static String TOOL_ID = "Freeline Console";
+
     /**
      * auto select init or run freeline project
      */
@@ -59,11 +62,11 @@ public class FreeUtil {
         // init freeline core file
         if (SystemUtil.isWindows()) {
             commandLine.setExePath("cmd");
-//            commandLine.addParameter("-c");
+            commandLine.addParameter("/c");
             commandLine.addParameter("gradlew.bat");
         } else {
             commandLine.setExePath("/bin/sh");
-//            commandLine.addParameter("/c");
+            commandLine.addParameter("-c");
             commandLine.addParameter("./gradlew");
         }
         commandLine.addParameters("initFreeline", "-Pmirror");
@@ -115,9 +118,6 @@ public class FreeUtil {
         toolWindow.getContentManager().addContent(new ContentImpl(consoleView.getComponent(), "Build", true));
         toolWindow.show(null);
     }
-
-    // TODO: 2016/9/13 0013 need refactor tool window
-    private final static String TOOL_ID = "Freeline Console";
 
     /**
      * if had init freeline return true
