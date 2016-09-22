@@ -1,8 +1,8 @@
 <idea-plugin version="2">
   <id>com.apkfuns.plugin.freeline</id>
   <name>Freeline Plugin</name>
-  <version>1.0.7</version>
-  <vendor email="" url="https://github.com/alibaba/freeline/tree/as_plugin/android-studio-plugin">act262、舞影凌风</vendor>
+  <version>1.0.8</version>
+  <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262、舞影凌风</vendor>
 
   <description><![CDATA[
       android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br/><br/>
@@ -22,20 +22,16 @@
   <change-notes><![CDATA[
       <ul>
       <li>
+          <b>1.0.8</b><br/>
+          support add run configurations 'Freeline Run'
+        </li>
+      <li>
           <b>1.0.7</b><br/>
           add Freeline ToolWindow and some tools
         </li>
       <li>
           <b>1.0.5</b><br/>
           fix android studio 2.2 RC Crash
-        </li>
-        <li>
-          <b>1.0.2</b><br/>
-          fix bug
-        </li>
-        <li>
-          <b>1.0.0</b><br/>
-          run Freeline with debug and Force
         </li>
       </ul>
     ]]>
