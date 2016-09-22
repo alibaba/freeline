@@ -19,6 +19,11 @@ public class PluginIcons {
     public static final Icon GC = intellijLoad("/actions/gc.png");
     public static final Icon GradleSync = load("/icons/gradlesync.png");
 
+    /* Run action icon */
+    public static final Icon ICON_ACTION_RUN = FreelineIcon;
+    /* Tool window icon */
+    public static final Icon ICON_TOOL_WINDOW = OpenTerminal;
+
     private static Icon load(String path) {
         return IconLoader.getIcon(path, PluginIcons.class);
     }

@@ -58,6 +58,16 @@
   <extensions defaultExtensionNs="com.intellij">
     <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.OpenTerminal"
                 factoryClass="views.FreelineToolWindowFactory" secondary="false"/>
+
+    <!-- Freeline Run Configuration Type define -->
+    <configurationType implementation="configuration.FreeConfigurationType"
+                       id="com.antfortune.freeline.plugin.config.FreeRunType"/>
+
+    <!-- Freeline project UI service -->
+    <projectService serviceImplementation="utils.FreeUIManager"
+                    serviceInterface="utils.FreeUIManager"
+                    id="com.antfortune.freeline.plugin.service.FreeUIManager"/>
+
   </extensions>
 
   <actions>
