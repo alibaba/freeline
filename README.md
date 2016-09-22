@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-0.6.3-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release Version](https://img.shields.io/badge/release-0.7.0-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
@@ -50,7 +50,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.6.3'
+        classpath 'com.antfortune.freeline:gradle:0.7.0'
     }
 }
 ````
@@ -63,18 +63,6 @@ android {
     ...
     freeline {
         hack true
-    }
-}
-````
-
-Finally, apply freeline in your application class.
-
-````Java
-public class App extends Application {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        FreelineCore.init(this);
     }
 }
 ````
@@ -93,10 +81,15 @@ Note that, you should apply the freeline plugin dependency before you execute th
 After changing the version of freeline in build.gradle files, you should run `./gradlew initFreeline` or `gradlew.bat initFreeline` to download the latest freeline dependency.
 
 ## Usage
+You can install freeline plugin in Android Studio for quick usage.
 
-Note, freeline only support Python 2.7+ now, there may be several problems with Python 3.5+.
+How to install? In Android Studio, go to Preferences → Plugins → Browse repositories and search for `freeline`.
 
-On the root dir of your project :
+![](http://ww4.sinaimg.cn/large/65e4f1e6gw1f82eknaeudj20tk01omxe.jpg)
+
+Just use the `Run Freeline` button and enjoy it.
+
+Besides, you can also execute python command in the command line in the root dir of your project:
 
 - `python freeline.py`
 
@@ -122,7 +115,6 @@ python freeline.py
 
 ## TODO
 - Compatibility Improvement
-- Android Studio Plugin
 - Annotation Support
 - Multiple Devices Connection Support
 
