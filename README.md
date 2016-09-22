@@ -89,7 +89,9 @@ How to install? In Android Studio, go to Preferences → Plugins → Browse repo
 
 Just use the `Run Freeline` button and enjoy it.
 
-Besides, you can also execute python command in the command line in the root dir of your project:
+Many thanks to [@pengwei1024](https://github.com/pengwei1024) and [@act262](https://github.com/act262) for creating such an awesome plugin.
+
+Besides, you can also execute python script in the command line in the root dir of your project:
 
 - `python freeline.py`
 
