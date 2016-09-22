@@ -41,6 +41,7 @@ class GradleCleanBuilder(CleanBuilder):
             'stat_cache.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml'])
         build_base_resource_task = BuildBaseResourceTask(self._config, self._project_info)
         generate_stat_task = GenerateFileStatTask(self._config)
+        append_stat_task = GenerateFileStatTask(self._config, is_append=True)
         read_project_info_task = GradleReadProjectInfoTask()
         generate_project_info_task = GradleGenerateProjectInfoTask(self._config)
 
@@ -49,6 +50,7 @@ class GradleCleanBuilder(CleanBuilder):
         build_task.add_child_task(install_task)
         clean_all_cache_task.add_child_task(build_base_resource_task)
         clean_all_cache_task.add_child_task(generate_project_info_task)
+        clean_all_cache_task.add_child_task(append_stat_task)
         read_project_info_task.add_child_task(build_task)
         self._root_task = [generate_stat_task, read_project_info_task]
 

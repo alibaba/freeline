@@ -172,27 +172,55 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
 
 class GenerateFileStatTask(Task):
-    def __init__(self, config):
-        Task.__init__(self, 'generate_file_stat_task')
+    def __init__(self, config, is_append=False):
+        name = 'append_file_stat_task' if is_append else 'generate_file_stat_task'
+        Task.__init__(self, name)
         self._config = config
+        self._is_append = is_append
         self._stat_cache = {}
+        self._cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
 
     def execute(self):
+        if self._is_append:  # reload config while append mode
+            self.debug('generate_file_stat_task in append mode')
+            from dispatcher import read_freeline_config
+            self._config = read_freeline_config()
+            self._stat_cache = load_json_cache(self._cache_path)
+
         if 'modules' in self._config:
             all_modules = self._config['modules']
         else:
             all_modules = get_all_modules(os.getcwd())
 
+        if self._is_append and os.path.exists(self._cache_path):
+            old_modules = self._stat_cache.keys()
+            match_arr = [m['name'] for m in all_modules]
+            match_map = {m['name']: m for m in all_modules}
+            new_modules = []
+            for m in match_arr:
+                if m not in old_modules:
+                    self.debug('find new module: {}'.format(m))
+                    new_modules.append(match_map[m])
+
+            if len(new_modules) > 0:
+                self._fill_cache_map(new_modules)
+                self._save_cache()
+            else:
+                self.debug('no new modules found.')
+        else:
+            self._fill_cache_map(all_modules)
+            self._save_cache()
+
+    def _fill_cache_map(self, all_modules):
         for module in all_modules:
+            self.debug('save {} module file stat'.format(module['name']))
             self._stat_cache[module['name']] = {}
             self._save_module_stat(module['name'], module['path'])
-        self._save_cache()
 
     def _save_cache(self):
-        cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
-        if os.path.exists(cache_path):
-            os.remove(cache_path)
-        write_json_cache(cache_path, self._stat_cache)
+        if os.path.exists(self._cache_path):
+            os.remove(self._cache_path)
+        write_json_cache(self._cache_path, self._stat_cache)
 
     def _save_module_stat(self, module_name, module_path):
         # scan bulid.gradle
