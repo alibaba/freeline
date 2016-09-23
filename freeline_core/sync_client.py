@@ -14,6 +14,7 @@ NO_DEVICE_FOUND_MESSAGE = """\tPlease make sure your application is properly run
 \tCheck follow steps:
 \t1. Make sure the versions `python freeline.py -v`, freeline-gradle and freeline-runtime are the same;
 \t2. Make sure there is no network proxy.
+\t3.
 \tMore about this can see: https://github.com/alibaba/freeline/issues/152"""
 
 
@@ -67,7 +68,7 @@ class SyncClient(object):
         self._port = self.scan_device_port()
 
         if self._port == 0:
-            for i in range(1, 25):
+            for i in range(1, 11):
                 need_protection = i <= 1
                 self.wake_up(need_protection=need_protection)
                 self._port = self.scan_device_port()
