@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <id>com.apkfuns.plugin.freeline</id>
     <name>Freeline Plugin</name>
-    <version>1.0.9</version>
+    <version>1.0.9.1</version>
     <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262、舞影凌风</vendor>
 
     <description><![CDATA[
@@ -22,8 +22,8 @@
     <change-notes><![CDATA[
       <ul>
       <li>
-          <b>1.0.9</b><br/>
-          add default run action shortcut
+         <b>1.0.9</b><br/>
+          add default run action shortcut、support jdk 1.7+
       </li>
       <li>
           <b>1.0.8</b><br/>

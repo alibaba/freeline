@@ -79,7 +79,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         }
     }
 
-    public void initAndExecute(String[] shell) {
+    public void initAndExecute(final String[] shell) {
         ToolWindow toolWindow = getToolWindow();
         if (toolWindow.isActive()) {
             executeShell(shell);
