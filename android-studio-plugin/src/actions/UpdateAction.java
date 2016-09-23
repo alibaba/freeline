@@ -50,7 +50,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
      * @param newVersion
      * @param gradleBuildModels
      */
-    protected void updateAction(String newVersion, Map<GradleBuildModel,
+    protected void updateAction(final String newVersion, final Map<GradleBuildModel,
             List<ArtifactDependencyModel>> gradleBuildModels) {
         CommandProcessor.getInstance().runUndoTransparentAction(new Runnable() {
             @Override
@@ -105,7 +105,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
      * @param entity
      * @param gradleBuildModels
      */
-    private void resultHandle(GradleDependencyEntity entity, Map<GradleBuildModel,
+    private void resultHandle(final GradleDependencyEntity entity, final Map<GradleBuildModel,
             List<ArtifactDependencyModel>> gradleBuildModels) {
         String localVersion = null;
         StringBuilder builder = new StringBuilder();
@@ -127,7 +127,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
         }
         if (Utils.notEmpty(localVersion)) {
             int compare = localVersion.compareTo(entity.getVersion());
-            CheckUpdateDialog dialog = new CheckUpdateDialog();
+            final CheckUpdateDialog dialog = new CheckUpdateDialog();
             dialog.getButtonOK().setEnabled(compare < 0);
             dialog.setServerVersion(entity.getGroupId(), entity.getArtifactId(), entity.getVersion());
             dialog.setServerUpdateTime(entity.getUpdateTime());
@@ -156,7 +156,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
     }
 
     @Override
-    public void onSuccess(GradleDependencyEntity entity) {
+    public void onSuccess(final GradleDependencyEntity entity) {
         invokeLater(new Runnable() {
             @Override
             public void run() {
