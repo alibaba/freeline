@@ -86,13 +86,9 @@ class FreelinePlugin implements Plugin<Project> {
                             apk_paths.add(output.outputFile.absolutePath)
                         }
                     }
-                    def descriptionFile = new File(FreelineUtils.joinPath(FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'))
-                    if (descriptionFile.exists()) {
-                        def description = new JsonSlurper().parseText(descriptionFile.text)
-                        description.apk_path = FreelineUtils.getDefaultApkPath(apk_paths, project.buildDir.absolutePath, project.name, description.product_flavor)
-                        println "find default apk path: ${description.apk_path}"
-                        FreelineUtils.saveJson(new JsonBuilder(description).toPrettyString(), descriptionFile.absolutePath, true)
-                    }
+                    def defaultApkPath = FreelineUtils.getDefaultApkPath(apk_paths, project.buildDir.absolutePath, project.name, productFlavor)
+                    println "find default apk path: ${defaultApkPath}"
+                    FreelineUtils.addNewAttribute(project, 'apk_path', defaultApkPath)
                 }
 
                 // add addtional aapt args
@@ -112,8 +108,6 @@ class FreelinePlugin implements Plugin<Project> {
                 // force tasks to run
                 def mergeAssetsTask = project.tasks.findByName("merge${variant.name.capitalize()}Assets")
                 mergeAssetsTask.outputs.upToDateWhen { false }
-                def manifestTask = project.tasks.findByName("process${variant.name.capitalize()}Manifest")
-                manifestTask.outputs.upToDateWhen { false }
 
                 if (applicationProxy) {
                     variant.outputs.each { output ->
@@ -156,6 +150,39 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 }
 
+                // apt
+                def isAptEnabled = isAptEnabled(project)
+                def javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
+                if (isAptEnabled && javaCompile) {
+                    println 'Freeline found apt plugin enabled.'
+                    javaCompile.doFirst {
+                        def aptConfiguration = project.configurations.apt
+                        if (!aptConfiguration.empty) {
+                            def aptOutputDir = new File(project.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
+                            def processorPath = (aptConfiguration + javaCompile.classpath).asPath
+
+                            boolean disableDiscovery = javaCompile.options.compilerArgs.indexOf('-processorpath') == -1
+
+                            int processorIndex = javaCompile.options.compilerArgs.indexOf('-processor')
+                            def processor = null
+                            if (processorIndex != -1) {
+                                processor = javaCompile.options.compilerArgs.get(processorIndex + 1)
+                            }
+
+                            def aptArgs = []
+                            javaCompile.options.compilerArgs.each { arg ->
+                                if (arg.toString().startsWith('-A')) {
+                                    aptArgs.add(arg)
+                                }
+                            }
+
+                            def aptConfig = ['enabled': isAptEnabled, 'disableDiscovery': disableDiscovery, 'aptOutput': aptOutputDir, 'processorPath': processorPath, 'processor': processor, 'aptArgs': aptArgs]
+                            println(aptConfig)
+                            FreelineUtils.addNewAttribute(project, 'apt', aptConfig)
+                        }
+                    }
+                }
+
                 // modify .class file
                 def isLowerVersion = false
                 if (!forceLowerVersion) {
@@ -175,7 +202,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def classesProcessTask
                 def preDexTask
                 def multiDexListTask
-                boolean multiDexEnabled = isMultiDexEnabled(project, variant)
+                boolean multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
@@ -272,6 +299,7 @@ class FreelinePlugin implements Plugin<Project> {
                 if (multiDexEnabled && applicationProxy) {
                     def mainDexListFile = new File("${project.buildDir}/intermediates/multi-dex/${variant.dirName}/maindexlist.txt")
                     if (multiDexListTask) {
+                        multiDexListTask.outputs.upToDateWhen { false }
                         multiDexListTask.doLast {
                             mainDexListFile << '\n' + 'com/antfortune/freeline/FreelineConfig.class'
                         }
@@ -441,6 +469,17 @@ class FreelinePlugin implements Plugin<Project> {
             return variant.mergedFlavor.multiDexEnabled
         }
         return project.android.defaultConfig.multiDexEnabled
+    }
+
+    private static String isAptEnabled(Project project) {
+        boolean isAptEnabled = false
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.neenbedankt.gradle.plugins" && it.moduleName == "android-apt") {
+                isAptEnabled = true
+                return false
+            }
+        }
+        return isAptEnabled
     }
 
 }

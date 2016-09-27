@@ -208,6 +208,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         self.debug('start to execute javac command...')
         self._invoker.append_r_file()
         self._invoker.fill_classpaths()
+        self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
         self._invoker.run_javac_task()
 
@@ -430,6 +431,21 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         #    android_tools.delete_class(dirpath, fn.replace('.class', ''))
                     if not existence:
                         android_tools.delete_class(dirpath, fn.replace('.class', ''))
+
+    def fill_extra_javac_args(self):
+        if 'apt' in self._config and self._config['apt']['enabled']:
+            apt_args = ['-s', self._config['apt']['aptOutput']]
+
+            if self._config['apt']['processor']:
+                apt_args.append('-processor')
+                apt_args.append(self._config['apt']['processor'])
+
+            if not self._config['apt']['disableDiscovery']:
+                apt_args.append('-processorpath')
+                apt_args.append(self._config['apt']['processorPath'])
+
+            apt_args.extend(self._config['apt']['aptArgs'])
+            self._extra_javac_args.extend(apt_args)
 
     def _get_res_incremental_dst_path(self, fpath):
         if 'assets' + os.sep in fpath:
