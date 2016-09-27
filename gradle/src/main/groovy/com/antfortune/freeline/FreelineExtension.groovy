@@ -33,6 +33,8 @@ class FreelineExtension {
 
     boolean autoDependency = true
 
+    boolean aptEnabled = true
+
     FreelineExtension(Project project) {
     }
 }
