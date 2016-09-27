@@ -343,9 +343,27 @@ class FreelinePlugin implements Plugin<Project> {
         if (mergeResourcesTask == null) {
             mergeResourcesTask = project.tasks.findByName("mergeDebugResources")
         }
-
         if (mergeResourcesTask == null) {
             println "${project.name} merge resources task not found."
+            if (!project.hasProperty("android")) {
+                return
+            }
+
+            def resourcesDependencies = ["local_resources": [], "library_resources": []]
+            def searchDirs = [new File(project.buildDir, 'generated/res/resValues/release'),
+                              new File(project.buildDir, 'generated/res/rs/release')]
+            searchDirs.each { dir ->
+                if (dir.exists()) {
+                    resourcesDependencies.local_resources.add(dir.absolutePath)
+                    println "add local resource: ${dir.absolutePath}"
+                }
+            }
+            def json = new JsonBuilder(resourcesDependencies).toPrettyString()
+            def cacheDir = new File(FreelineUtils.joinPath(FreelineUtils.joinPath(buildCacheDir, project.name)))
+            if (!cacheDir.exists()) {
+                cacheDir.mkdirs()
+            }
+            FreelineUtils.saveJson(json, FreelineUtils.joinPath(cacheDir.absolutePath, "resources_dependencies.json"), true)
             return
         }
 
