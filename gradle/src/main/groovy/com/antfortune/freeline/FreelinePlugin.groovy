@@ -302,7 +302,9 @@ class FreelinePlugin implements Plugin<Project> {
                     if (multiDexListTask) {
                         multiDexListTask.outputs.upToDateWhen { false }
                         multiDexListTask.doLast {
-                            mainDexListFile << '\n' + 'com/antfortune/freeline/FreelineConfig.class'
+                            Constants.FREELINE_CLASSES.each { clazz ->
+                                mainDexListFile << "\n${clazz}"
+                            }
                         }
                     }
                 }
