@@ -51,7 +51,6 @@ class FreelinePlugin implements Plugin<Project> {
             
             project.android.applicationVariants.each { variant ->
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
-                def hack = extension.hack
                 def productFlavor = extension.productFlavor
                 def apkPath = extension.apkPath
                 def excludeHackClasses = extension.excludeHackClasses
@@ -70,7 +69,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                 println "find variant ${variant.name} start hack process..."
 
-                if (!hack || !freelineBuild) {
+                if (!freelineBuild) {
                     return
                 }
 
