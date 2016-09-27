@@ -339,6 +339,7 @@ class AndroidIncBuildInvoker(object):
         self._classpaths = []
         self._is_r_file_changed = False
         self._is_need_javac = True
+        self._extra_javac_args = []
 
         self.before_execute()
 
@@ -542,6 +543,7 @@ class AndroidIncBuildInvoker(object):
         for fpath in self._changed_files['src']:
             javacargs.append(fpath)
 
+        javacargs.extend(self._extra_javac_args)
         javacargs.append('-d')
         javacargs.append(self._finder.get_patch_classes_cache_dir())
 

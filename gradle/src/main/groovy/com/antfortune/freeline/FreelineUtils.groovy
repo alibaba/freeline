@@ -1,5 +1,6 @@
 package com.antfortune.freeline
 
+import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import org.gradle.api.Project
 
@@ -92,6 +93,15 @@ class FreelineUtils {
         pending << json
         println "Save to $pending.absolutePath"
         return true
+    }
+
+    public static void addNewAttribute(Project project, String key, def value) {
+        def descriptionFile = new File(joinPath(getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'))
+        if (descriptionFile.exists()) {
+            def description = new JsonSlurper().parseText(descriptionFile.text)
+            description[key] = value
+            saveJson(new JsonBuilder(description).toPrettyString(), descriptionFile.absolutePath, true)
+        }
     }
 
     public static String joinPath(String... sep) {
