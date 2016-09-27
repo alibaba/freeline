@@ -57,6 +57,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def excludeHackClasses = extension.excludeHackClasses
                 def forceLowerVersion = extension.foceLowerVersion
                 def applicationProxy = extension.applicationProxy
+                def aptEnabled = extension.aptEnabled
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
 
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
@@ -153,11 +154,11 @@ class FreelinePlugin implements Plugin<Project> {
                 // apt
                 def isAptEnabled = isAptEnabled(project)
                 def javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
-                if (isAptEnabled && javaCompile) {
+                if (aptEnabled && isAptEnabled && javaCompile) {
                     println 'Freeline found apt plugin enabled.'
                     javaCompile.doFirst {
-                        def aptConfiguration = project.configurations.apt
-                        if (!aptConfiguration.empty) {
+                        def aptConfiguration = project.configurations.findByName("apt")
+                        if (aptConfiguration && !aptConfiguration.empty) {
                             def aptOutputDir = new File(project.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
                             def processorPath = (aptConfiguration + javaCompile.classpath).asPath
 
