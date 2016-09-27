@@ -12,6 +12,8 @@ import org.objectweb.asm.Type
  */
 class FreelineClassVisitor extends ClassVisitor implements Opcodes {
 
+    private static final String SUFFIX_ANDROIDANNOTATION = "_"
+
     public boolean isHack = true;
 
     public FreelineClassVisitor(int api, ClassWriter cw) {
@@ -23,7 +25,12 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
         if ("android/app/Application".equals(superName)) {
             isHack = false;
         }
-        super.visit(version, access, name, signature, superName, interfaces)
+        if (name.endsWith(SUFFIX_ANDROIDANNOTATION)) {
+            println "find AndroidAnnotation class name: ${name}, freeline will remove the final tag"
+            super.visit(version, access & (~ACC_FINAL), name, signature, superName, interfaces)
+        } else {
+            super.visit(version, access, name, signature, superName, interfaces)
+        }
     }
 
     @Override
