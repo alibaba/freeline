@@ -10,8 +10,9 @@ from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name
 from task import find_root_tasks, find_last_tasks, Task
-from utils import get_file_content, write_file_content, is_windows_system
+from utils import get_file_content, write_file_content, is_windows_system, cexec
 from tracing import Tracing
+from exceptions import FreelineException
 
 
 class GradleIncBuilder(IncrementalBuilder):
@@ -211,6 +212,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
         self._invoker.run_javac_task()
+        self._invoker.run_retrolambda()
 
 
 class GradleIncDexCommand(IncDexCommand):
@@ -446,6 +448,96 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
             apt_args.extend(self._config['apt']['aptArgs'])
             self._extra_javac_args.extend(apt_args)
+
+    def run_javac_task(self):
+        javacargs = [self._javac, '-encoding', 'UTF-8', '-g', '-cp', os.pathsep.join(self._classpaths)]
+
+        for fpath in self._changed_files['src']:
+            javacargs.append(fpath)
+
+        javacargs.extend(self._extra_javac_args)
+        javacargs.append('-d')
+        javacargs.append(self._finder.get_patch_classes_cache_dir())
+
+        self.debug('javac exec: ' + ' '.join(javacargs))
+        output, err, code = cexec(javacargs, callback=None)
+
+        if code != 0:
+            raise FreelineException('incremental javac compile failed.', '{}\n{}'.format(output, err))
+        else:
+            if self._is_r_file_changed:
+                old_r_file = self._finder.get_dst_r_path(config=self._config)
+                new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
+                shutil.copyfile(new_r_file, old_r_file)
+                self.debug('copy {} to {}'.format(new_r_file, old_r_file))
+
+    def run_retrolambda(self):
+        if 'retrolambda' in self._config and self._config['retrolambda']['enabled']:
+            target_dir = self._finder.get_patch_classes_cache_dir()
+            jar_args = [Builder.get_java(self._config),
+                        '-Dretrolambda.inputDir={}'.format(target_dir),
+                        '-Dretrolambda.outputDir={}'.format(target_dir)]
+
+            if self._config['retrolambda']['supportIncludeFiles']:
+                include_files = []
+                classes = []
+                for dirpath, dirnames, files in os.walk(target_dir):
+                    for fn in files:
+                        if fn.endswith('.class'):
+                            classes.append(os.path.relpath(os.path.join(dirpath, fn), target_dir))
+
+                src_dirs = self._config['project_source_sets'][self._name]['main_src_directory']
+                for fpath in self._changed_files['src']:
+                    short_path = fpath.replace('.java', '.class')
+                    for src_dir in src_dirs:
+                        if src_dir in short_path:
+                            short_path = os.path.relpath(fpath, src_dir).replace('.java', '')
+                            break
+
+                    for clazz in classes:
+                        if short_path + '.class' in clazz or short_path + '$' in clazz:
+                            include_file = os.path.join(target_dir, clazz)
+                            if os.path.exists(include_file):
+                                self.debug('incremental build lambda file: {}'.format(include_file))
+                                include_files.append(include_file)
+
+                include_files_param = os.pathsep.join(include_files)
+                if len(include_files_param) > 3496:
+                    include_files_path = os.path.join(self._cache_dir, self._name, 'retrolambda_inc.list')
+                    self.__save_parms_to_file(include_files_path, include_files)
+                    jar_args.append('-Dretrolambda.includedFile={}'.format(include_files_path))
+                else:
+                    jar_args.append('-Dretrolambda.includedFiles={}'.format(include_files_param))
+
+            lambda_classpaths = [target_dir, self._config['retrolambda']['rtJar']]
+            lambda_classpaths.extend(self._classpaths)
+            param = os.pathsep.join(lambda_classpaths)
+
+            if self._config['retrolambda']['supportIncludeFiles'] and len(param) > 3496:
+                classpath_file = os.path.join(self._cache_dir, self._name, 'retrolambda_classpaths.path')
+                self.__save_parms_to_file(classpath_file, lambda_classpaths)
+                jar_args.append('-Dretrolambda.classpathFile={}'.format(classpath_file))
+            else:
+                jar_args.append('-Dretrolambda.classpath={}'.format(param))
+
+            jar_args.append('-cp')
+            jar_args.append(self._config['retrolambda']['targetJar'])
+            jar_args.append(self._config['retrolambda']['mainClass'])
+
+            self.debug('retrolambda exec: ' + ' '.join(jar_args))
+            output, err, code = cexec(jar_args, callback=None)
+
+            if code != 0:
+                raise FreelineException('retrolambda compile failed.', '{}\n{}'.format(output, err))
+
+    def __save_parms_to_file(self, path, params):
+        if os.path.exists(path):
+            os.remove(path)
+        content = ''
+        for param in params:
+            content += param + '\n'
+        write_file_content(path, content)
+        self.debug('save retrolambda params to {}'.format(path))
 
     def _get_res_incremental_dst_path(self, fpath):
         if 'assets' + os.sep in fpath:

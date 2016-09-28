@@ -303,12 +303,19 @@ class FreelineInitializer {
         return dir.exists() && dir.isDirectory()
     }
 
-    private static String getJavaHome() {
-        String env = System.getenv("JAVA_HOME")
-        if (env == null || "".equals(env)) {
-            env = System.getProperty("java.home").replace(File.separator + "jre", "")
+    // from retrolambda
+    public static String getJavaHome() {
+        String javaHomeProp = System.properties.'java.home'
+        if (javaHomeProp) {
+            int jreIndex = javaHomeProp.lastIndexOf("${File.separator}jre")
+            if (jreIndex != -1) {
+                return javaHomeProp.substring(0, jreIndex)
+            } else {
+                return javaHomeProp
+            }
+        } else {
+            return System.getenv("JAVA_HOME")
         }
-        return env
     }
 
     private static void appendDirs(def targetCollections, def collections) {
