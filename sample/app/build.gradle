@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.antfortune.freeline'
+apply plugin: 'android-apt'
 
 android {
     compileSdkVersion 24
@@ -55,6 +56,13 @@ android {
     useLibrary 'org.apache.http.legacy'
 }
 
+apt {
+    arguments {
+        androidManifestFile variant.outputs[0]?.processResources?.manifestFile
+        resourcePackageName "com.antfortune.freeline.sample"
+    }
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
@@ -68,4 +76,10 @@ dependencies {
     releaseCompile project(":runtime:runtime-no-op")
     testCompile project(":runtime:runtime-no-op")
     monkeyCompile project(":runtime:runtime-no-op")
+
+    compile 'com.jakewharton:butterknife:8.4.0'
+    apt 'com.jakewharton:butterknife-compiler:8.4.0'
+
+    apt "org.androidannotations:androidannotations:4.1.0"
+    compile "org.androidannotations:androidannotations-api:4.1.0"
 }
