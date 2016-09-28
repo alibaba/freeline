@@ -2,11 +2,13 @@ package com.antfortune.freeline
 
 import groovy.io.FileType
 import groovy.json.JsonBuilder
-import groovy.json.JsonSlurper
 import groovy.xml.XmlUtil
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
+import org.gradle.util.VersionNumber
 
 /**
  * Created by yeqi on 16/5/3.
@@ -44,10 +46,6 @@ class FreelinePlugin implements Plugin<Project> {
             if (!project.plugins.hasPlugin("com.android.application")) {
                 throw new RuntimeException("Freeline plugin can only be applied for android application module.")
             }
-
-            if (!project.hasProperty("freeline")) {
-                throw new RuntimeException("You should add freeline DSL to your main module's build.gradle before execute gradle command.")
-            }
             
             project.android.applicationVariants.each { variant ->
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
@@ -57,6 +55,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def forceLowerVersion = extension.foceLowerVersion
                 def applicationProxy = extension.applicationProxy
                 def aptEnabled = extension.aptEnabled
+                def retrolambdaEnabled = extension.retrolambdaEnabled
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
 
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
@@ -180,6 +179,39 @@ class FreelinePlugin implements Plugin<Project> {
                             println(aptConfig)
                             FreelineUtils.addNewAttribute(project, 'apt', aptConfig)
                         }
+                    }
+                }
+
+                // retrolambda
+                if (retrolambdaEnabled && project.plugins.hasPlugin("me.tatarka.retrolambda")) {
+                    def jdk8
+                    boolean isOnJava8 = (System.properties.'java.version' as String).startsWith('1.8')
+                    if (isOnJava8) {
+                        jdk8 = FreelineInitializer.getJavaHome()
+                    } else {
+                        jdk8 = System.getenv("JAVA8_HOME")
+                    }
+
+                    if (jdk8 != null) {
+                        def rtJar = "${jdk8}/jre/lib/rt.jar"
+                        def retrolambdaConfig = project.configurations.getByName("retrolambdaConfig")
+                        def targetJar = project.files(retrolambdaConfig).asPath
+                        def mainClass = 'net.orfjackal.retrolambda.Main'
+
+                        VersionNumber retrolambdaVersion = retrolambdaVersion(retrolambdaConfig)
+                        def supportIncludeFiles = requireVersion(retrolambdaVersion, '2.1.0')
+
+                        def lambdaConfig = [
+                                'enabled': retrolambdaEnabled,
+                                'targetJar': targetJar,
+                                'mainClass': mainClass,
+                                'rtJar': rtJar,
+                                'supportIncludeFiles': supportIncludeFiles
+                        ]
+                        println(lambdaConfig)
+                        FreelineUtils.addNewAttribute(project, 'retrolambda', lambdaConfig)
+                    } else {
+                        println '[WARNING] JDK8 not found, skip retrolambda.'
                     }
                 }
 
@@ -500,6 +532,26 @@ class FreelinePlugin implements Plugin<Project> {
             }
         }
         return isAptEnabled
+    }
+
+    private static VersionNumber retrolambdaVersion(Configuration retrolambdaConfig) {
+        retrolambdaConfig.resolve()
+        Dependency retrolambdaDep = retrolambdaConfig.dependencies.iterator().next()
+        if (!retrolambdaDep.version) {
+            // Don't know version
+            return null
+        }
+        return VersionNumber.parse(retrolambdaDep.version)
+
+    }
+
+    private static boolean requireVersion(VersionNumber retrolambdaVersion, String version, boolean fallback = false) {
+        if (retrolambdaVersion == null) {
+            // Don't know version, assume fallback
+            return fallback
+        }
+        def targetVersionNumber = VersionNumber.parse(version)
+        return retrolambdaVersion >= targetVersionNumber
     }
 
 }

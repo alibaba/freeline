@@ -35,6 +35,8 @@ class FreelineExtension {
 
     boolean aptEnabled = true
 
+    boolean retrolambdaEnabled = true
+
     FreelineExtension(Project project) {
     }
 }

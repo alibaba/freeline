@@ -91,6 +91,16 @@ class Builder(object):
         return None
 
     @staticmethod
+    def get_java(config=None):
+        path = os.getenv('JAVA_HOME')
+        if config is not None and 'java_home' in config:
+            path = config['java_home']
+        exec_name = 'java.exe' if is_windows_system() else 'java'
+        if path and is_exe(os.path.join(path, 'bin', exec_name)):
+            return os.path.join(path, 'bin', exec_name)
+        return None
+
+    @staticmethod
     def get_dx(config):
         if is_windows_system():
             if 'build_tools_directory' in config and os.path.exists(config['build_tools_directory']):
