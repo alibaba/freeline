@@ -436,18 +436,19 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         android_tools.delete_class(dirpath, fn.replace('.class', ''))
 
     def fill_extra_javac_args(self):
-        if 'apt' in self._config and self._config['apt']['enabled']:
-            apt_args = ['-s', self._config['apt']['aptOutput']]
+        if 'apt' in self._config and self._name in self._config['apt'] and self._config['apt'][self._name]['enabled']:
+            apt_config = self._config['apt'][self._name]
+            apt_args = ['-s', apt_config['aptOutput']]
 
-            if self._config['apt']['processor']:
+            if apt_config['processor']:
                 apt_args.append('-processor')
-                apt_args.append(self._config['apt']['processor'])
+                apt_args.append(apt_config['processor'])
 
-            if not self._config['apt']['disableDiscovery']:
+            if not apt_config['disableDiscovery']:
                 apt_args.append('-processorpath')
-                apt_args.append(self._config['apt']['processorPath'])
+                apt_args.append(apt_config['processorPath'])
 
-            apt_args.extend(self._config['apt']['aptArgs'])
+            apt_args.extend(apt_config['aptArgs'])
             self._extra_javac_args.extend(apt_args)
 
     def run_javac_task(self):
@@ -502,7 +503,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
                     for clazz in classes:
                         if short_path + '.class' in clazz or short_path + '$' in clazz or 'R.class' in clazz \
-                                or 'R$' in clazz:
+                                or 'R$' in clazz or short_path + '_' in clazz:
                             include_file = os.path.join(target_dir, clazz)
                             if os.path.exists(include_file):
                                 self.debug('incremental build lambda file: {}'.format(include_file))
