@@ -240,6 +240,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         self._changed_modules = changed_modules
         self._merged_res_paths = []
         self._merged_res_paths.append(self._finder.get_backup_res_dir())
+        self._is_retrolambda_enabled = 'retrolambda' in self._config and self._config['retrolambda']['enabled']
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
@@ -450,7 +451,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             self._extra_javac_args.extend(apt_args)
 
     def run_javac_task(self):
-        javacargs = [self._javac, '-encoding', 'UTF-8', '-g', '-cp', os.pathsep.join(self._classpaths)]
+        javacargs = [self._javac, '-encoding', 'UTF-8', '-g']
+        if not self._is_retrolambda_enabled:
+            javacargs.extend(['-target', '1.7', '-source', '1.7'])
+
+        javacargs.append('-cp')
+        javacargs.append(os.pathsep.join(self._classpaths))
 
         for fpath in self._changed_files['src']:
             javacargs.append(fpath)
@@ -472,7 +478,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 self.debug('copy {} to {}'.format(new_r_file, old_r_file))
 
     def run_retrolambda(self):
-        if 'retrolambda' in self._config and self._config['retrolambda']['enabled']:
+        if self._is_retrolambda_enabled:
             target_dir = self._finder.get_patch_classes_cache_dir()
             jar_args = [Builder.get_java(self._config),
                         '-Dretrolambda.inputDir={}'.format(target_dir),
@@ -495,7 +501,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                             break
 
                     for clazz in classes:
-                        if short_path + '.class' in clazz or short_path + '$' in clazz:
+                        if short_path + '.class' in clazz or short_path + '$' in clazz or 'R.class' in clazz \
+                                or 'R$' in clazz:
                             include_file = os.path.join(target_dir, clazz)
                             if os.path.exists(include_file):
                                 self.debug('incremental build lambda file: {}'.format(include_file))
