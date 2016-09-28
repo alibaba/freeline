@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-![Release Version](https://img.shields.io/badge/release-0.7.0-red.svg) ![BSD License](https://img.shields.io/badge/license-BSD%20-blue.svg) ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+[![Release Version](https://img.shields.io/badge/release-0.7.1-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
 
 *Freeline* is a fast build and deployment tool for Android. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
 
@@ -22,13 +22,15 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 [中文原理说明](https://yq.aliyun.com/articles/59122?spm=5176.8091938.0.0.1Bw3mU)
 
 ## Features
-- Speed up standard android gradle projects with multiple modules;
-- Concurrent tasks that incrementally build project;
-- Hot deploy even if the main process crashes;
-- Build incremental dex and resource pack;
-- Caching resource.arsc support;
-- Running on Windows, Linux and Mac;
-- Native so hot swap support.
+- Speed up standard android gradle projects with multiple modules
+- Concurrent tasks that incrementally build project
+- Hot deploy even if the main process crashes
+- Build incremental dex and resource pack
+- Caching resource.arsc support
+- Running on Windows, Linux and Mac
+- Native so hot swap support
+- Annotation support
+- Retrolambda suppor
 
 See the following table for changes support.
 
@@ -50,35 +52,21 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.7.0'
+        classpath 'com.antfortune.freeline:gradle:0.7.1'
     }
 }
 ````
-Then, apply the freeline plugin in your android application module's build.gradle and add the freeline dependencies:
+Then, apply the freeline plugin in your android application module's build.gradle:
 
 ````Gradle
 apply plugin: 'com.antfortune.freeline'
 
 android {
     ...
-    freeline {
-        hack true
-    }
 }
 ````
 
 If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References).
-
-## Installation
-- Windows: `gradlew.bat initFreeline`
-- Linux/Mac: `./gradlew initFreeline`
-
-`gradle initFreeline -Pmirror` or proxy might be useful, if you have trouble in downloading freeline dependency.
-
-Note that, you should apply the freeline plugin dependency before you execute these commands. 
-
-## Update
-After changing the version of freeline in build.gradle files, you should run `./gradlew initFreeline` or `gradlew.bat initFreeline` to download the latest freeline dependency.
 
 ## Usage
 You can install freeline plugin in Android Studio for quick usage.
@@ -89,22 +77,11 @@ How to install? In Android Studio, go to Preferences → Plugins → Browse repo
 
 Just use the `Run Freeline` button and enjoy it.
 
+The plugin will show you the latest update of Freeline, you can use this plugin to update Freeline.
+
 Many thanks to [@pengwei1024](https://github.com/pengwei1024) and [@act262](https://github.com/act262) for creating such an awesome plugin.
 
-Besides, you can also execute python script in the command line in the root dir of your project:
-
-- `python freeline.py`
-
-    freeline will automatically perform a full build on your project as follows:
-    - manifest.xml modified
-    - build.gradle modified
-    - connect to other mobile phones after any incremental build
-    
-    and an incremental build on other change case (java or res modified ),you don't need to pay attention to what you just modified.
-
-- `python freeline.py -f`
-
-    when if you need a full build in other case , your can force it through adding "-f"
+Besides, you can also execute python script in the command line in the root dir of your project. See [wiki](https://github.com/alibaba/freeline/wiki/Freeline-CLI-Usage) for more details.
 
 
 ## Sample Usage
@@ -117,7 +94,6 @@ python freeline.py
 
 ## TODO
 - Compatibility Improvement
-- Annotation Support
 - Multiple Devices Connection Support
 
 ## Limitations
