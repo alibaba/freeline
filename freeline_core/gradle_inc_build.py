@@ -240,7 +240,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         self._changed_modules = changed_modules
         self._merged_res_paths = []
         self._merged_res_paths.append(self._finder.get_backup_res_dir())
-        self._is_retrolambda_enabled = 'retrolambda' in self._config and self._config['retrolambda']['enabled']
+        self._is_retrolambda_enabled = 'retrolambda' in self._config and self._name in self._config['retrolambda'] \
+                                       and self._config['retrolambda'][self._name]['enabled']
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
@@ -480,12 +481,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
     def run_retrolambda(self):
         if self._is_retrolambda_enabled:
+            lambda_config = self._config['retrolambda'][self._name]
             target_dir = self._finder.get_patch_classes_cache_dir()
             jar_args = [Builder.get_java(self._config),
                         '-Dretrolambda.inputDir={}'.format(target_dir),
                         '-Dretrolambda.outputDir={}'.format(target_dir)]
 
-            if self._config['retrolambda']['supportIncludeFiles']:
+            if lambda_config['supportIncludeFiles']:
                 include_files = []
                 classes = []
                 for dirpath, dirnames, files in os.walk(target_dir):
@@ -517,11 +519,11 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 else:
                     jar_args.append('-Dretrolambda.includedFiles={}'.format(include_files_param))
 
-            lambda_classpaths = [target_dir, self._config['retrolambda']['rtJar']]
+            lambda_classpaths = [target_dir, lambda_config['rtJar']]
             lambda_classpaths.extend(self._classpaths)
             param = os.pathsep.join(lambda_classpaths)
 
-            if self._config['retrolambda']['supportIncludeFiles'] and len(param) > 3496:
+            if lambda_config['supportIncludeFiles'] and len(param) > 3496:
                 classpath_file = os.path.join(self._cache_dir, self._name, 'retrolambda_classpaths.path')
                 self.__save_parms_to_file(classpath_file, lambda_classpaths)
                 jar_args.append('-Dretrolambda.classpathFile={}'.format(classpath_file))
@@ -529,8 +531,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 jar_args.append('-Dretrolambda.classpath={}'.format(param))
 
             jar_args.append('-cp')
-            jar_args.append(self._config['retrolambda']['targetJar'])
-            jar_args.append(self._config['retrolambda']['mainClass'])
+            jar_args.append(lambda_config['targetJar'])
+            jar_args.append(lambda_config['mainClass'])
 
             self.debug('retrolambda exec: ' + ' '.join(jar_args))
             output, err, code = cexec(jar_args, callback=None)

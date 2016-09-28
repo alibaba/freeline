@@ -133,6 +133,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                 def addtionalJars = []
                 def projectAptConfig = [:]
+                def projectRetrolambdaConfig = [:]
 
                 project.rootProject.allprojects { pro ->
                     if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
@@ -205,38 +206,32 @@ class FreelinePlugin implements Plugin<Project> {
                             }
                         }
                     }
-                }
 
-                // retrolambda
-                if (retrolambdaEnabled && project.plugins.hasPlugin("me.tatarka.retrolambda")) {
-                    def jdk8
-                    boolean isOnJava8 = (System.properties.'java.version' as String).startsWith('1.8')
-                    if (isOnJava8) {
-                        jdk8 = FreelineInitializer.getJavaHome()
-                    } else {
-                        jdk8 = System.getenv("JAVA8_HOME")
-                    }
+                    // find retrolambda config
+                    if (retrolambdaEnabled && pro.plugins.hasPlugin("me.tatarka.retrolambda")) {
+                        def jdk8 = getJdk8()
+                        if (jdk8 != null) {
+                            def rtJar = "${jdk8}/jre/lib/rt.jar"
+                            def retrolambdaConfig = pro.configurations.getByName("retrolambdaConfig")
+                            def targetJar = pro.files(retrolambdaConfig).asPath
+                            def mainClass = 'net.orfjackal.retrolambda.Main'
 
-                    if (jdk8 != null) {
-                        def rtJar = "${jdk8}/jre/lib/rt.jar"
-                        def retrolambdaConfig = project.configurations.getByName("retrolambdaConfig")
-                        def targetJar = project.files(retrolambdaConfig).asPath
-                        def mainClass = 'net.orfjackal.retrolambda.Main'
+                            VersionNumber retrolambdaVersion = retrolambdaVersion(retrolambdaConfig)
+                            def supportIncludeFiles = requireVersion(retrolambdaVersion, '2.1.0')
 
-                        VersionNumber retrolambdaVersion = retrolambdaVersion(retrolambdaConfig)
-                        def supportIncludeFiles = requireVersion(retrolambdaVersion, '2.1.0')
-
-                        def lambdaConfig = [
-                                'enabled': retrolambdaEnabled,
-                                'targetJar': targetJar,
-                                'mainClass': mainClass,
-                                'rtJar': rtJar,
-                                'supportIncludeFiles': supportIncludeFiles
-                        ]
-                        println(lambdaConfig)
-                        FreelineUtils.addNewAttribute(project, 'retrolambda', lambdaConfig)
-                    } else {
-                        println '[WARNING] JDK8 not found, skip retrolambda.'
+                            def lambdaConfig = [
+                                    'enabled': retrolambdaEnabled,
+                                    'targetJar': targetJar,
+                                    'mainClass': mainClass,
+                                    'rtJar': rtJar,
+                                    'supportIncludeFiles': supportIncludeFiles
+                            ]
+                            println("$pro.name retrolambda config:")
+                            println(lambdaConfig)
+                            projectRetrolambdaConfig[pro.name] = lambdaConfig
+                        } else {
+                            println '[WARNING] JDK8 not found, skip retrolambda.'
+                        }
                     }
                 }
 
@@ -369,6 +364,7 @@ class FreelinePlugin implements Plugin<Project> {
                 if (assembleTask) {
                     assembleTask.doLast {
                         FreelineUtils.addNewAttribute(project, 'apt', projectAptConfig)
+                        FreelineUtils.addNewAttribute(project, 'retrolambda', projectRetrolambdaConfig)
                         rollBackClasses(backupMap)
                     }
                 }
@@ -578,6 +574,14 @@ class FreelinePlugin implements Plugin<Project> {
         }
         def targetVersionNumber = VersionNumber.parse(version)
         return retrolambdaVersion >= targetVersionNumber
+    }
+
+    private static String getJdk8() {
+        if ((System.properties.'java.version' as String).startsWith('1.8')) {
+            return FreelineInitializer.getJavaHome()
+        } else {
+            return System.getenv("JAVA8_HOME")
+        }
     }
 
 }
