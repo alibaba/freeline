@@ -131,53 +131,78 @@ class FreelinePlugin implements Plugin<Project> {
                     findResourceDependencies(variant, p, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath))
                 }
 
-                // find additional jars
                 def addtionalJars = []
-                if (project.android.hasProperty("libraryRequests")) {
-                    project.android.libraryRequests.each { p ->
-                        def jar_path = FreelineUtils.joinPath(
-                                project.android.sdkDirectory.toString(),
-                                'platforms',
-                                project.android.compileSdkVersion.toString(),
-                                'optional',
-                                p.name + ".jar")
-                        def f = new File(jar_path)
-                        if (f.exists() && f.isFile()) {
-                            addtionalJars.add(jar_path)
-                            println "find additional jar: ${jar_path}"
-                        }
-                    }
-                }
+                def projectAptConfig = [:]
 
-                // apt
-                def isAptEnabled = isAptEnabled(project)
-                def javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
-                if (aptEnabled && isAptEnabled && javaCompile) {
-                    println 'Freeline found apt plugin enabled.'
-                    javaCompile.doFirst {
-                        def aptConfiguration = project.configurations.findByName("apt")
-                        if (aptConfiguration && !aptConfiguration.empty) {
-                            def aptOutputDir = new File(project.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
-                            def processorPath = (aptConfiguration + javaCompile.classpath).asPath
-
-                            boolean disableDiscovery = javaCompile.options.compilerArgs.indexOf('-processorpath') == -1
-
-                            int processorIndex = javaCompile.options.compilerArgs.indexOf('-processor')
-                            def processor = null
-                            if (processorIndex != -1) {
-                                processor = javaCompile.options.compilerArgs.get(processorIndex + 1)
-                            }
-
-                            def aptArgs = []
-                            javaCompile.options.compilerArgs.each { arg ->
-                                if (arg.toString().startsWith('-A')) {
-                                    aptArgs.add(arg)
+                project.rootProject.allprojects { pro ->
+                    if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
+                        // find additional jars
+                        if (pro.android.hasProperty("libraryRequests")) {
+                            pro.android.libraryRequests.each { p ->
+                                def jar_path = FreelineUtils.joinPath(
+                                        pro.android.sdkDirectory.toString(),
+                                        'platforms',
+                                        pro.android.compileSdkVersion.toString(),
+                                        'optional',
+                                        p.name + ".jar")
+                                def f = new File(jar_path)
+                                if (f.exists() && f.isFile()) {
+                                    addtionalJars.add(jar_path)
+                                    println "find additional jar: ${jar_path}"
                                 }
                             }
+                        }
 
-                            def aptConfig = ['enabled': isAptEnabled, 'disableDiscovery': disableDiscovery, 'aptOutput': aptOutputDir, 'processorPath': processorPath, 'processor': processor, 'aptArgs': aptArgs]
-                            println(aptConfig)
-                            FreelineUtils.addNewAttribute(project, 'apt', aptConfig)
+                        // find apt config
+                        def isAptEnabled = pro.plugins.hasPlugin("android-apt")
+
+                        def javaCompile
+                        if (pro.plugins.hasPlugin("com.android.application")) {
+                            javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
+                        } else {
+                            pro.android.libraryVariants.each { libraryVariant ->
+                                if ("release".equalsIgnoreCase(libraryVariant.buildType.name as String)) {
+                                    javaCompile = libraryVariant.hasProperty('javaCompiler') ? libraryVariant.javaCompiler : libraryVariant.javaCompile
+                                    return false
+                                }
+                            }
+                        }
+
+                        if (aptEnabled && isAptEnabled && javaCompile) {
+                            println "Freeline found ${pro.name} apt plugin enabled."
+                            javaCompile.outputs.upToDateWhen { false }
+                            javaCompile.doFirst {
+                                def aptConfiguration = pro.configurations.findByName("apt")
+                                if (aptConfiguration && !aptConfiguration.empty) {
+                                    def aptOutputDir
+                                    if (pro.plugins.hasPlugin("com.android.application")) {
+                                        aptOutputDir = new File(pro.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
+                                    } else {
+                                        aptOutputDir = new File(pro.buildDir, "generated/source/apt/release").absolutePath
+                                    }
+                                    def processorPath = (aptConfiguration + javaCompile.classpath).asPath
+
+                                    boolean disableDiscovery = javaCompile.options.compilerArgs.indexOf('-processorpath') == -1
+
+                                    int processorIndex = javaCompile.options.compilerArgs.indexOf('-processor')
+                                    def processor = null
+                                    if (processorIndex != -1) {
+                                        processor = javaCompile.options.compilerArgs.get(processorIndex + 1)
+                                    }
+
+                                    def aptArgs = []
+                                    javaCompile.options.compilerArgs.each { arg ->
+                                        if (arg.toString().startsWith('-A')) {
+                                            aptArgs.add(arg)
+                                        }
+                                    }
+
+                                    def aptConfig = ['enabled': isAptEnabled, 'disableDiscovery': disableDiscovery, 'aptOutput': aptOutputDir, 'processorPath': processorPath, 'processor': processor, 'aptArgs': aptArgs]
+                                    projectAptConfig[pro.name] = aptConfig
+                                    println("$pro.name APT config:")
+                                    println(aptConfig)
+                                }
+                            }
                         }
                     }
                 }
@@ -343,6 +368,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
                 if (assembleTask) {
                     assembleTask.doLast {
+                        FreelineUtils.addNewAttribute(project, 'apt', projectAptConfig)
                         rollBackClasses(backupMap)
                     }
                 }
