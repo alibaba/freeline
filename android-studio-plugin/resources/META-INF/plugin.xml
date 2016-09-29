@@ -220,7 +220,7 @@
 
     <actions>
         <!-- Freeline default run action -->
-        <action id="Plugin_FreeLine_Run" class="actions.FreeLineRunAction"
+        <action id="Plugin_Freeline_Run" class="actions.FreelineRunAction"
                 text="Run Freeline" description="Run Freeline"
                 icon="PluginIcons.FreelineIcon">
             <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
@@ -233,18 +233,18 @@
         </group>
 
         <!-- Freeline tools -->
-        <group id="Plugin_FreeLine_Tools" text="Freeline" description="Freeline" popup="true">
-            <action id="Plugin_FreeLine_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug"
-                    description="Run FreeLine Debug"
+        <group id="Plugin_Freeline_Tools" text="Freeline" description="Freeline" popup="true">
+            <action id="Plugin_Freeline_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug"
+                    description="Run Freeline Debug"
                     icon="PluginIcons.StartDebugger">
             </action>
             <separator/>
-            <action id="Plugin_FreeLine_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force"
-                    description="Run FreeLine Force"
+            <action id="Plugin_Freeline_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force"
+                    description="Run Freeline Force"
                     icon="PluginIcons.QuickfixBulb">
             </action>
             <separator/>
-            <action id="Plugin_FreeLine_Run_Update" class="actions.UpdateAction" text="Check Freeline Update"
+            <action id="Plugin_Freeline_Run_Update" class="actions.UpdateAction" text="Check Freeline Update"
                     description="Check Update"
                     icon="PluginIcons.GradleSync">
             </action>

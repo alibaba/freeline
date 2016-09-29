@@ -36,16 +36,16 @@ public abstract class BaseAction extends AnAction {
     public abstract void actionPerformed();
 
     /**
-     * 检查FreeLine是否存在
+     * 检查Freeline是否存在
      *
      * @return
      */
-    protected boolean checkFreeLineExist() {
+    protected boolean checkFreelineExist() {
         File pyFile = new File(projectDir, "freeline.py");
         if (pyFile.exists()) {
             return true;
         }
-        NotificationUtils.errorNotification("please install FreeLine first");
+        NotificationUtils.errorNotification("please install Freeline first");
         return false;
     }
 
