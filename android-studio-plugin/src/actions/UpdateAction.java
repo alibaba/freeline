@@ -37,7 +37,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
 
     @Override
     public void actionPerformed() {
-        if (checkFreeLineExist()) {
+        if (checkFreelineExist()) {
             asyncTask(new GetServerVersion(this));
         } else {
             GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", null);
