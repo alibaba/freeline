@@ -7,10 +7,10 @@ import views.FreelineTerminal;
 /**
  * Created by pengwei on 16/9/11.
  */
-public class FreeLineRunAction extends BaseAction {
+public class FreelineRunAction extends BaseAction {
     @Override
     public void actionPerformed() {
-        if (checkFreeLineExist()) {
+        if (checkFreelineExist()) {
             String python = Utils.getPythonLocation();
             if (python == null) {
                 NotificationUtils.errorNotification("command 'python' not found");

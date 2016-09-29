@@ -8,7 +8,7 @@ import com.intellij.openapi.application.ApplicationManager;
 
 public class NotificationUtils {
 
-    private static final String TITLE = "FreeLine Plugin";
+    private static final String TITLE = "Freeline Plugin";
     private static final NotificationGroup NOTIFICATION_GROUP = NotificationGroup.balloonGroup(TITLE);
 
     /**
