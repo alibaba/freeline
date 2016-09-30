@@ -30,7 +30,7 @@ FreelineAapt will open source codes later. See wiki to know more about Freeline,
 - Running on Windows, Linux and Mac
 - Native so hot swap support
 - Annotation support
-- Retrolambda suppor
+- Retrolambda support
 
 See the following table for changes support.
 
