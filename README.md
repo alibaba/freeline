@@ -68,6 +68,9 @@ android {
 
 If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References).
 
+for the first time ，you should run './gradlew initFreeline -Pmirror' to download freeline.
+
+
 ## Usage
 You can install freeline plugin in Android Studio for quick usage.
 
