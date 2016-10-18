@@ -27,8 +27,10 @@ public class PushDexSchema implements ISchemaAction {
 
     @Override
     public void handle(String method, String path, HashMap<String, String> headers, Map<String, String> queries, InputStream input, EmbedHttpServer.ResponseOutputStream response) throws Exception {
+        String dexName = queries.get("dexName");
+        File dexDir = new File(FreelineCore.getDynamicDexDir());
+        File file = new File(dexDir, dexName + ".pending");
         File dir = new File(FreelineCore.getDynamicInfoTempDir());
-        File file = new File(dir, "dex.pending");
         File optDir = new File(dir, "opt");
         if (!optDir.exists()) {
             optDir.mkdirs();
@@ -36,9 +38,9 @@ public class PushDexSchema implements ISchemaAction {
         String vmVersion = System.getProperty("java.vm.version");
         File finalFile = null;
         if (vmVersion != null && vmVersion.startsWith("2")) {
-            finalFile = new File(dir, "dynamic.apk");
+            finalFile = new File(dexDir, dexName + ".apk");
         } else {
-            finalFile = new File(dir, "dynamic.dex");
+            finalFile = new File(dexDir, dexName + ".dex");
         }
         FileOutputStream fos = new FileOutputStream(file);
         byte[] buf = new byte[4096];
@@ -51,8 +53,8 @@ public class PushDexSchema implements ISchemaAction {
         response.setStatusCode(201);
         boolean rst = file.renameTo(finalFile);
         //FreelineCore.applyDynamicDex(finalFile.getAbsolutePath(), optDir.getAbsolutePath());
-        LongLinkServer.setDynamicDexPath(finalFile.getAbsolutePath());
+        LongLinkServer.setDynamicDexPath(dexDir.getAbsolutePath());
         LongLinkServer.setOptDirPath(optDir.getAbsolutePath());
-        Log.d(TAG, new StringBuilder().append("dex file received (").append(finalFile.length()).append(" bytes)").toString() + " rename rst :" + rst);
+        Log.d(TAG, "dex file received (" + finalFile.length() + " bytes), rename result :" + rst  + ", save to " + finalFile.getAbsolutePath());
     }
 }
