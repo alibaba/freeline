@@ -131,18 +131,24 @@ class SyncClient(object):
         raise NotImplementedError
 
     def sync_incremental_dex(self):
-        dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
-        if os.path.exists(dex_path):
-            self.debug('start to sync incremental dex...')
-            with open(dex_path, 'rb') as fp:
-                url = 'http://127.0.0.1:{}/pushDex'.format(self._port)
-                self.debug('pushdex: ' + url)
-                result, err, code = curl(url, body=fp.read())
-                if code != 0:
-                    from exceptions import FreelineException
-                    raise FreelineException('sync incremental dex failed.', err.message)
-        else:
-            self.debug('no {} exists.'.format(dex_path))
+        # dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
+        dex_dir = android_tools.get_incremental_dex_dir(self._cache_dir)
+        if os.path.isdir(dex_dir):
+            dexes = [fn for fn in os.listdir(dex_dir) if fn.endswith('.dex')]
+            if len(dexes) > 0:
+                self.debug('start to sync incremental dex...')
+                for dex_name in dexes:
+                    dex_path = os.path.join(dex_dir, dex_name)
+                    with open(dex_path, 'rb') as fp:
+                        url = 'http://127.0.0.1:{}/pushDex?dexName={}'.format(self._port, dex_name.replace('.dex', ''))
+                        self.debug('pushdex: ' + url)
+                        self.debug('dex path: {}'.format(dex_path))
+                        result, err, code = curl(url, body=fp.read())
+                        if code != 0:
+                            from exceptions import FreelineException
+                            raise FreelineException('sync incremental dex failed.', err.message)
+            else:
+                self.debug('no incremental dexes in .'.format(dex_dir))
 
     def sync_state(self, is_need_restart):
         if self._is_need_sync_dex() or self._is_need_sync_res() or self._is_need_sync_native():

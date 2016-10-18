@@ -286,14 +286,25 @@ class MergeDexTask(Task):
                 self.debug('merge dex exec: ' + ' '.join(dex_merge_args))
                 output, err, code = cexec(dex_merge_args, callback=None)
                 if code != 0:
-                    raise FreelineException('merge dex failed: {}'.format(dex_merge_args), output + '\n' + err)
+                    raise FreelineException('merge dex failed: {}'.format(' '.join(dex_merge_args)),
+                                            output + '\n' + err)
 
     def _get_dexes(self):
         pending_merge_dexes = []
-        for bundle in self._all_modules:
-            path = os.path.join(self._cache_dir, bundle, 'dex', bundle + '.dex')
-            if os.path.exists(path):
-                pending_merge_dexes.append(path)
+        target_dir = get_incremental_dex_dir(self._cache_dir)
+        for module in self._all_modules:
+            dir_path = os.path.join(self._cache_dir, module, 'dex')
+            if os.path.isdir(dir_path):
+                files = os.listdir(dir_path)
+                dexes = [os.path.join(dir_path, fn) for fn in files if fn.endswith('.dex')]
+                if len(dexes) == 1:
+                    pending_merge_dexes.extend(dexes)
+                else:
+                    for dex in dexes:
+                        if dex.endswith('classes.dex'):
+                            shutil.copy(dex, os.path.join(target_dir, module + '-classes.dex'))
+                        else:
+                            pending_merge_dexes.append(dex)
         return pending_merge_dexes
 
 
@@ -567,13 +578,14 @@ class AndroidIncBuildInvoker(object):
 
     def run_dex_task(self):
         patch_classes_cache_dir = self._finder.get_patch_classes_cache_dir()
-        dex_path = self._finder.get_dst_dex_path()
+        # dex_path = self._finder.get_dst_dex_path()
+        dex_path = self._finder.get_patch_dex_dir()
         add_path = None
         if is_windows_system():
             add_path = str(os.path.abspath(os.path.join(self._javac, os.pardir)))
-            dex_args = [self._dx, '--dex', '--output=' + dex_path, patch_classes_cache_dir]
+            dex_args = [self._dx, '--dex', '--multi-dex', '--output=' + dex_path, patch_classes_cache_dir]
         else:
-            dex_args = [self._dx, '--dex', '--no-optimize', '--force-jumbo', '--output=' + dex_path,
+            dex_args = [self._dx, '--dex', '--no-optimize', '--force-jumbo', '--multi-dex', '--output=' + dex_path,
                         patch_classes_cache_dir]
 
         self.debug('dex exec: ' + ' '.join(dex_args))
@@ -716,7 +728,14 @@ def is_res_sub_dir(dir_name):
 
 
 def get_incremental_dex_path(cache_dir):
-    return os.path.join(cache_dir, 'increment.dex')
+    return os.path.join(get_incremental_dex_dir(cache_dir), 'merged.dex')
+
+
+def get_incremental_dex_dir(cache_dir):
+    dir_path = os.path.join(cache_dir, 'freeline-dexes')
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    return dir_path
 
 
 def get_device_sdk_version_by_adb(adb):

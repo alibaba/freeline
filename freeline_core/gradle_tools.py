@@ -546,8 +546,8 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
                     module = fn[:fn.rfind('.')]
                     self._refresh_public_files(module)
 
-                if fn.endswith('increment.dex') or fn.endswith('.rflag') or fn.endswith('.restart') or fn.endswith(
-                        'natives.zip'):
+                if fn.endswith('merged.dex') or fn.endswith('.rflag') or fn.endswith('.restart') or fn.endswith(
+                        'natives.zip') or fn.endswith('-classes.dex'):
                     fpath = os.path.join(dirpath, fn)
                     self.debug("remove cache: {}".format(fpath))
                     os.remove(fpath)
