@@ -61,6 +61,8 @@ android {
     ...
 }
 ````
+首次运行前，你需要运行一次 './gradlew initFreeline -Pmirror' 用于下载freeline核心库，该过程仅需一次.
+
 
 如果你的工程结构较为复杂，在第一次使用freeline编译的时候报错了的话，你可以添加一些freeline提供的配置项，来适配你的工程。具体可以看[Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References)。
 
