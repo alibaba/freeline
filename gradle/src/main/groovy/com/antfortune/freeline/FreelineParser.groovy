@@ -23,6 +23,7 @@ class FreelineParser {
 
     public static String getApplication(String manifestPath, String packageName) {
         def application = ""
+        packageName = fetchRealPackageName(manifestPath, packageName)
         def manifestFile = new File(manifestPath)
         if (manifestFile.exists() && manifestFile.isFile()) {
             def manifest = new XmlSlurper(false, false).parse(manifestFile)
@@ -36,6 +37,7 @@ class FreelineParser {
 
     public static String getLauncher(String manifestPath, String packageName) {
         def launcher = ""
+        packageName = fetchRealPackageName(manifestPath, packageName)
         def manifestFile = new File(manifestPath)
         if (manifestFile.exists() && manifestFile.isFile()) {
             def manifest = new XmlSlurper(false, false).parse(manifestFile)
@@ -85,6 +87,14 @@ class FreelineParser {
             minSdkVersion = manifest."uses-sdk"."@android:minSdkVersion".text()
         }
         return Integer.valueOf(minSdkVersion)
+    }
+
+    private static String fetchRealPackageName(String manifestPath, String packageName) {
+        def manifestPackageName = getPackage(manifestPath)
+        if (manifestPackageName != null && !manifestPackageName.equals(packageName)) {
+            packageName = manifestPackageName
+        }
+        return packageName
     }
 
 }
