@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.antfortune.freeline.gradle.GradleDynamic;
+import com.antfortune.freeline.resources.MonkeyPatcher;
 import com.antfortune.freeline.util.ActivityManager;
 import com.antfortune.freeline.util.AppUtils;
 import com.antfortune.freeline.util.DexUtils;
@@ -57,8 +58,16 @@ public class FreelineCore {
 
     private static Application sApplication;
 
+    private static Application sRealApplication;
+
     private static IDynamic sDynamic;
 
+    public static void init(Application app, Application realApplication) {
+        sRealApplication = realApplication;
+        init(app, new GradleDynamic(app));
+    }
+
+    @Deprecated
     public static void init(Application app) {
         init(app, new GradleDynamic(app));
     }
@@ -71,6 +80,7 @@ public class FreelineCore {
         if (AppUtils.isApkDebugable(app) && AppUtils.isMainProcess(app)) {
             Log.i(TAG, "freeline init application");
             ActivityManager.initApplication(app);
+            MonkeyPatcher.monkeyPatchApplication(app, app, sRealApplication, null);
 
             try {
                 Object mPackageInfo = getPackageInfo(app);
@@ -135,7 +145,7 @@ public class FreelineCore {
     }
 
     public static long getBuildTime(Context context) {
-        String path = context.getApplicationContext().getPackageResourcePath();
+        String path = context.getApplicationInfo().sourceDir;
         return (new File(path)).lastModified();
     }
 
@@ -325,6 +335,10 @@ public class FreelineCore {
             return sDynamic.applyDynamicRes(dynamicRes);
         }
         return false;
+    }
+
+    public static Application getRealApplication() {
+        return sRealApplication;
     }
 
     public static void updateDynamicTime() {

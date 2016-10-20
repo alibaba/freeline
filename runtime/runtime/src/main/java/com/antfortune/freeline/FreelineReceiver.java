@@ -39,7 +39,7 @@ public class FreelineReceiver extends BroadcastReceiver {
             if (type == ACTION_UPDATE_ACTIVITY) {
                 saveDynamicResInfo(intent);
                 FreelineCore.updateDynamicTime();
-                ActivityManager.restartActivity();
+                ActivityManager.restartForegroundActivity();
             } else if (type == ACTION_RESTART_APPLICATION) {
                 saveDynamicResInfo(intent);
                 applyDynamicDex(intent);

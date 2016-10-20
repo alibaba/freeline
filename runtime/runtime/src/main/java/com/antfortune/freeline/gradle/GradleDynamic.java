@@ -28,7 +28,8 @@ public class GradleDynamic implements IDynamic {
 			String dynamicResPath = dynamicRes.get(FreelineCore.DEFAULT_PACKAGE_ID);
 			Log.i(TAG, "dynamicResPath: " + dynamicResPath);
 			if (!TextUtils.isEmpty(dynamicResPath)) {
-				MonkeyPatcher.monkeyPatchApplication(app, null, app, dynamicResPath);
+                Application realApplication = FreelineCore.getRealApplication();
+				MonkeyPatcher.monkeyPatchApplication(app, app, realApplication, dynamicResPath);
 				MonkeyPatcher.monkeyPatchExistingResources(app, dynamicResPath, Arrays.asList(ActivityManager.getAllActivities()));
 				Log.i(TAG, "GradleDynamic apply dynamic resource successfully");
 			}
