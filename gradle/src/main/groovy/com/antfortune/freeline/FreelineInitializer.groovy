@@ -197,7 +197,7 @@ class FreelineInitializer {
 
         if (buildScript == null || buildScript == '') {
             // set default build script
-            projectDescription.build_script = FreelineGenerator.generateBuildScript(productFlavor)
+            projectDescription.build_script = FreelineGenerator.generateBuildScript(projectDescription.main_project_name as String, productFlavor)
         }
 
         if (launcher == null || launcher == '') {
