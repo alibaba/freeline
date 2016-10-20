@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.antfortune.freeline.FreelineCore;
 import com.antfortune.freeline.MiddlewareActivity;
 
 import java.util.ArrayList;
@@ -127,7 +128,12 @@ public class ActivityManager {
 
     }
 
-
+    public static void restartForegroundActivity() {
+        Activity foregroundActivity = Restarter.getForegroundActivity(FreelineCore.getApplication());
+        if (foregroundActivity != null) {
+            Restarter.restartActivityOnUiThread(foregroundActivity);
+        }
+    }
     
     public static void restartActivity() {
     	Activity[] activities = getAllActivities();

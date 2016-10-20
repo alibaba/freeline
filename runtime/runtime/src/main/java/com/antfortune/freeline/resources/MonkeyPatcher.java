@@ -208,10 +208,16 @@ public class MonkeyPatcher {
                     if (loadedApk == null) {
                         continue;
                     }
-                    mApplication.set(loadedApk, realApplication);
-                    mResDir.set(loadedApk, externalResourceFile);
-                    if (mLoadedApk != null) {
-                        mLoadedApk.set(realApplication, loadedApk);
+                    if (mApplication.get(loadedApk) == bootstrap) {
+                        if (realApplication != null) {
+                            mApplication.set(loadedApk, realApplication);
+                        }
+                        if (externalResourceFile != null) {
+                            mResDir.set(loadedApk, externalResourceFile);
+                        }
+                        if (realApplication != null && mLoadedApk != null) {
+                            mLoadedApk.set(realApplication, loadedApk);
+                        }
                     }
                 }
             }
