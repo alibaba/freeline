@@ -392,7 +392,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     elif pn == self._module_info['packagename']:
                         fpath = self.__modify_other_modules_r(pn)
                         self.debug('modify {}'.format(fpath))
-                        if os.path.exists(fpath):
+                        if fpath and os.path.exists(fpath):
                             self._changed_files['src'].append(fpath)
                             self.debug('add R.java to changed list: ' + fpath)
         else:
