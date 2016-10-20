@@ -4,7 +4,9 @@ import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ProjectComponent;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.SimpleToolWindowPanel;
@@ -246,13 +248,10 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     /**
      * 停止执行
      */
-    private static class StopAction extends DumbAwareAction {
-        private FreelineTerminal terminal;
+    private static class StopAction extends BaseTerminalAction {
         private Robot robot;
-
         public StopAction(FreelineTerminal terminal) {
-            super("Stop Run Freeline", "Stop Run Freeline", PluginIcons.Suspend);
-            this.terminal = terminal;
+            super(terminal, "Stop Run Freeline", "Stop Run Freeline", PluginIcons.Suspend);
             try {
                 robot = new Robot();
             } catch (AWTException e) {
@@ -261,7 +260,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         }
 
         @Override
-        public void actionPerformed(AnActionEvent anActionEvent) {
+        public void doAction(AnActionEvent anActionEvent) {
             if (terminal.getCurrentSession() != null) {
                 terminal.getCurrentSession().getComponent().requestFocusInWindow();
                 Utils.keyPressWithCtrl(robot, KeyEvent.VK_C);
@@ -269,44 +268,35 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         }
     }
 
-    private static class RunAction extends DumbAwareAction {
-        private FreelineTerminal terminal;
-
+    private static class RunAction extends BaseTerminalAction {
         public RunAction(FreelineTerminal terminal) {
-            super("Run Freeline", "Run Freeline", PluginIcons.FreelineIcon);
-            this.terminal = terminal;
+            super(terminal, "Run Freeline", "Run Freeline", PluginIcons.FreelineIcon);
         }
 
         @Override
-        public void actionPerformed(AnActionEvent anActionEvent) {
+        public void doAction(AnActionEvent anActionEvent) {
             terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py"});
         }
     }
 
-    private static class DebugAction extends DumbAwareAction {
-        private FreelineTerminal terminal;
-
+    private static class DebugAction extends BaseTerminalAction {
         public DebugAction(FreelineTerminal terminal) {
-            super("Run Freeline -d", "Run Freeline -d", PluginIcons.StartDebugger);
-            this.terminal = terminal;
+            super(terminal, "Run Freeline -d", "Run Freeline -d", PluginIcons.StartDebugger);
         }
 
         @Override
-        public void actionPerformed(AnActionEvent anActionEvent) {
+        public void doAction(AnActionEvent anActionEvent) {
             terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py", "-d"});
         }
     }
 
-    private static class ForceAction extends DumbAwareAction {
-        private FreelineTerminal terminal;
-
+    private static class ForceAction extends BaseTerminalAction {
         public ForceAction(FreelineTerminal terminal) {
-            super("Run Freeline -f", "Run Freeline -f", PluginIcons.QuickfixBulb);
-            this.terminal = terminal;
+            super(terminal, "Run Freeline -f", "Run Freeline -f", PluginIcons.QuickfixBulb);
         }
 
         @Override
-        public void actionPerformed(AnActionEvent anActionEvent) {
+        public void doAction(AnActionEvent anActionEvent) {
             terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py", "-f"});
         }
     }
@@ -314,19 +304,38 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     /**
      * 清空terminal
      */
-    private static class ClearAction extends DumbAwareAction {
-        private FreelineTerminal terminal;
-
+    private static class ClearAction extends BaseTerminalAction {
         public ClearAction(FreelineTerminal terminal) {
-            super("Clear", "Clear", PluginIcons.GC);
+            super(terminal, "Clear", "Clear", PluginIcons.GC);
+        }
+
+        @Override
+        public void doAction(AnActionEvent anActionEvent) {
+            if (terminal.getCurrentSession() != null) {
+                terminal.getCurrentSession().getTerminal().reset();
+            }
+        }
+    }
+
+    private static abstract class BaseTerminalAction extends DumbAwareAction {
+        protected FreelineTerminal terminal;
+
+        public BaseTerminalAction(FreelineTerminal terminal, String text, String description, Icon icon) {
+            super(text, description, icon);
             this.terminal = terminal;
         }
 
         @Override
         public void actionPerformed(AnActionEvent anActionEvent) {
-            if (terminal.getCurrentSession() != null) {
-                terminal.getCurrentSession().getTerminal().reset();
-            }
+            saveDocuments();
+            doAction(anActionEvent);
         }
+
+        private void saveDocuments() {
+            FileDocumentManager.getInstance().saveAllDocuments();
+            ApplicationManager.getApplication().saveSettings();
+        }
+
+        public abstract void doAction(AnActionEvent anActionEvent);
     }
 }

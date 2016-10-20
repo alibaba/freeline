@@ -26,7 +26,10 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import dalvik.system.PathClassLoader;
@@ -45,6 +48,8 @@ public class FreelineCore {
     public static final String DEFAULT_PACKAGE_ID = "base-res.key";
 
     private static final String DYNAMIC_INFO_DEX_PATH_KEY = "dynamic_dex_key";
+
+    private static final String DYNAMIC_INFO_DEX_DIR_KEY = "dynamic_dex_dir_key";
 
     private static final String DYNAMIC_INFO_OPT_PATH_KEY = "dynamic_opt_key";
 
@@ -108,6 +113,10 @@ public class FreelineCore {
 
     private static String getDynamicDexPath() {
         return getDynamicInfoSp().getString(DYNAMIC_INFO_DEX_PATH_KEY, null);
+    }
+
+    private static String getDynamicDexDirPath() {
+        return getDynamicInfoSp().getString(DYNAMIC_INFO_DEX_DIR_KEY, null);
     }
 
     private static String getDynamicDexOptPath() {
@@ -195,22 +204,22 @@ public class FreelineCore {
     }
 
     private static void injectHackDex(Context context, PathClassLoader origin) {
-        File hostDex = new File(getDynamicCacheDir(), "hackload.dex");
-        if (!hostDex.exists() || hostDex.length() < 100) {
+        File hackDex = new File(getDynamicCacheDir(), "hackload.dex");
+        if (!hackDex.exists() || hackDex.length() < 100) {
             try {
-                copyAssets(context, "hackload.dex", hostDex.getAbsolutePath());
+                copyAssets(context, "hackload.dex", hackDex.getAbsolutePath());
                 Log.i(TAG, "copy hackload dex from assets success");
             } catch (Exception e) {
                 printStackTrace(e);
             }
         }
-        if (hostDex.exists() && hostDex.length() > 100) {
+        if (hackDex.exists() && hackDex.length() > 100) {
             File opt = new File(getDynamicCacheDir(), "opt");
             if (!opt.exists()) {
                 opt.mkdirs();
             }
-            DexUtils.inject(origin, hostDex, opt);
-            Log.i(TAG, "load hackload，dex size:" + hostDex.length());
+            DexUtils.inject(origin, hackDex, opt);
+            Log.i(TAG, "load hackload，dex size:" + hackDex.length());
         }
     }
 
@@ -220,16 +229,27 @@ public class FreelineCore {
 
 
     private static void injectDex(PathClassLoader origin) {
-        String dexPath = getDynamicDexPath();
-        if (!TextUtils.isEmpty(dexPath)) {
-            File dex = new File(dexPath);
-            if (dex.exists()) {
-                File opt = new File(getDynamicDexOptPath());
-                if (!opt.exists()) {
-                    opt.mkdirs();
+        String dexDirPath = getDynamicDexDirPath();
+        if (!TextUtils.isEmpty(dexDirPath)) {
+            File dexDir = new File(dexDirPath);
+            if (dexDir.isDirectory()) {
+                File[] dexFiles = dexDir.listFiles();
+
+                if (dexFiles.length > 0) {
+                    File opt = new File(getDynamicDexOptPath());
+                    if (!opt.exists()) {
+                        opt.mkdirs();
+                    }
+                    for (File dexFile : dexFiles) {
+                        String dirName = generateStringMD5(dexFile.getName());
+                        File dexOptDir = new File(opt, dirName);
+                        if (!dexOptDir.exists()) {
+                            dexOptDir.mkdirs();
+                        }
+                        DexUtils.inject(origin, dexFile, dexOptDir);
+                    }
+                    Log.i(TAG, "find increment package");
                 }
-                DexUtils.inject(origin, dex, opt);
-                Log.i(TAG, "find increment package");
             }
         }
     }
@@ -253,7 +273,8 @@ public class FreelineCore {
         Log.i(TAG, "apply dynamicDex " + dexFileStr);
         SharedPreferences sp = getDynamicInfoSp();
         SharedPreferences.Editor editor = sp.edit();
-        editor.putString(DYNAMIC_INFO_DEX_PATH_KEY, dexFileStr);
+        //editor.putString(DYNAMIC_INFO_DEX_PATH_KEY, dexFileStr);
+        editor.putString(DYNAMIC_INFO_DEX_DIR_KEY, dexFileStr);
         editor.putString(DYNAMIC_INFO_OPT_PATH_KEY, dexOptDir);
         editor.commit();
         return true;
@@ -334,6 +355,14 @@ public class FreelineCore {
 
     public static String getDynamicInfoTempDir() {
         File dir = new File(sApplication.getCacheDir(), "temp");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir.getAbsolutePath();
+    }
+
+    public static String getDynamicDexDir() {
+        File dir = new File(getDynamicInfoTempDir(), "dex");
         if (!dir.exists()) {
             dir.mkdirs();
         }

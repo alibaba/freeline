@@ -5,9 +5,13 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.antfortune.freeline.resources.MonkeyPatcher;
 import com.antfortune.freeline.util.ReflectUtil;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.Map;
 
 /**
  * Created by huangyong on 16/9/14.
@@ -28,6 +32,7 @@ public class FreelineApplication extends Application {
         FreelineCore.init(this);
         initFreelineConfig();
         createRealApplication();
+        replaceApplication();
         startRealApplication();
     }
 
@@ -80,6 +85,60 @@ public class FreelineApplication extends Application {
                 FreelineCore.printStackTrace(e);
                 Log.e(TAG, "create real application error");
             }
+        }
+    }
+
+    private void replaceApplication() {
+        try {
+            Log.d(TAG, "FreelineApplication#replaceApplication()");
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Field applicationField = getApplicationField();
+            Field packagesField = getPackagesField(activityThreadClass);
+            Field loadedApkField = getLoadedApkField();
+            Object currentActivityThread = MonkeyPatcher.getActivityThread(this, activityThreadClass);
+
+            Map<String, WeakReference<?>> packages = (Map<String, WeakReference<?>>) packagesField.get(currentActivityThread);
+            for (Map.Entry<String, WeakReference<?>> entry : packages.entrySet()) {
+                Object loadedApk = entry.getValue().get();
+                if (loadedApk == null) {
+                    continue;
+                }
+                applicationField.set(loadedApk, realApplication);
+                if (loadedApkField != null) {
+                    loadedApkField.setAccessible(true);
+                    loadedApkField.set(realApplication, loadedApk);
+                }
+            }
+            Log.d(TAG, "replace Application success.");
+        } catch (Exception e) {
+            FreelineCore.printStackTrace(e);
+            Log.e(TAG, "replace application error.");
+        }
+    }
+
+    private Field getApplicationField() throws ClassNotFoundException, NoSuchFieldException {
+        Class<?> loadedApkClass;
+        try {
+            loadedApkClass = Class.forName("android.app.LoadedApk");
+        } catch (ClassNotFoundException e) {
+            loadedApkClass = Class.forName("android.app.ActivityThread$PackageInfo");
+        }
+        Field applicationField = loadedApkClass.getDeclaredField("mApplication");
+        applicationField.setAccessible(true);
+        return applicationField;
+    }
+
+    private Field getPackagesField(Class activityThreadClass) throws ClassNotFoundException, NoSuchFieldException {
+        Field packagesField = activityThreadClass.getDeclaredField("mPackages");
+        packagesField.setAccessible(true);
+        return packagesField;
+    }
+
+    private Field getLoadedApkField() {
+        try {
+            return Application.class.getDeclaredField("mLoadedApk");
+        } catch (NoSuchFieldException e) {
+            return null;
         }
     }
 }
