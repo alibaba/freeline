@@ -128,7 +128,8 @@ class FreelinePlugin implements Plugin<Project> {
 
                 // find thrid party libraries' resources dependencies
                 project.rootProject.allprojects.each { p ->
-                    findResourceDependencies(variant, p, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath))
+                    findResourceDependencies(variant, p, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "resources")
+                    findResourceDependencies(variant, p, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "assets")
                 }
 
                 def addtionalJars = []
@@ -204,6 +205,8 @@ class FreelinePlugin implements Plugin<Project> {
                                     println(aptConfig)
                                 }
                             }
+                        } else {
+                            println "Freeline not found apt plugin for $pro.name[aptEnabled: $aptEnabled, isAptEnabled: $isAptEnabled, javaCompile: ${javaCompile == null}]"
                         }
                     }
 
@@ -389,36 +392,38 @@ class FreelinePlugin implements Plugin<Project> {
         }
     }
 
-    private static void findResourceDependencies(def variant, Project project, String buildCacheDir) {
-        def mergeResourcesTask = project.tasks.findByName("merge${variant.name.capitalize()}Resources")
-        def resourcesInterceptor = "resourcesInterceptorBeforeMerge${variant.name.capitalize()}Resources"
+    private static void findResourceDependencies(def variant, Project project, String buildCacheDir, String type) {
+        def mergeResourcesTask = project.tasks.findByName("merge${variant.name.capitalize()}${type.capitalize()}")
+        def resourcesInterceptor = "${type}InterceptorBeforeMerge${variant.name.capitalize()}${type.capitalize()}"
         if (mergeResourcesTask == null) {
-            mergeResourcesTask = project.tasks.findByName("mergeReleaseResources")
+            mergeResourcesTask = project.tasks.findByName("mergeRelease${type.capitalize()}")
         }
         if (mergeResourcesTask == null) {
-            mergeResourcesTask = project.tasks.findByName("mergeDebugResources")
+            mergeResourcesTask = project.tasks.findByName("mergeDebug${type.capitalize()}")
         }
         if (mergeResourcesTask == null) {
-            println "${project.name} merge resources task not found."
+            println "${project.name} merge ${type} task not found."
             if (!project.hasProperty("android")) {
                 return
             }
 
-            def resourcesDependencies = ["local_resources": [], "library_resources": []]
-            def searchDirs = [new File(project.buildDir, 'generated/res/resValues/release'),
-                              new File(project.buildDir, 'generated/res/rs/release')]
-            searchDirs.each { dir ->
-                if (dir.exists()) {
-                    resourcesDependencies.local_resources.add(dir.absolutePath)
-                    println "add local resource: ${dir.absolutePath}"
+            if (type == 'resources') {
+                def resourcesDependencies = ["local_resources": [], "library_resources": []]
+                def searchDirs = [new File(project.buildDir, 'generated/res/resValues/release'),
+                                  new File(project.buildDir, 'generated/res/rs/release')]
+                searchDirs.each { dir ->
+                    if (dir.exists()) {
+                        resourcesDependencies.local_resources.add(dir.absolutePath)
+                        println "add local resource: ${dir.absolutePath}"
+                    }
                 }
+                def json = new JsonBuilder(resourcesDependencies).toPrettyString()
+                def cacheDir = new File(FreelineUtils.joinPath(FreelineUtils.joinPath(buildCacheDir, project.name)))
+                if (!cacheDir.exists()) {
+                    cacheDir.mkdirs()
+                }
+                FreelineUtils.saveJson(json, FreelineUtils.joinPath(cacheDir.absolutePath, "resources_dependencies.json"), true)
             }
-            def json = new JsonBuilder(resourcesDependencies).toPrettyString()
-            def cacheDir = new File(FreelineUtils.joinPath(FreelineUtils.joinPath(buildCacheDir, project.name)))
-            if (!cacheDir.exists()) {
-                cacheDir.mkdirs()
-            }
-            FreelineUtils.saveJson(json, FreelineUtils.joinPath(cacheDir.absolutePath, "resources_dependencies.json"), true)
             return
         }
 
@@ -435,13 +440,21 @@ class FreelinePlugin implements Plugin<Project> {
                 if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
                     def mapper = ["match" : "", "path" : []]
                     mapper.match = "exploded-aar${File.separator}${p.group}${File.separator}${p.name}${File.separator}"
-                    p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
+                    if (type == "resources") {
+                        p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
+                    } else if (type == "assets") {
+                        p.android.sourceSets.main.assets.srcDirs.asList().collect(mapper.path) { it.absolutePath }
+                    }
                     mappers.add(mapper)
                 }
             }
 
             def projectResDirs = []
-            project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+            if (type == "resources") {
+                project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+            } else if (type == "assets") {
+                project.android.sourceSets.main.assets.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+            }
 
             mergeResourcesTask.inputs.files.files.each { f ->
                 if (f.exists() && f.isDirectory()) {
@@ -472,7 +485,7 @@ class FreelinePlugin implements Plugin<Project> {
 
             def json = new JsonBuilder(resourcesDependencies).toPrettyString()
             project.logger.info(json)
-            FreelineUtils.saveJson(json, FreelineUtils.joinPath(dir.absolutePath, "resources_dependencies.json"), true);
+            FreelineUtils.saveJson(json, FreelineUtils.joinPath(dir.absolutePath, "${type}_dependencies.json"), true);
         }
 
         def resourcesInterceptorTask = project.tasks[resourcesInterceptor]
