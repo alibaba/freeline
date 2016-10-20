@@ -21,7 +21,7 @@ class FreelineGenerator {
         return productFlavor.equalsIgnoreCase("") || productFlavor.equalsIgnoreCase("debug")
     }
 
-    public static String generateBuildScript(String productFlavor) {
+    public static String generateBuildScript(String mainModule, String productFlavor) {
         def params = []
         if (Os.isFamily(Os.FAMILY_WINDOWS)) {
             params.add("gradlew.bat")
@@ -30,9 +30,9 @@ class FreelineGenerator {
         }
 
         if (isNormalProductFlavor(productFlavor)) {
-            params.add("assembleDebug")
+            params.add(":${mainModule}:assembleDebug")
         } else {
-            params.add("assemble${productFlavor.capitalize()}Debug")
+            params.add(":${mainModule}:assemble${productFlavor.capitalize()}Debug")
         }
 
         return params.join(" ")
