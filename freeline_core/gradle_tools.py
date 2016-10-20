@@ -646,12 +646,15 @@ class BuildBaseResourceTask(Task):
                 aapt_args.append('-A')
                 aapt_args.append(adir)
 
-        for m in self._module_info['local_module_dep']:
-            if m in self._config['project_source_sets']:
-                for adir in self._config['project_source_sets'][m]['main_assets_directory']:
-                    if os.path.exists(adir):
-                        aapt_args.append('-A')
-                        aapt_args.append(adir)
+        for adir in self._module_info['local_dep_assets_path']:
+            if os.path.exists(adir):
+                aapt_args.append('-A')
+                aapt_args.append(adir)
+
+        for adir in self._module_info['dep_assets_path']:
+            if os.path.exists(adir):
+                aapt_args.append('-A')
+                aapt_args.append(adir)
 
         base_resource_path = get_base_resource_path(self._config['build_cache_dir'])
         aapt_args.append('-m')
@@ -780,29 +783,37 @@ def get_project_info(config):
                     if local_dep_name in project_info:
                         project_info[module['name']]['local_module_dep'].append(local_dep_name)
 
-            res_dependencies_path = os.path.join(config['build_cache_dir'], module['name'],
-                                                 'resources_dependencies.json')
-            res_dependencies = {'library_resources': [], 'local_resources': []}
-            if os.path.exists(res_dependencies_path):
-                res_dependencies = load_json_cache(res_dependencies_path)
-            project_info[module['name']]['dep_res_path'] = res_dependencies['library_resources']
-
-            if 'module_dependencies' not in config:
-                project_info[module['name']]['local_dep_res_path'] = res_dependencies['local_resources']
-            else:
-                local_res_deps = []
-                local_res_deps.extend(res_dependencies['local_resources'])
-                deps = project_info[module['name']]['local_module_dep']
-                deps = find_all_dependent_modules(deps, deps, config)
-                for m in deps:
-                    deppath = os.path.join(config['build_cache_dir'], m, 'resources_dependencies.json')
-                    if os.path.exists(deppath):
-                        dep = load_json_cache(deppath)
-                        if 'local_resources' in dep:
-                            local_res_deps.extend(dep['local_resources'])
-                project_info[module['name']]['local_dep_res_path'] = list(set(local_res_deps))
+            project_info[module['name']]['dep_res_path'], project_info[module['name']]['local_dep_res_path'] = \
+                get_local_resources_dependencies('resources', config, module, project_info)
+            project_info[module['name']]['dep_assets_path'], project_info[module['name']]['local_dep_assets_path'] = \
+                get_local_resources_dependencies('assets', config, module, project_info)
 
     return project_info
+
+
+def get_local_resources_dependencies(res_type, config, module, project_info):
+    res_dep_path = os.path.join(config['build_cache_dir'], module['name'], '{}_dependencies.json'.format(res_type))
+    res_dependencies = {'library_resources': [], 'local_resources': []}
+    if os.path.exists(res_dep_path):
+        res_dependencies = load_json_cache(res_dep_path)
+
+    local_dep_res_path = []
+    if 'module_dependencies' not in config:
+        local_dep_res_path = res_dependencies['local_resources']
+    else:
+        local_res_deps = []
+        local_res_deps.extend(res_dependencies['local_resources'])
+        deps = project_info[module['name']]['local_module_dep']
+        deps = find_all_dependent_modules(deps, deps, config)
+        for m in deps:
+            deppath = os.path.join(config['build_cache_dir'], m, '{}_dependencies.json'.format(res_type))
+            if os.path.exists(deppath):
+                dep = load_json_cache(deppath)
+                if 'local_resources' in dep:
+                    local_res_deps.extend(dep['local_resources'])
+                local_dep_res_path = list(set(local_res_deps))
+
+    return res_dependencies['library_resources'], local_dep_res_path
 
 
 def find_all_dependent_modules(arr, modules, config):
