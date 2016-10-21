@@ -61,8 +61,15 @@ android {
     ...
 }
 ````
-首次运行前，你需要运行一次 './gradlew initFreeline -Pmirror' 用于下载freeline核心库，该过程仅需一次.
 
+最后，在命令行执行以下命令来下载 freeline 的 python 和二进制依赖。
+
+- Windows[CMD]: gradlew initFreeline
+- Linux/Mac: ./gradlew initFreeline
+
+对于国内的用户来说，如果你的下载的时候速度很慢，你也可以加上参数，执行`gradlew initFreeline -Pmirror`，这样就会从国内镜像地址来下载。
+
+你也可以使用参数`-PfreelineVersion={your-specific-version}`来下载特定版本的 freeline 依赖。
 
 如果你的工程结构较为复杂，在第一次使用freeline编译的时候报错了的话，你可以添加一些freeline提供的配置项，来适配你的工程。具体可以看[Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References)。
 
