@@ -68,10 +68,16 @@ android {
 }
 ````
 
+Finally, execute the gradle task `initFreeline` to download freeline dependencies.
+
+- Windows[CMD]: gradlew initFreeline
+- Linux/Mac: ./gradlew initFreeline
+
+For Chinese users, if you got stuck in the download process, you can execute `gradlew initFreeline -Pmirror` to speed up the progress.
+
+You can also use `-PfreelineVersion={your-specific-version}` parameter to download the specific version of freeline's python and bin dependencies.
+
 If you have a complex project structure, you may need to use freeline DSL to customize your build process. For more details about freeline DSL, see [Freeline DSL References](https://github.com/alibaba/freeline/wiki/Freeline-DSL-References).
-
-for the first time ，you should run './gradlew initFreeline -Pmirror' to download freeline.
-
 
 ## Usage
 You can install freeline plugin in Android Studio for quick usage.
