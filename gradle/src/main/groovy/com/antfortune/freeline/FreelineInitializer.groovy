@@ -161,9 +161,11 @@ class FreelineInitializer {
         projectDescription.extra_dep_res_paths = extraResourcesDependencies
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
+        projectDescription.android_gradle_version = getAndroidGradleVersion(project)
+        projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_version as String)
 
         if (packageName == null || packageName == '') {
-            projectDescription.package = FreelineParser.getPackageName(project.android.defaultConfig.applicationId.toString(), projectDescription.main_manifest_path)
+            projectDescription.package = FreelineParser.getPackageName(project.android.defaultConfig.applicationId as String, projectDescription.main_manifest_path as String)
             projectDescription.debug_package = projectDescription.package
         }
 
@@ -247,12 +249,61 @@ class FreelineInitializer {
         projectDescription.project_source_sets = project_source_sets
 
         projectDescription.modules = modules
-        projectDescription.module_dependencies = module_dependencies;
+        projectDescription.module_dependencies = module_dependencies
+
+        projectDescription.databinding = []
+        project.rootProject.allprojects.each { pro ->
+            if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
+                if (pro.android.hasProperty("dataBinding") && pro.android.dataBinding.enabled) {
+                    def data = [:]
+                    String manifestPath = projectDescription.project_source_sets[pro.name].main_manifest_path
+                    data.name = pro.name
+                    data.isLibrary = pro.plugins.hasPlugin("com.android.library")
+                    data.minSdkVersion = getMinSdkVersion(pro, manifestPath)
+                    if (pro.name == project.name) {
+                        data.packageName = projectDescription.package
+                    } else if (data.isLibrary) {
+                        data.packageName = FreelineParser.getPackage(manifestPath)
+                    }
+                    projectDescription.databinding.add(data)
+                }
+            }
+        }
 
         def json = new JsonBuilder(projectDescription).toPrettyString()
         println json
 
         FreelineUtils.saveJson(json, FreelineUtils.joinPath(projectDescription.freeline_cache_dir, 'project_description.json'), true)
+    }
+
+    private static def getMinSdkVersion(Project project, String manifestPath) {
+        if (project.android.defaultConfig.minSdkVersion != null) {
+            return project.android.defaultConfig.minSdkVersion.apiLevel
+        } else {
+            return FreelineParser.getMinSdkVersion(manifestPath)
+        }
+    }
+
+    private static boolean isUseJdk8(String androidGradleVersion) {
+        if (FreelineUtils.isEmpty(androidGradleVersion)) {
+            return false
+        }
+        // Use custom class to avoid java.lang.NoClassDefFoundError in lower gradle version.
+        VersionParser versionParser = new VersionParser()
+        int result = new StaticVersionComparator().compare(versionParser.transform(androidGradleVersion),
+                versionParser.transform("2.2.0"))
+        return result >= 0
+    }
+
+    private static String getAndroidGradleVersion(Project project) {
+        String moduleVersion = null
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
+                moduleVersion = it.moduleVersion
+                return false
+            }
+        }
+        return moduleVersion
     }
 
     private static def createSourceSets(Project pro, def flavor, def buildType) {
