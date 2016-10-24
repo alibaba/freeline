@@ -9,13 +9,13 @@ import java.io.File;
  */
 public class ProcessLayouts {
 
-    public static void run(File inputDirectory, File outputDirectory) throws Exception {
+    public static void run(File inputDirectory, File outputDirectory, File layoutInfoDirectory) throws Exception {
         LayoutXmlProcessor.ResourceInput resourceInput =
                 new LayoutXmlProcessor.ResourceInput(false, inputDirectory, outputDirectory);
 
         // dataBindingProcessLayouts
         DataBindingHelper.getLayoutXmlProcessor().processResources(resourceInput);
-        DataBindingHelper.getLayoutXmlProcessor().writeLayoutInfoFiles(outputDirectory);
+        DataBindingHelper.getLayoutXmlProcessor().writeLayoutInfoFiles(layoutInfoDirectory);
     }
 
 }

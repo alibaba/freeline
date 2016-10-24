@@ -13,6 +13,7 @@ public class CliMain {
     private static final String ARG_INPUT = "input";
     private static final String ARG_OUTPUT = "output";
     private static final String ARG_CLASSES = "classes";
+    private static final String ARG_LAYOUT_INFO = "layout-info";
     private static final String ARG_LIBRARY = "library";
     private static final String ARG_VERSION = "version";
     private static final String ARG_SDK = "sdk";
@@ -31,6 +32,11 @@ public class CliMain {
                 .build());
         options.addOption(Option.builder("o").desc("output resources directory path")
                 .longOpt(ARG_OUTPUT)
+                .hasArg()
+                .required()
+                .build());
+        options.addOption(Option.builder("d").desc("output layout info directory path")
+                .longOpt(ARG_LAYOUT_INFO)
                 .hasArg()
                 .required()
                 .build());
@@ -59,6 +65,7 @@ public class CliMain {
         String packageName;
         String inputDirPath;
         String outputDirPath;
+        String layoutInfoDirPath;
         String classOutputDirPath;
         String sdkDirectoryPath;
         boolean isLibrary;
@@ -70,6 +77,7 @@ public class CliMain {
             packageName = commandLine.getOptionValue(ARG_PACKAGE);
             inputDirPath = commandLine.getOptionValue(ARG_INPUT);
             outputDirPath = commandLine.getOptionValue(ARG_OUTPUT);
+            layoutInfoDirPath = commandLine.getOptionValue(ARG_LAYOUT_INFO);
             classOutputDirPath = commandLine.getOptionValue(ARG_CLASSES);
             sdkDirectoryPath = commandLine.getOptionValue(ARG_SDK);
             isLibrary = Boolean.parseBoolean(commandLine.getOptionValue(ARG_LIBRARY));
@@ -85,9 +93,10 @@ public class CliMain {
         try {
             File inputDirectory = new File(inputDirPath);
             File outputDirectory = new File(outputDirPath);
+            File layoutInfoDirectory = new File(layoutInfoDirPath);
             File sdkDirectory = new File(sdkDirectoryPath);
 
-            ProcessLayouts.run(inputDirectory, outputDirectory);
+            ProcessLayouts.run(inputDirectory, outputDirectory, layoutInfoDirectory);
             ExportDataBindingInfo.run(sdkDirectory, outputDirectory);
         } catch (Exception e) {
             System.err.println("procosee databinding error: " + e.getMessage() + "\n");
