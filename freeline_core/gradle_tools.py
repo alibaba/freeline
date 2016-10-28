@@ -8,9 +8,14 @@ from freeline_build import ScanChangedFilesCommand, DispatchPolicy
 from logger import Logger
 from sync_client import SyncClient
 from exceptions import FreelineException, FileMissedException
-from utils import curl, write_json_cache, load_json_cache, cexec, print_json
+from utils import curl, write_json_cache, load_json_cache, cexec, md5string, remove_namespace
 from task import Task
 from builder import Builder
+
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 
 class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
@@ -585,10 +590,12 @@ class BuildBaseResourceTask(Task):
                                              package_name=self._module_info['packagename'])
         self._public_xml_path = self._finder.get_public_xml_path()
         self._ids_xml_path = self._finder.get_ids_xml_path()
+        self._res_mapper = {}
 
     def execute(self):
         self.__init_attributes()
         self.keep_ids()
+        self.process_databinding()
         from tracing import Tracing
         with Tracing('build_base_resource_aapt_task'):
             self.run_aapt()
@@ -607,6 +614,12 @@ class BuildBaseResourceTask(Task):
             self.debug('origin R.java path: ' + rpath)
             android_tools.generate_public_files_by_r(rpath, self._public_xml_path, self._ids_xml_path)
 
+    def process_databinding(self):
+        if 'databinding' in self._config and len(self._config['databinding']) > 0:
+            processor = DataBindingProcessor(self._config)
+            processor.process()
+            DatabindingDirectoryLookUp.save_path_map(self._config['build_cache_dir'])
+
     def run_aapt(self):
         aapt_args = [Builder.get_aapt(), 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
@@ -615,12 +628,12 @@ class BuildBaseResourceTask(Task):
         for rdir in self._config['project_source_sets'][self._main_module_name]['main_res_directory']:
             if os.path.exists(rdir):
                 aapt_args.append('-S')
-                aapt_args.append(rdir)
+                aapt_args.append(DatabindingDirectoryLookUp.find_target_res_path(rdir))
 
         for rdir in self._module_info['local_dep_res_path']:
             if os.path.exists(rdir):
                 aapt_args.append('-S')
-                aapt_args.append(rdir)
+                aapt_args.append(DatabindingDirectoryLookUp.find_target_res_path(rdir))
 
         if 'extra_dep_res_paths' in self._config and self._config['extra_dep_res_paths'] is not None:
             arr = self._config['extra_dep_res_paths']
@@ -677,6 +690,225 @@ class BuildBaseResourceTask(Task):
             raise FreelineException('build base resources failed with: {}'.format(' '.join(aapt_args)),
                                     '{}\n{}'.format(output, err))
         self.debug('generate base resource success: {}'.format(base_resource_path))
+
+
+class DataBindingProcessor(object):
+    def __init__(self, config):
+        self.name = 'databinding_processor'
+        self._config = config
+        self._res_mapper = {}
+
+    def process(self):
+        databinding_config = self._config['databinding']
+        if len(databinding_config) == 0:
+            self.debug('no modules for processing databinding')
+            return
+
+        source_sets = self._config['project_source_sets']
+        for module_config in databinding_config:
+            if module_config['name'] in source_sets:
+                module_name = module_config['name']
+                for rdir in source_sets[module_name]['main_res_directory']:
+                    output_res_dir = DatabindingDirectoryLookUp.create_target_res_path(
+                        self._config['build_cache_dir'],
+                        module_name, rdir)
+                    # output_layoutinfo_dir = DatabindingDirectoryLookUp.create_target_layoutinfo_path(
+                    #     self._config['build_cache_dir'],
+                    #     module_name, rdir)
+                    output_layoutinfo_dir = DatabindingDirectoryLookUp.get_merged_layoutinfo_dir(
+                        self._config['build_cache_dir'])
+                    output_java_dir = DatabindingDirectoryLookUp.create_target_java_path(
+                        self._config['build_cache_dir'],
+                        module_name, rdir)
+                    from tracing import Tracing
+                    with Tracing('process_databinding_resources'):
+                        self.process_module_databinding(module_config, rdir, output_res_dir,
+                                                        output_layoutinfo_dir, output_java_dir,
+                                                        self._config['sdk_directory'])
+
+    def process_module_databinding(self, module_config, input_res_dir, output_res_dir, output_layout_info_dir,
+                                   output_java_dir, sdk_directory, changed_files=None):
+        databinding_args = ['java', '-jar', Builder.get_databinding_cli(self._config), '-p',
+                            module_config['packageName'], '-i', input_res_dir, '-o', output_res_dir,
+                            '-d', output_layout_info_dir, '-c', output_java_dir, '-l', 'false',
+                            '-v', str(module_config['minSdkVersion']), '-s', sdk_directory]
+        if changed_files:
+            databinding_args.extend(['-a', os.pathsep.join(changed_files)])
+
+        command = ' '.join(databinding_args)
+        self.debug(command)
+        output, err, code = cexec(databinding_args, callback=None)
+        if code == 0:
+            self.debug("process databinding resources success: {}".format(input_res_dir))
+            self._res_mapper[input_res_dir] = {'target_res_dir': output_res_dir}
+        else:
+            raise FreelineException('process module databinding failed: {}'.format(command),
+                                    '{}\n{}'.format(output, err))
+
+    def extract_related_java_files(self, module, layout_info_dir):
+        classpaths = []
+        for dirpath, dirnames, files in os.walk(layout_info_dir):
+            for fn in files:
+                fpath = os.path.join(dirpath, fn)
+                result = self.process_layout_info(fpath)
+                for classpath in result:
+                    if classpath not in classpaths:
+                        classpaths.append(classpath)
+
+        if len(classpaths) == 0:
+            self.debug('{} module has no related java files.'.format(module))
+            return []
+
+        src_dir_paths = []
+        for module_name, source_sets in self._config['project_source_sets'].iteritems():
+            src_dir_paths.extend(source_sets['main_src_directory'])
+
+        related_java_files = []
+        for classpath in classpaths:
+            path_posfix = classpath.replace('.', os.sep) + '.java'
+            is_founded = False
+            for sdir in src_dir_paths:
+                fpath = os.path.join(sdir, path_posfix)
+                if os.path.exists(fpath):
+                    related_java_files.append(fpath)
+                    is_founded = True
+                    self.debug('found related java file: {}'.format(fpath))
+
+            if not is_founded:
+                self.debug('classpath file not found: {}'.format(classpath))
+
+        return related_java_files
+
+    def process_layout_info(self, fpath):
+        if os.path.exists(fpath):
+            self.debug('process layout info: {}'.format(fpath))
+            tree = ET.ElementTree(ET.fromstring(remove_namespace(fpath)))
+            imports = tree.findall('Imports')
+            variables = tree.findall('Variables')
+
+            imports_dict = {}
+            classpaths = []
+
+            for import_node in imports:
+                imports_dict[import_node.attrib['name']] = import_node.attrib
+
+            for variable_node in variables:
+                variable_type = variable_node.attrib['type']
+                if '.' in variable_type:
+                    classpath = variable_type
+                elif variable_type in imports_dict:
+                    classpath = imports_dict[variable_type]['type']
+                else:
+                    classpath = None
+
+                if classpath and not classpath.startswith('android.') and not classpath.startswith('java.'):
+                    classpaths.append(classpath)
+
+            return classpaths
+        return []
+
+    def debug(self, message):
+        Logger.debug('[{}] {}'.format(self.name, message))
+
+
+class DatabindingDirectoryLookUp(object):
+    original_path_mapper = {}
+    target_path_mapper = {}
+    target_layoutinfo_mapper = {}
+    target_java_mapper = {}
+
+    @staticmethod
+    def save_path_map(cache_dir):
+        databinding_path_cache = {'original_path_mapper': DatabindingDirectoryLookUp.original_path_mapper,
+                                  'target_path_mapper': DatabindingDirectoryLookUp.target_path_mapper,
+                                  'target_layoutinfo_mapper': DatabindingDirectoryLookUp.target_layoutinfo_mapper,
+                                  'target_java_mapper': DatabindingDirectoryLookUp.target_java_mapper}
+        databinding_path_cache_path = os.path.join(cache_dir, 'databinding_path_cache.json')
+        if os.path.exists(databinding_path_cache_path):
+            os.remove(databinding_path_cache_path)
+        write_json_cache(databinding_path_cache_path, databinding_path_cache)
+
+    @staticmethod
+    def load_path_map(cache_dir):
+        databinding_path_cache_path = os.path.join(cache_dir, 'databinding_path_cache.json')
+        if os.path.exists(databinding_path_cache_path):
+            cache = load_json_cache(databinding_path_cache_path)
+            if 'original_path_mapper' in cache:
+                DatabindingDirectoryLookUp.original_path_mapper = cache['original_path_mapper']
+            if 'target_path_mapper' in cache:
+                DatabindingDirectoryLookUp.target_path_mapper = cache['target_path_mapper']
+            if 'target_layoutinfo_mapper' in cache:
+                DatabindingDirectoryLookUp.target_layoutinfo_mapper = cache['target_layoutinfo_mapper']
+            if 'target_java_mapper' in cache:
+                DatabindingDirectoryLookUp.target_java_mapper = cache['target_java_mapper']
+
+    @staticmethod
+    def find_original_path(target_path):
+        key = md5string(target_path)
+        if key in DatabindingDirectoryLookUp.original_path_mapper:
+            origin_path = DatabindingDirectoryLookUp.original_path_mapper[key]
+            Logger.debug('replace {} with target resource dir: {}'.format(target_path, origin_path))
+            return origin_path
+        return target_path
+
+    @staticmethod
+    def get_merged_layoutinfo_dir(cache_dir):
+        return os.path.join(cache_dir, 'freeline-databinding', 'merged_layoutinfo')
+
+    @staticmethod
+    def find_target_layoutinfo_path(origin_path):
+        return DatabindingDirectoryLookUp.find_target_path('layoutinfo',
+                                                           DatabindingDirectoryLookUp.target_layoutinfo_mapper,
+                                                           origin_path)
+
+    @staticmethod
+    def find_target_java_path(origin_path):
+        return DatabindingDirectoryLookUp.find_target_path('java', DatabindingDirectoryLookUp.target_java_mapper,
+                                                           origin_path)
+
+    @staticmethod
+    def find_target_res_path(origin_path):
+        return DatabindingDirectoryLookUp.find_target_path('res', DatabindingDirectoryLookUp.target_path_mapper,
+                                                           origin_path)
+
+    @staticmethod
+    def find_target_path(target_type, cache_mapper, origin_path):
+        if len(cache_mapper.keys()) == 0:
+            return origin_path
+
+        key = md5string(origin_path)
+        if key in cache_mapper:
+            target_path = cache_mapper[key]
+            if target_type == 'res':
+                Logger.debug('replace {} with target resource dir: {}'.format(origin_path, target_path))
+            return target_path
+        return origin_path
+
+    @staticmethod
+    def create_target_res_path(cache_dir, module, origin_path):
+        return DatabindingDirectoryLookUp.create_target_path('res', DatabindingDirectoryLookUp.target_path_mapper,
+                                                             cache_dir, module, origin_path)
+
+    @staticmethod
+    def create_target_layoutinfo_path(cache_dir, module, origin_path):
+        return DatabindingDirectoryLookUp.create_target_path('layoutinfo',
+                                                             DatabindingDirectoryLookUp.target_layoutinfo_mapper,
+                                                             cache_dir, module, origin_path)
+
+    @staticmethod
+    def create_target_java_path(cache_dir, module, origin_path):
+        return DatabindingDirectoryLookUp.create_target_path('java', DatabindingDirectoryLookUp.target_java_mapper,
+                                                             cache_dir, module, origin_path)
+
+    @staticmethod
+    def create_target_path(target_type, cache_mapper, cache_dir, module, origin_path):
+        key = md5string(origin_path)
+        if key in cache_mapper:
+            return cache_mapper[key]
+
+        output_dir = os.path.join(cache_dir, 'freeline-databinding', module, key, target_type)
+        cache_mapper[key] = output_dir
+        return output_dir
 
 
 def get_base_resource_path(cache_dir):
