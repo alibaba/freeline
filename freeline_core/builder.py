@@ -34,6 +34,8 @@ class Builder(object):
         if sdk_dir and os.path.isdir(sdk_dir):
             return sdk_dir
 
+        Logger.debug('[ERROR] config[sdk_directory]、ANDROID_HOME、ANDROID_SDK not found, '
+                     'Build.get_android_sdk_dir() return None.')
         return None
 
     @staticmethod
@@ -42,6 +44,7 @@ class Builder(object):
         adb_exe_name = os.name == 'nt' and 'adb.exe' or 'adb'
         if os.path.isdir(sdk_dir) and is_exe(os.path.join(sdk_dir, 'platform-tools', adb_exe_name)):
             return os.path.join(sdk_dir, 'platform-tools', adb_exe_name)
+        Logger.debug('[ERROR] Builder.get_adb() return None.')
         return None
 
     @staticmethod
@@ -88,6 +91,7 @@ class Builder(object):
         exec_name = 'javac.exe' if is_windows_system() else 'javac'
         if path and is_exe(os.path.join(path, 'bin', exec_name)):
             return os.path.join(path, 'bin', exec_name)
+        Logger.debug('[ERROR] Builder.get_javac() return None.')
         return None
 
     @staticmethod
@@ -98,6 +102,7 @@ class Builder(object):
         exec_name = 'java.exe' if is_windows_system() else 'java'
         if path and is_exe(os.path.join(path, 'bin', exec_name)):
             return os.path.join(path, 'bin', exec_name)
+        Logger.debug('[ERROR] Builder.get_java() return None.')
         return None
 
     @staticmethod
@@ -109,6 +114,14 @@ class Builder(object):
                     return path
         else:
             return os.path.join('freeline', 'release-tools', 'dx')
+
+    @staticmethod
+    def get_databinding_cli(config):
+        dbcli = os.path.join('freeline', 'release-tools', 'databinding-cli.jar')
+        if 'use_jdk8' in config:
+            if config['use_jdk8']:
+                dbcli = os.path.join('freeline', 'release-tools', 'databinding-cli8.jar')
+        return dbcli
 
 
 class CleanBuilder(Builder):

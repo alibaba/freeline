@@ -8,7 +8,8 @@ import android_tools
 from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
-    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name
+    GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
+    DatabindingDirectoryLookUp
 from task import find_root_tasks, find_last_tasks, Task
 from utils import get_file_content, write_file_content, is_windows_system, cexec
 from tracing import Tracing
@@ -26,6 +27,7 @@ class GradleIncBuilder(IncrementalBuilder):
         self._module_dir_map = {}
         self._has_res_changed = self.__is_any_modules_have_res_changed()
         self._changed_modules = self.__changed_modules()
+        self._original_changed_files = dict(changed_files)
 
     def check_build_environment(self):
         if not self._project_info:
@@ -109,7 +111,8 @@ class GradleIncBuilder(IncrementalBuilder):
 
     def incremental_build(self):
         merge_dex_task = GradleMergeDexTask(self._config['build_cache_dir'], self._all_modules, self._project_info)
-        aapt_task = GradleAaptTask(self.__setup_invoker(self._config['main_project_name']))
+        aapt_task = GradleAaptTask(self.__setup_invoker(self._config['main_project_name']),
+                                   self._original_changed_files)
 
         task_list = self._tasks_dictionary.values()
         last_tasks = find_last_tasks(task_list)
@@ -136,9 +139,10 @@ class GradleIncBuilder(IncrementalBuilder):
 
 
 class GradleAaptTask(Task):
-    def __init__(self, invoker):
+    def __init__(self, invoker, original_changed_files):
         Task.__init__(self, 'gradle_aapt_task')
         self._invoker = invoker
+        self._original_changed_files = original_changed_files
 
     def execute(self):
         should_run_res_task = self._invoker.check_res_task()
@@ -154,12 +158,16 @@ class GradleAaptTask(Task):
             self._invoker.generate_r_file()
 
         # self._invoker.backup_res_files()
+        with Tracing("incremental_databinding_process"):
+            self._invoker.process_databinding(self._original_changed_files)
 
         with Tracing("run_incremental_aapt_task"):
             self._invoker.run_aapt_task()
 
         with Tracing("check_other_modules_resources"):
             self._invoker.check_other_modules_resources()
+
+        self._invoker.recover_original_file_path()
 
 
 class GradleCompileCommand(CompileCommand):
@@ -240,6 +248,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         self._changed_modules = changed_modules
         self._merged_res_paths = []
         self._merged_res_paths.append(self._finder.get_backup_res_dir())
+        self._replace_mapper = {}
         self._is_retrolambda_enabled = 'retrolambda' in self._config and self._name in self._config['retrolambda'] \
                                        and self._config['retrolambda'][self._name]['enabled']
         for mname in self._all_module_info.keys():
@@ -260,6 +269,76 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def fill_dependant_jars(self):
         self._res_dependencies = self._module_info['dep_jar_path']
 
+    def process_databinding(self, original_changed_files):
+        if 'databinding' in self._config:
+            databinding_config = self._config['databinding']
+            if len(databinding_config) == 0:
+                self.debug('no modules for processing databinding')
+                return
+
+            DatabindingDirectoryLookUp.load_path_map(self._config['build_cache_dir'])
+            procossor = DataBindingProcessor(self._config)
+            for module_config in databinding_config:
+                module_name = module_config['name']
+                if module_name in original_changed_files['projects']:
+                    resources_files = original_changed_files['projects'][module_config['name']]['res']
+                    if len(resources_files) == 0:
+                        self.debug('module {} has no resources files changed'.format(module_name))
+                        continue
+
+                    changed_files_map = {}
+                    res_dirs = self._config['project_source_sets'][module_name]['main_res_directory']
+                    # TODO: detect matches missing issue
+                    for path in resources_files:
+                        for rdir in res_dirs:
+                            if path.startswith(rdir):
+                                if rdir in changed_files_map:
+                                    changed_files_map[rdir].append(path)
+                                else:
+                                    changed_files_map[rdir] = [path]
+                                break
+
+                    for rdir in changed_files_map.keys():
+                        output_res_dir = DatabindingDirectoryLookUp.find_target_res_path(rdir)
+                        output_java_dir = DatabindingDirectoryLookUp.find_target_java_path(rdir)
+                        output_layoutinfo_dir = DatabindingDirectoryLookUp.get_merged_layoutinfo_dir(self._cache_dir)
+                        if output_res_dir and output_java_dir and output_layoutinfo_dir:
+                            changed_files_list = changed_files_map[rdir]
+                            procossor.process_module_databinding(module_config, rdir, output_res_dir,
+                                                                 output_layoutinfo_dir, output_java_dir,
+                                                                 self._config['sdk_directory'],
+                                                                 changed_files=changed_files_list)
+                            # replace file path
+                            for path in changed_files_list:
+                                new_path = path.replace(rdir, output_res_dir)
+                                self._merged_res_paths.append(output_res_dir)  # append new path prefix
+                                self.debug('replace {} with output path: {}'.format(path, new_path))
+                                self._replace_mapper[new_path] = path
+                                self._changed_files['res'].remove(path)
+                                self._changed_files['res'].append(new_path)
+
+                            # mark java compiler
+                            if os.path.exists(output_layoutinfo_dir):
+                                has_layoutinfo = False
+                                for name in os.listdir(output_layoutinfo_dir):
+                                    if name.endswith('.xml'):
+                                        has_layoutinfo = True
+                                        break
+
+                                if has_layoutinfo:
+                                    info_file = os.path.join(output_java_dir, 'android', 'databinding', 'layouts',
+                                                             'DataBindingInfo.java')
+                                    if os.path.exists(info_file):
+                                        append_files = [info_file]
+                                        append_files.extend(procossor.extract_related_java_files(module_name,
+                                                                                                 output_layoutinfo_dir))
+                                        for fpath in append_files:
+                                            self.debug('add {} to {} module'.format(fpath, module_name))
+                                            original_changed_files['projects'][module_name]['src'].append(fpath)
+
+                                        if not android_tools.is_src_changed(self._config['build_cache_dir']):
+                                            android_tools.mark_src_changed(self._config['build_cache_dir'])
+
     def _get_aapt_args(self):
         aapt_args = [self._aapt, 'package', '-f', '-I',
                      os.path.join(self._config['compile_sdk_directory'], 'android.jar'),
@@ -268,12 +347,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         for rdir in self._config['project_source_sets'][self._name]['main_res_directory']:
             if os.path.exists(rdir):
                 aapt_args.append('-S')
-                aapt_args.append(rdir)
+                aapt_args.append(DatabindingDirectoryLookUp.find_target_res_path(rdir))
 
         for rdir in self._module_info['local_dep_res_path']:
             if os.path.exists(rdir):
                 aapt_args.append('-S')
-                aapt_args.append(rdir)
+                aapt_args.append(DatabindingDirectoryLookUp.find_target_res_path(rdir))
 
         for resdir in self._module_info['dep_res_path']:
             if os.path.exists(resdir):
@@ -342,6 +421,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
         return aapt_args, final_changed_list
+
+    def recover_original_file_path(self):
+        copylist = list(self._changed_files['res'])
+        for fpath in copylist:
+            if fpath in self._replace_mapper:
+                self._changed_files['res'].remove(fpath)
+                self._changed_files['res'].append(self._replace_mapper[fpath])
 
     def check_other_modules_resources(self):
         if self._name == self._config['main_project_name'] and self._all_module_info is not None:
@@ -417,6 +503,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             finder = GradleDirectoryFinder(module, self._module_dir_map[module], self._cache_dir)
             self._classpaths.append(finder.get_patch_classes_cache_dir())
 
+        # add main module classes dir to classpath to generate databinding files
+        main_module_name = self._config['main_project_name']
+        if self._name != main_module_name and 'databinding_modules' in self._config and self._name in \
+                self._config['databinding_modules']:
+            finder = GradleDirectoryFinder(main_module_name, self._module_dir_map[main_module_name], self._cache_dir,
+                                           config=self._config)
+            self._classpaths.append(finder.get_dst_classes_dir())
+
         self._classpaths.append(os.path.join(self._config['compile_sdk_directory'], 'android.jar'))
         self._classpaths.extend(self._module_info['dep_jar_path'])
 
@@ -453,6 +547,18 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 apt_args.append(apt_config['processorPath'])
 
             apt_args.extend(apt_config['aptArgs'])
+            self._extra_javac_args.extend(apt_args)
+        elif 'databinding_modules' in self._config and self._name in self._config['databinding_modules']:
+            apt_output = os.path.join(self._config['build_directory'], 'generated', 'source', 'apt',
+                                      self._config['product_flavor'], 'debug')
+            if not os.path.exists(apt_output):
+                os.makedirs(apt_output)
+
+            if self._config['databinding_compiler_jar'] != '':
+                self.debug('add compiler jar to classpath: {}'.format(self._config['databinding_compiler_jar']))
+                self._module_info['dep_jar_path'].append(self._config['databinding_compiler_jar'])
+
+            apt_args = ['-s', apt_output, '-processorpath', os.pathsep.join(self._module_info['dep_jar_path'])]
             self._extra_javac_args.extend(apt_args)
 
     def run_javac_task(self):
@@ -585,6 +691,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     relative_path = os.path.join(res_dir_name, res.replace(respath, ''))
                     self.debug("find relative path: {}".format(relative_path))
                     return relative_path
+        self.debug('relative path not found: {}'.format(res))
         return None
 
     def __get_freeline_backup_r_dir(self):
