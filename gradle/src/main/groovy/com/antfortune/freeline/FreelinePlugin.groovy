@@ -136,7 +136,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def projectAptConfig = [:]
                 def projectRetrolambdaConfig = [:]
 
-                project.rootProject.allprojects { pro ->
+                project.rootProject.allprojects.each { pro ->
                     if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
                         // find additional jars
                         if (pro.android.hasProperty("libraryRequests")) {
@@ -157,18 +157,7 @@ class FreelinePlugin implements Plugin<Project> {
 
                         // find apt config
                         def isAptEnabled = pro.plugins.hasPlugin("android-apt")
-
-                        def javaCompile
-                        if (pro.plugins.hasPlugin("com.android.application")) {
-                            javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
-                        } else {
-                            pro.android.libraryVariants.each { libraryVariant ->
-                                if ("release".equalsIgnoreCase(libraryVariant.buildType.name as String)) {
-                                    javaCompile = libraryVariant.hasProperty('javaCompiler') ? libraryVariant.javaCompiler : libraryVariant.javaCompile
-                                    return false
-                                }
-                            }
-                        }
+                        def javaCompile = getJavaCompileTask(variant, pro)
 
                         if (aptEnabled && isAptEnabled && javaCompile) {
                             println "Freeline found ${pro.name} apt plugin enabled."
@@ -201,8 +190,6 @@ class FreelinePlugin implements Plugin<Project> {
 
                                     def aptConfig = ['enabled': isAptEnabled, 'disableDiscovery': disableDiscovery, 'aptOutput': aptOutputDir, 'processorPath': processorPath, 'processor': processor, 'aptArgs': aptArgs]
                                     projectAptConfig[pro.name] = aptConfig
-                                    println("$pro.name APT config:")
-                                    println(aptConfig)
                                 }
                             }
                         } else {
@@ -229,11 +216,31 @@ class FreelinePlugin implements Plugin<Project> {
                                     'rtJar': rtJar,
                                     'supportIncludeFiles': supportIncludeFiles
                             ]
-                            println("$pro.name retrolambda config:")
-                            println(lambdaConfig)
                             projectRetrolambdaConfig[pro.name] = lambdaConfig
                         } else {
                             println '[WARNING] JDK8 not found, skip retrolambda.'
+                        }
+                    }
+                }
+
+                // find databinding compiler jar path
+                def databindingCompilerJarPath = ""
+                if (project.android.hasProperty("dataBinding") && project.android.dataBinding.enabled) {
+                    println "[FREELINE] dataBinding enabled."
+                    def javaCompileTask = getJavaCompileTask(variant, project)
+                    if (javaCompileTask) {
+                        javaCompileTask.doFirst {
+                            int processorIndex = javaCompileTask.options.compilerArgs.indexOf('-processorpath')
+                            if (processorIndex != -1) {
+                                def processor = javaCompileTask.options.compilerArgs.get(processorIndex + 1)
+                                processor.split(File.pathSeparator).each { jarPath ->
+                                    if (jarPath.contains("com.android.databinding${File.separator}compiler")) {
+                                        println "find dataBinding compiler jar path: ${jarPath}"
+                                        databindingCompilerJarPath = jarPath
+                                        return false
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -368,6 +375,7 @@ class FreelinePlugin implements Plugin<Project> {
                     assembleTask.doLast {
                         FreelineUtils.addNewAttribute(project, 'apt', projectAptConfig)
                         FreelineUtils.addNewAttribute(project, 'retrolambda', projectRetrolambdaConfig)
+                        FreelineUtils.addNewAttribute(project, 'databinding_compiler_jar', databindingCompilerJarPath)
                         rollBackClasses(backupMap)
                     }
                 }
@@ -595,6 +603,21 @@ class FreelinePlugin implements Plugin<Project> {
         } else {
             return System.getenv("JAVA8_HOME")
         }
+    }
+
+    private static def getJavaCompileTask(def variant, Project pro) {
+        def javaCompile
+        if (pro.plugins.hasPlugin("com.android.application")) {
+            javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
+        } else {
+            pro.android.libraryVariants.each { libraryVariant ->
+                if ("release".equalsIgnoreCase(libraryVariant.buildType.name as String)) {
+                    javaCompile = libraryVariant.hasProperty('javaCompiler') ? libraryVariant.javaCompiler : libraryVariant.javaCompile
+                    return false
+                }
+            }
+        }
+        return javaCompile
     }
 
 }

@@ -252,6 +252,7 @@ class FreelineInitializer {
         projectDescription.module_dependencies = module_dependencies
 
         projectDescription.databinding = []
+        projectDescription.databinding_modules = []
         project.rootProject.allprojects.each { pro ->
             if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
                 if (pro.android.hasProperty("dataBinding") && pro.android.dataBinding.enabled) {
@@ -266,6 +267,7 @@ class FreelineInitializer {
                         data.packageName = FreelineParser.getPackage(manifestPath)
                     }
                     projectDescription.databinding.add(data)
+                    projectDescription.databinding_modules.add(pro.name)
                 }
             }
         }
