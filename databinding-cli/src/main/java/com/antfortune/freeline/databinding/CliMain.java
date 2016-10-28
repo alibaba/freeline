@@ -3,6 +3,8 @@ package com.antfortune.freeline.databinding;
 import org.apache.commons.cli.*;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by huangyong on 16/10/21.
@@ -17,6 +19,7 @@ public class CliMain {
     private static final String ARG_LIBRARY = "library";
     private static final String ARG_VERSION = "version";
     private static final String ARG_SDK = "sdk";
+    private static final String ARG_CHANGED = "changed-files";
 
     public static void main(String[] args) {
         Options options = new Options();
@@ -60,6 +63,10 @@ public class CliMain {
                 .hasArg()
                 .required()
                 .build());
+        options.addOption(Option.builder("a").desc("changed file list, separated by `:`")
+                .longOpt(ARG_CHANGED)
+                .hasArg()
+                .build());
 
         CommandLine commandLine;
         String packageName;
@@ -68,6 +75,7 @@ public class CliMain {
         String layoutInfoDirPath;
         String classOutputDirPath;
         String sdkDirectoryPath;
+        String changedFilesList;
         boolean isLibrary;
         int minSdkVersion;
 
@@ -80,6 +88,7 @@ public class CliMain {
             layoutInfoDirPath = commandLine.getOptionValue(ARG_LAYOUT_INFO);
             classOutputDirPath = commandLine.getOptionValue(ARG_CLASSES);
             sdkDirectoryPath = commandLine.getOptionValue(ARG_SDK);
+            changedFilesList = commandLine.getOptionValue(ARG_CHANGED);
             isLibrary = Boolean.parseBoolean(commandLine.getOptionValue(ARG_LIBRARY));
             minSdkVersion = Integer.parseInt(commandLine.getOptionValue(ARG_VERSION));
         } catch (ParseException e) {
@@ -95,11 +104,16 @@ public class CliMain {
             File outputDirectory = new File(outputDirPath);
             File layoutInfoDirectory = new File(layoutInfoDirPath);
             File sdkDirectory = new File(sdkDirectoryPath);
+            boolean isIncremental = changedFilesList != null && !"".equals(changedFilesList);
+            List<String> filesList = null;
+            if (isIncremental) {
+                filesList = Arrays.asList(changedFilesList.split(File.pathSeparator));
+            }
 
-            ProcessLayouts.run(inputDirectory, outputDirectory, layoutInfoDirectory);
-            ExportDataBindingInfo.run(sdkDirectory, outputDirectory);
+            ProcessLayouts.run(isIncremental, inputDirectory, outputDirectory, layoutInfoDirectory, filesList);
+            ExportDataBindingInfo.run(sdkDirectory, layoutInfoDirectory);
         } catch (Exception e) {
-            System.err.println("procosee databinding error: " + e.getMessage() + "\n");
+            System.err.println("process databinding error: " + e.getMessage() + "\n");
         }
     }
 
