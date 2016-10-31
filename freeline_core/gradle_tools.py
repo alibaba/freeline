@@ -1070,7 +1070,6 @@ def get_local_resources_dependencies(res_type, config, module, project_info):
     if os.path.exists(res_dep_path):
         res_dependencies = load_json_cache(res_dep_path)
 
-    local_dep_res_path = []
     if 'module_dependencies' not in config:
         local_dep_res_path = res_dependencies['local_resources']
     else:
@@ -1084,7 +1083,7 @@ def get_local_resources_dependencies(res_type, config, module, project_info):
                 dep = load_json_cache(deppath)
                 if 'local_resources' in dep:
                     local_res_deps.extend(dep['local_resources'])
-                local_dep_res_path = list(set(local_res_deps))
+        local_dep_res_path = list(set(local_res_deps))
 
     return res_dependencies['library_resources'], local_dep_res_path
 
