@@ -46,6 +46,7 @@ class LoggerWorker(threading.Thread):
 
 class Logger(object):
     # TODO: check screen height before log messages
+    debuggable = False
     debug_messages_queue = Queue.Queue()
     temp_backup_queue = Queue.Queue()
     info_message_array = []

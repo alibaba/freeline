@@ -33,10 +33,9 @@ class Dispatcher(object):
         self.debug('command line args: ' + str(args))
         Logger.info('[INFO] preparing for tasks...')
 
-        if 'debug' in args and args.debug:
+        if is_windows_system() or ('debug' in args and args.debug):
             self._logger.debuggable = True
-        if is_windows_system():
-            self._logger.debuggable = True
+            Logger.debuggable = True
 
         self._check_logger_worker()
 
