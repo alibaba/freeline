@@ -11,7 +11,7 @@ from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClie
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
     DatabindingDirectoryLookUp
 from task import find_root_tasks, find_last_tasks, Task
-from utils import get_file_content, write_file_content, is_windows_system, cexec
+from utils import get_file_content, write_file_content, is_windows_system, cexec, load_json_cache, get_md5
 from tracing import Tracing
 from exceptions import FreelineException
 
@@ -112,7 +112,7 @@ class GradleIncBuilder(IncrementalBuilder):
     def incremental_build(self):
         merge_dex_task = GradleMergeDexTask(self._config['build_cache_dir'], self._all_modules, self._project_info)
         aapt_task = GradleAaptTask(self.__setup_invoker(self._config['main_project_name']),
-                                   self._original_changed_files)
+                                   self._original_changed_files, self._changed_files)
 
         task_list = self._tasks_dictionary.values()
         last_tasks = find_last_tasks(task_list)
@@ -139,10 +139,11 @@ class GradleIncBuilder(IncrementalBuilder):
 
 
 class GradleAaptTask(Task):
-    def __init__(self, invoker, original_changed_files):
+    def __init__(self, invoker, original_changed_files, changed_files):
         Task.__init__(self, 'gradle_aapt_task')
         self._invoker = invoker
         self._original_changed_files = original_changed_files
+        self._changed_files_ref = changed_files
 
     def execute(self):
         should_run_res_task = self._invoker.check_res_task()
@@ -159,7 +160,7 @@ class GradleAaptTask(Task):
 
         # self._invoker.backup_res_files()
         with Tracing("incremental_databinding_process"):
-            self._invoker.process_databinding(self._original_changed_files)
+            self._invoker.process_databinding(self._original_changed_files, self._changed_files_ref)
 
         with Tracing("run_incremental_aapt_task"):
             self._invoker.run_aapt_task()
@@ -219,6 +220,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.fill_classpaths()
         self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
+        self._invoker.run_apt_only()
         self._invoker.run_javac_task()
         self._invoker.run_retrolambda()
 
@@ -251,6 +253,9 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         self._replace_mapper = {}
         self._is_retrolambda_enabled = 'retrolambda' in self._config and self._name in self._config['retrolambda'] \
                                        and self._config['retrolambda'][self._name]['enabled']
+        self._is_databinding_enabled = 'databinding_modules' in self._config and self._name in self._config[
+            'databinding_modules']
+        self._apt_output_dir = None
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
@@ -269,13 +274,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def fill_dependant_jars(self):
         self._res_dependencies = self._module_info['dep_jar_path']
 
-    def process_databinding(self, original_changed_files):
+    def process_databinding(self, original_changed_files, changed_files_ref):
         if 'databinding' in self._config:
-            databinding_config = self._config['databinding']
-            if len(databinding_config) == 0:
+            if self._config['databinding_modules'] == 0:
                 self.debug('no modules for processing databinding')
                 return
 
+            databinding_config = self._config['databinding']
             DatabindingDirectoryLookUp.load_path_map(self._config['build_cache_dir'])
             procossor = DataBindingProcessor(self._config)
             for module_config in databinding_config:
@@ -332,9 +337,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                                         append_files = [info_file]
                                         append_files.extend(procossor.extract_related_java_files(module_name,
                                                                                                  output_layoutinfo_dir))
+
+                                        if 'apt' not in changed_files_ref['projects'][module_name]:
+                                            changed_files_ref['projects'][module_name]['apt'] = []
+
                                         for fpath in append_files:
                                             self.debug('add {} to {} module'.format(fpath, module_name))
-                                            original_changed_files['projects'][module_name]['src'].append(fpath)
+                                            changed_files_ref['projects'][module_name]['apt'].append(fpath)
 
                                         if not android_tools.is_src_changed(self._config['build_cache_dir']):
                                             android_tools.mark_src_changed(self._config['build_cache_dir'])
@@ -505,8 +514,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         # add main module classes dir to classpath to generate databinding files
         main_module_name = self._config['main_project_name']
-        if self._name != main_module_name and 'databinding_modules' in self._config and self._name in \
-                self._config['databinding_modules']:
+        if self._name != main_module_name and self._is_databinding_enabled:
             finder = GradleDirectoryFinder(main_module_name, self._module_dir_map[main_module_name], self._cache_dir,
                                            config=self._config)
             self._classpaths.append(finder.get_dst_classes_dir())
@@ -536,6 +544,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def fill_extra_javac_args(self):
         if 'apt' in self._config and self._name in self._config['apt'] and self._config['apt'][self._name]['enabled']:
             apt_config = self._config['apt'][self._name]
+            self._apt_output_dir = apt_config['aptOutput']
             apt_args = ['-s', apt_config['aptOutput']]
 
             if apt_config['processor']:
@@ -548,9 +557,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
             apt_args.extend(apt_config['aptArgs'])
             self._extra_javac_args.extend(apt_args)
-        elif 'databinding_modules' in self._config and self._name in self._config['databinding_modules']:
-            apt_output = os.path.join(self._config['build_directory'], 'generated', 'source', 'apt',
-                                      self._config['product_flavor'], 'debug')
+        elif self._is_databinding_enabled:
+            if self._name == self._config['main_project_name']:
+                apt_output = os.path.join(self._config['build_directory'], 'generated', 'source', 'apt',
+                                          self._config['product_flavor'], 'debug')
+            else:
+                apt_output = os.path.join(self._config['build_directory'], 'generated', 'source', 'apt', 'release')
+
+            self._apt_output_dir = apt_output
             if not os.path.exists(apt_output):
                 os.makedirs(apt_output)
 
@@ -561,20 +575,38 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             apt_args = ['-s', apt_output, '-processorpath', os.pathsep.join(self._module_info['dep_jar_path'])]
             self._extra_javac_args.extend(apt_args)
 
+    def run_apt_only(self):
+        if self._is_databinding_enabled and self._should_run_databinding_apt():
+            apt_args = self._generate_java_compile_args(extra_javac_args_enabled=True)
+            self.debug('apt exec: ' + ' '.join(apt_args))
+            output, err, code = cexec(apt_args, callback=None)
+
+            if code != 0:
+                raise FreelineException('apt compile failed.', '{}\n{}'.format(output, err))
+
+            if self._apt_output_dir and os.path.exists(self._apt_output_dir):
+                apt_cache_path = os.path.join(self._config['build_cache_dir'], 'apt_files_stat_cache.json')
+                if os.path.exists(apt_cache_path):
+                    apt_cache = load_json_cache(apt_cache_path)
+                for dirpath, dirnames, files in os.walk(self._apt_output_dir):
+                    for fn in files:
+                        fpath = os.path.join(dirpath, fn)
+                        if apt_cache and self._name in apt_cache:
+                            if fpath in apt_cache[self._name]:
+                                new_md5 = get_md5(fpath)
+                                if new_md5 != apt_cache[self._name][fpath]['md5']:
+                                    self.debug('detect new md5 value, add apt file to change list: {}'.format(fpath))
+                                    self._changed_files['src'].append(fpath)
+                            else:
+                                self.debug('find new apt file, add to change list: {}'.format(fpath))
+                                self._changed_files['src'].append(fpath)
+                        else:
+                            self.debug('apt cache not found, add to change list: {}'.format(fpath))
+                            self._changed_files['src'].append(fpath)
+
     def run_javac_task(self):
-        javacargs = [self._javac, '-encoding', 'UTF-8', '-g']
-        if not self._is_retrolambda_enabled:
-            javacargs.extend(['-target', '1.7', '-source', '1.7'])
-
-        javacargs.append('-cp')
-        javacargs.append(os.pathsep.join(self._classpaths))
-
-        for fpath in self._changed_files['src']:
-            javacargs.append(fpath)
-
-        javacargs.extend(self._extra_javac_args)
-        javacargs.append('-d')
-        javacargs.append(self._finder.get_patch_classes_cache_dir())
+        extra_javac_args_enabled = not (self._is_databinding_enabled and self._should_run_databinding_apt())
+        javacargs = self._generate_java_compile_args(extra_javac_args_enabled=extra_javac_args_enabled)
 
         self.debug('javac exec: ' + ' '.join(javacargs))
         output, err, code = cexec(javacargs, callback=None)
@@ -587,6 +619,34 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
                 shutil.copyfile(new_r_file, old_r_file)
                 self.debug('copy {} to {}'.format(new_r_file, old_r_file))
+
+    def _should_run_databinding_apt(self):
+        if 'apt' in self._changed_files:
+            for fpath in self._changed_files['apt']:
+                if fpath.endswith('DataBindingInfo.java'):
+                    return True
+        return False
+
+    def _generate_java_compile_args(self, extra_javac_args_enabled=False):
+        javacargs = [self._javac, '-encoding', 'UTF-8', '-g']
+        if not self._is_retrolambda_enabled:
+            javacargs.extend(['-target', '1.7', '-source', '1.7'])
+
+        javacargs.append('-cp')
+        javacargs.append(os.pathsep.join(self._classpaths))
+
+        for fpath in self._changed_files['src']:
+            javacargs.append(fpath)
+
+        if extra_javac_args_enabled:
+            if 'apt' in self._changed_files:
+                for fpath in self._changed_files['apt']:
+                    javacargs.append(fpath)
+            javacargs.extend(self._extra_javac_args)
+
+        javacargs.append('-d')
+        javacargs.append(self._finder.get_patch_classes_cache_dir())
+        return javacargs
 
     def run_retrolambda(self):
         if self._is_retrolambda_enabled:

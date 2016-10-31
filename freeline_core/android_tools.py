@@ -504,6 +504,13 @@ class AndroidIncBuildInvoker(object):
 
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
+        apt_changed_count = 0
+        if 'apt' in self._changed_files:
+            apt_changed_count = len(self._changed_files['apt'])
+            changed_count += apt_changed_count
+            if apt_changed_count > 0:
+                self.debug('apt changed files:')
+                self.debug(self._changed_files['apt'])
         self.debug("src changed files:")
         self.debug(self._changed_files['src'])
 
@@ -523,6 +530,9 @@ class AndroidIncBuildInvoker(object):
                 self.debug(
                     '{} only find R.java changed, but other modules has src files changed, so need javac task'.format(
                         self._name))
+                self._is_need_javac = True
+            elif apt_changed_count != 0:
+                self.debug('{} has apt files changed so that it need javac task.'.format(self._name))
                 self._is_need_javac = True
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))

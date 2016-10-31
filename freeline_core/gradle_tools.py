@@ -571,6 +571,47 @@ class GradleCleanCacheTask(android_tools.CleanCacheTask):
             android_tools.generate_id_file_by_public(public_xml_path, ids_xml_path)
 
 
+class GenerateAptFilesStatTask(Task):
+    def __init__(self):
+        Task.__init__(self, 'generate_apt_files_task')
+
+    def execute(self):
+        from dispatcher import read_freeline_config
+        config = read_freeline_config()
+        if 'databinding_modules' in config and len(config['databinding_modules']) > 0:
+            self.debug('start generate apt files stat...')
+            apt_files_stat = {}
+            from utils import get_md5
+            for module in config['databinding_modules']:
+                apt_output_path = self.__apt_output_path(config, module)
+                if apt_output_path and os.path.isdir(apt_output_path):
+                    apt_files_stat[module] = {}
+                    for dirpath, dirnames, files in os.walk(apt_output_path):
+                        for fn in files:
+                            fpath = os.path.join(dirpath, fn)
+                            apt_files_stat[module][fpath] = {'md5': get_md5(fpath)}
+
+            apt_files_cache_path = os.path.join(config['build_cache_dir'], 'apt_files_stat_cache.json')
+            if os.path.exists(apt_files_cache_path):
+                os.remove(apt_files_cache_path)
+            write_json_cache(apt_files_cache_path, apt_files_stat)
+            self.debug('save apt files cache to path: {}'.format(apt_files_cache_path))
+
+    def __apt_output_path(self, config, module):
+        if 'apt' in config and module in config['apt']:
+            apt_output_path = config['apt'][module]['aptOutput']
+        else:
+            if module == config['main_project_name']:
+                apt_output_path = os.path.join(config['build_directory'], 'generated', 'source', 'apt',
+                                               config['product_flavor'], 'debug')
+            else:
+                apt_output_path = os.path.join(config['build_directory'], 'generated', 'source', 'apt',
+                                               'release')
+            if not os.path.exists(apt_output_path):
+                os.makedirs(apt_output_path)
+        return apt_output_path
+
+
 class BuildBaseResourceTask(Task):
     def __init__(self, config, project_info):
         Task.__init__(self, 'build_base_resource_task')
