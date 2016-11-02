@@ -607,6 +607,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
     def run_javac_task(self):
         if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
             self._is_need_javac = False
+            android_tools.clean_src_changed_flag(self._cache_dir)
             self.debug('apt process do not generate new files, ignore javac task.')
             return
 
