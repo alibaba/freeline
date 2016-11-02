@@ -159,15 +159,16 @@ class UpdateStatTask(Task):
         stat_cache = load_json_cache(cache_path)
         for module, file_dict in self._changed_files.iteritems():
             for key, files in file_dict.iteritems():
-                for fpath in files:
-                    if not fpath.startswith(self._config['build_cache_dir']) and os.path.exists(fpath):
-                        self.debug('refresh {} stat'.format(fpath))
-                        os.utime(fpath, None)
-                        if fpath not in stat_cache[module]:
-                            stat_cache[module][fpath] = {}
+                if key != 'apt':
+                    for fpath in files:
+                        if not fpath.startswith(self._config['build_cache_dir']) and os.path.exists(fpath):
+                            self.debug('refresh {} stat'.format(fpath))
+                            os.utime(fpath, None)
+                            if fpath not in stat_cache[module]:
+                                stat_cache[module][fpath] = {}
 
-                        stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
-                        stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
+                            stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
+                            stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
 
         write_json_cache(cache_path, stat_cache)
 
