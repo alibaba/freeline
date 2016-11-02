@@ -605,6 +605,11 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                             self._changed_files['src'].append(fpath)
 
     def run_javac_task(self):
+        if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
+            self._is_need_javac = False
+            self.debug('apt process do not generate new files, ignore javac task.')
+            return
+
         extra_javac_args_enabled = not (self._is_databinding_enabled and self._should_run_databinding_apt())
         javacargs = self._generate_java_compile_args(extra_javac_args_enabled=extra_javac_args_enabled)
 
@@ -617,8 +622,9 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             if self._is_r_file_changed:
                 old_r_file = self._finder.get_dst_r_path(config=self._config)
                 new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
-                shutil.copyfile(new_r_file, old_r_file)
-                self.debug('copy {} to {}'.format(new_r_file, old_r_file))
+                if old_r_file and new_r_file:
+                    shutil.copyfile(new_r_file, old_r_file)
+                    self.debug('copy {} to {}'.format(new_r_file, old_r_file))
 
     def _should_run_databinding_apt(self):
         if 'apt' in self._changed_files:
@@ -649,7 +655,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         return javacargs
 
     def run_retrolambda(self):
-        if self._is_retrolambda_enabled:
+        if self._is_need_javac and self._is_retrolambda_enabled:
             lambda_config = self._config['retrolambda'][self._name]
             target_dir = self._finder.get_patch_classes_cache_dir()
             jar_args = [Builder.get_java(self._config),
