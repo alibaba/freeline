@@ -15,7 +15,7 @@ def developerEmail = 'yong.hy@alipay.com'
 def publishedGroupId = 'com.antfortune.freeline'
 def artifact = 'gradle'
 def libraryName = 'freeline-gradle'
-def publishVersion = '0.7.3.1'
+def publishVersion = '0.8.0'
 
 install {
     repositories {
