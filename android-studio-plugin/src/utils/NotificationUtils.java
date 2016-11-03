@@ -5,6 +5,7 @@ import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.ui.Messages;
 
 public class NotificationUtils {
 
@@ -31,6 +32,7 @@ public class NotificationUtils {
 
     /**
      * show a error Notification
+     *
      * @param message
      */
     public static void errorNotification(final String message) {
@@ -38,7 +40,16 @@ public class NotificationUtils {
     }
 
     /**
-     *  show a info Notification
+     * error message dialog
+     * @param message
+     */
+    public static void errorMsgDialog(String message) {
+        Messages.showMessageDialog(message, "Error", Messages.getInformationIcon());
+    }
+
+    /**
+     * show a info Notification
+     *
      * @param message
      */
     public static void infoNotification(final String message) {

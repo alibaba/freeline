@@ -18,7 +18,9 @@ public class ImageJPanel extends JPanel {
     public void setImagePath(String path) {
         try {
             InputStream is = this.getClass().getClassLoader().getResourceAsStream(path);
-            image = ImageIO.read(is);
+            if (is != null) {
+                image = ImageIO.read(is);
+            }
         } catch (IOException e) {
 
         }

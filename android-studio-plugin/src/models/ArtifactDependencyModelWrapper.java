@@ -8,6 +8,8 @@ import java.lang.reflect.Method;
 
 /**
  * Created by pengwei on 16/9/14.
+ * 兼容android studio不同版本
+ * 2.1.2之前版本name()方法返回string， 之后返回GradleNullableValue
  */
 public class ArtifactDependencyModelWrapper {
 

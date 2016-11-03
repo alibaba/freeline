@@ -1,6 +1,6 @@
 package utils;
 
-import com.jediterm.terminal.ui.UIUtil;
+import com.intellij.openapi.util.SystemInfo;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -30,7 +30,7 @@ public final class Utils {
         } catch (IOException | InterruptedException e) {
         }
         try {
-            if (!UIUtil.isWindows) {
+            if (!SystemInfo.isWindows) {
                 process = Runtime.getRuntime().exec(new String[]{"whereis", "python"});
                 if (process != null && process.getInputStream() != null) {
                     String result = StreamUtil.inputStream2String(process.getInputStream());
@@ -54,7 +54,7 @@ public final class Utils {
      * @param url
      */
     public static void openUrl(String url) {
-        if (UIUtil.isWindows) {
+        if (SystemInfo.isWindows) {
             try {
                 Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
             } catch (IOException e) {

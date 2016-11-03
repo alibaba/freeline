@@ -9,25 +9,16 @@ import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListenerAdapter;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.search.FilenameIndex;
-import com.intellij.psi.search.GlobalSearchScope;
 import models.ArtifactDependencyModelWrapper;
 import models.GradleDependencyEntity;
 import models.GetServerCallback;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.gradle.util.GradleConstants;
-import utils.GradleUtil;
-import utils.NotificationUtils;
-import utils.StreamUtil;
-import utils.Utils;
+import utils.*;
 import views.CheckUpdateDialog;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -37,10 +28,9 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
 
     @Override
     public void actionPerformed() {
-        if (checkFreelineExist()) {
+        FreelineUtil.hasInitFreeline(currentProject);
+        if (FreelineUtil.checkInstall(currentProject)) {
             asyncTask(new GetServerVersion(this));
-        } else {
-            GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", null);
         }
     }
 
@@ -160,8 +150,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
         invokeLater(new Runnable() {
             @Override
             public void run() {
-                Collection<VirtualFile> gradleFiles = FilenameIndex.getVirtualFilesByName(currentProject,
-                        GradleConstants.DEFAULT_SCRIPT_NAME, GlobalSearchScope.allScope(currentProject));
+                Collection<VirtualFile> gradleFiles = GradleUtil.getAllGradleFile(currentProject);
                 Map<GradleBuildModel, List<ArtifactDependencyModel>> fileListMap = new HashMap<>();
                 for (VirtualFile file : gradleFiles) {
                     GradleBuildModel model = GradleBuildModel.parseBuildFile(file, currentProject);
@@ -198,12 +187,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
                 return;
             }
             try {
-                URL url = new URL("http://jcenter.bintray.com/com/antfortune/freeline/gradle/maven-metadata.xml");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(5 * 1000);
-                conn.setRequestMethod("GET");
-                InputStream inStream = conn.getInputStream();
-                String result = StreamUtil.inputStream2String(inStream);
+                String result = FreelineUtil.syncGetFreelineVersion();
                 if (result != null && result.trim().length() != 0) {
                     GradleDependencyEntity entity = GradleDependencyEntity.parse(result);
                     if (entity != null && Utils.notEmpty(entity.getVersion())

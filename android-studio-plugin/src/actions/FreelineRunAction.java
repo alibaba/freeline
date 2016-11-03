@@ -1,5 +1,6 @@
 package actions;
 
+import utils.FreelineUtil;
 import utils.NotificationUtils;
 import utils.Utils;
 import views.FreelineTerminal;
@@ -10,7 +11,7 @@ import views.FreelineTerminal;
 public class FreelineRunAction extends BaseAction {
     @Override
     public void actionPerformed() {
-        if (checkFreelineExist()) {
+        if (FreelineUtil.checkInstall(currentProject)) {
             String python = Utils.getPythonLocation();
             if (python == null) {
                 NotificationUtils.errorNotification("command 'python' not found");
