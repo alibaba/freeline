@@ -1075,8 +1075,8 @@ def get_local_resources_dependencies(res_type, config, module, project_info):
     else:
         local_res_deps = []
         local_res_deps.extend(res_dependencies['local_resources'])
-        deps = project_info[module['name']]['local_module_dep']
-        deps = find_all_dependent_modules(deps, deps, config)
+        deps = list(project_info[module['name']]['local_module_dep'])
+        deps = list(set(find_all_dependent_modules(deps, deps, config)))
         for m in deps:
             deppath = os.path.join(config['build_cache_dir'], m, '{}_dependencies.json'.format(res_type))
             if os.path.exists(deppath):
