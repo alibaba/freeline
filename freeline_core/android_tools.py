@@ -159,15 +159,16 @@ class UpdateStatTask(Task):
         stat_cache = load_json_cache(cache_path)
         for module, file_dict in self._changed_files.iteritems():
             for key, files in file_dict.iteritems():
-                for fpath in files:
-                    if not fpath.startswith(self._config['build_cache_dir']) and os.path.exists(fpath):
-                        self.debug('refresh {} stat'.format(fpath))
-                        os.utime(fpath, None)
-                        if fpath not in stat_cache[module]:
-                            stat_cache[module][fpath] = {}
+                if key != 'apt':
+                    for fpath in files:
+                        if not fpath.startswith(self._config['build_cache_dir']) and os.path.exists(fpath):
+                            self.debug('refresh {} stat'.format(fpath))
+                            os.utime(fpath, None)
+                            if fpath not in stat_cache[module]:
+                                stat_cache[module][fpath] = {}
 
-                        stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
-                        stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
+                            stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
+                            stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
 
         write_json_cache(cache_path, stat_cache)
 
@@ -504,6 +505,13 @@ class AndroidIncBuildInvoker(object):
 
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
+        apt_changed_count = 0
+        if 'apt' in self._changed_files:
+            apt_changed_count = len(self._changed_files['apt'])
+            changed_count += apt_changed_count
+            if apt_changed_count > 0:
+                self.debug('apt changed files:')
+                self.debug(self._changed_files['apt'])
         self.debug("src changed files:")
         self.debug(self._changed_files['src'])
 
@@ -523,6 +531,9 @@ class AndroidIncBuildInvoker(object):
                 self.debug(
                     '{} only find R.java changed, but other modules has src files changed, so need javac task'.format(
                         self._name))
+                self._is_need_javac = True
+            elif apt_changed_count != 0:
+                self.debug('{} has apt files changed so that it need javac task.'.format(self._name))
                 self._is_need_javac = True
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))

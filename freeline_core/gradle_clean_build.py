@@ -5,10 +5,10 @@ import os
 
 from android_tools import InstallApkTask, CleanAllCacheTask
 from builder import CleanBuilder
-from gradle_tools import GenerateFileStatTask, BuildBaseResourceTask, get_project_info
+from gradle_tools import GenerateFileStatTask, BuildBaseResourceTask, get_project_info, GenerateAptFilesStatTask
 from task import CleanBuildTask, Task
-from utils import cexec, load_json_cache, write_json_cache
-from utils import is_windows_system
+from utils import cexec, load_json_cache, write_json_cache, is_windows_system
+from logger import Logger
 
 
 class GradleCleanBuilder(CleanBuilder):
@@ -45,6 +45,7 @@ class GradleCleanBuilder(CleanBuilder):
         append_stat_task = GenerateFileStatTask(self._config, is_append=True)
         read_project_info_task = GradleReadProjectInfoTask()
         generate_project_info_task = GradleGenerateProjectInfoTask(self._config)
+        generate_apt_file_stat_task = GenerateAptFilesStatTask()
 
         # generate_stat_task.add_child_task(read_project_info_task)
         build_task.add_child_task(clean_all_cache_task)
@@ -52,6 +53,7 @@ class GradleCleanBuilder(CleanBuilder):
         clean_all_cache_task.add_child_task(build_base_resource_task)
         clean_all_cache_task.add_child_task(generate_project_info_task)
         clean_all_cache_task.add_child_task(append_stat_task)
+        clean_all_cache_task.add_child_task(generate_apt_file_stat_task)
         read_project_info_task.add_child_task(build_task)
         self._root_task = [generate_stat_task, read_project_info_task]
 
@@ -103,14 +105,14 @@ class GradleCleanBuildTask(CleanBuildTask):
             cwd = None
 
         command = self._config['build_script']
-        command += ' --stacktrace'
         command += ' -P freelineBuild=true'
         if 'auto_dependency' in self._config and not self._config['auto_dependency']:
             command += ' -PdisableAutoDependency=true'
+        if Logger.debuggable:
+            command += ' --stacktrace'
         self.debug(command)
         self.debug("Gradle build task is running, please wait a minute...")
         output, err, code = cexec(command.split(' '), callback=None, cwd=cwd)
         if code != 0:
             from exceptions import FreelineException
-            raise FreelineException('build failed with script: {}'.format(self._config['build_script']),
-                                    '{}\n{}'.format(output, err))
+            raise FreelineException('build failed with script: {}'.format(command), '{}\n{}'.format(output, err))

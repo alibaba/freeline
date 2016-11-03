@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-[![Release Version](https://img.shields.io/badge/release-0.7.3.1-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
+[![Release Version](https://img.shields.io/badge/release-0.8.0-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
 
 Freeline是由[蚂蚁聚宝](https://www.antfortune.com/)Android团队开发的一款针对Android平台的增量编译工具。它可以充分利用缓存文件，在几秒钟内迅速地对代码的改动进行编译并部署到设备上，有效地减少了日常开发中的大量重新编译与安装的耗时。
 
@@ -26,6 +26,7 @@ Freeline会根据代码文件的变更情况，自动在全量编译与增量编
 - 支持so动态更新
 - 支持resource.arsc缓存
 - 支持retrolambda
+- 支持DataBinding
 - 支持各类主流注解库
 - 支持Windows，Linux，Mac平台
 
@@ -48,7 +49,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.7.3.1'
+        classpath 'com.antfortune.freeline:gradle:0.8.0'
     }
 }
 ````
@@ -116,4 +117,4 @@ See [wiki](https://github.com/alibaba/freeline/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%
 - [LayoutCast](https://github.com/mmin18/LayoutCast)
 
 ## License
-BSD License
+BSD3 License

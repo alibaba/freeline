@@ -199,7 +199,8 @@ class FreelineInitializer {
 
         if (buildScript == null || buildScript == '') {
             // set default build script
-            projectDescription.build_script = FreelineGenerator.generateBuildScript(projectDescription.main_project_name as String, productFlavor)
+            def isRootModuleTheMainModule = project.name == projectDescription.main_project_name
+            projectDescription.build_script = FreelineGenerator.generateBuildScript(isRootModuleTheMainModule, projectDescription.main_project_name as String, productFlavor)
         }
 
         if (launcher == null || launcher == '') {
