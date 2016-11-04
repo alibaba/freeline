@@ -25,7 +25,11 @@ public class PluginIcons {
     public static final Icon ICON_TOOL_WINDOW = OpenTerminal;
 
     private static Icon load(String path) {
-        return IconLoader.getIcon(path, PluginIcons.class);
+        try {
+            return IconLoader.getIcon(path, PluginIcons.class);
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 
     private static Icon androidLoad(String path) {

@@ -12,7 +12,7 @@ import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import utils.FreeUtil;
+import utils.FreelineUtil;
 
 /**
  * Freeline run configuration implementation
@@ -34,7 +34,7 @@ class FreeRunConfiguration extends RunConfigurationBase {
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
-        if (!FreeUtil.hadInitFreeline(getProject())) {
+        if (!FreelineUtil.hadInitFreeline(getProject())) {
             throw new RuntimeConfigurationException("Not yet initialize freeline code", "Warning");
         }
     }
@@ -58,7 +58,7 @@ class FreeRunConfiguration extends RunConfigurationBase {
         @NotNull
         @Override
         protected ProcessHandler startProcess() throws ExecutionException {
-            if (!FreeUtil.hadInitFreeline(getProject())) {
+            if (!FreelineUtil.hadInitFreeline(getProject())) {
                 throw new CantRunException("Not yet initialized freeline code");
             }
             // here just run one command: python freeline.py

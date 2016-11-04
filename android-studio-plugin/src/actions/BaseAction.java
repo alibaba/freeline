@@ -4,9 +4,8 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKeys;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
-import utils.NotificationUtils;
+import utils.DocumentUtil;
 
 import java.io.File;
 
@@ -21,33 +20,15 @@ public abstract class BaseAction extends AnAction {
 
     @Override
     public final void actionPerformed(AnActionEvent anActionEvent) {
-        saveDocument();
+        DocumentUtil.saveDocument();
         this.anActionEvent = anActionEvent;
         this.currentProject = DataKeys.PROJECT.getData(anActionEvent.getDataContext());
         this.projectDir = new File(currentProject.getBasePath());
         actionPerformed();
     }
 
-    private void saveDocument() {
-        FileDocumentManager.getInstance().saveAllDocuments();
-        ApplicationManager.getApplication().saveSettings();
-    }
-
     public abstract void actionPerformed();
 
-    /**
-     * 检查Freeline是否存在
-     *
-     * @return
-     */
-    protected boolean checkFreelineExist() {
-        File pyFile = new File(projectDir, "freeline.py");
-        if (pyFile.exists()) {
-            return true;
-        }
-        NotificationUtils.errorNotification("please install Freeline first");
-        return false;
-    }
 
     /**
      * 异步执行

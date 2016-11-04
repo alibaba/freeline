@@ -16,6 +16,7 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerEx;
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import com.jediterm.terminal.TerminalMode;
 import com.jediterm.terminal.model.TerminalTextBuffer;
 import com.jediterm.terminal.ui.JediTermWidget;
 import icons.PluginIcons;
@@ -23,9 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.terminal.AbstractTerminalRunner;
 import org.jetbrains.plugins.terminal.JBTabbedTerminalWidget;
+import org.jetbrains.plugins.terminal.JBTerminalPanel;
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner;
-import utils.NotificationUtils;
-import utils.Utils;
+import utils.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -121,15 +122,15 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     public void executeShell(String[] shell) {
         StringBuilder build = new StringBuilder();
         if (shell != null && shell.length > 0) {
-            for (String s : shell) {
-                if (s == null) {
-                    continue;
-                }
-                build.append(s + " ");
+        for (String s : shell) {
+            if (s == null) {
+                continue;
             }
+            build.append(s + " ");
         }
-        executeShell(build.toString());
     }
+    executeShell(build.toString());
+}
 
     public void initTerminal(final ToolWindow toolWindow) {
         toolWindow.setToHideOnEmptyContent(true);
@@ -327,13 +328,10 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
 
         @Override
         public void actionPerformed(AnActionEvent anActionEvent) {
-            saveDocuments();
-            doAction(anActionEvent);
-        }
-
-        private void saveDocuments() {
-            FileDocumentManager.getInstance().saveAllDocuments();
-            ApplicationManager.getApplication().saveSettings();
+            DocumentUtil.saveDocument();
+            if (FreelineUtil.checkInstall(anActionEvent.getProject())) {
+                doAction(anActionEvent);
+            }
         }
 
         public abstract void doAction(AnActionEvent anActionEvent);

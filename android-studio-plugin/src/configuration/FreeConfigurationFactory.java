@@ -5,7 +5,7 @@ import com.intellij.execution.configurations.ConfigurationType;
 import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
-import utils.FreeUtil;
+import utils.FreelineUtil;
 
 /**
  * Freeline Configuration Factory
@@ -27,7 +27,7 @@ class FreeConfigurationFactory extends ConfigurationFactory {
     @Override
     public boolean isApplicable(@NotNull Project project) {
         // enabled only had init project
-        return FreeUtil.hadInitFreeline(project);
+        return FreelineUtil.hadInitFreeline(project);
     }
 
     @Override
