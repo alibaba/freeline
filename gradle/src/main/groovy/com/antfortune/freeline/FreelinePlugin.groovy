@@ -290,20 +290,21 @@ class FreelinePlugin implements Plugin<Project> {
 
                 classesProcessTask.outputs.upToDateWhen { false }
                 String backUpDirPath = FreelineUtils.getBuildBackupDir(project.buildDir.absolutePath)
+                def modules = [:]
+                project.rootProject.allprojects.each { pro ->
+                    //modules.add("exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator)
+                    modules[pro.name] = "exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator
+                }
 
                 if (preDexTask) {
                     preDexTask.outputs.upToDateWhen { false }
                     def hackClassesBeforePreDex = "hackClassesBeforePreDex${variant.name.capitalize()}"
                     project.task(hackClassesBeforePreDex) << {
                         def jarDependencies = []
-                        def modules = []
-                        project.rootProject.allprojects.each { pro ->
-                            modules.add("exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator)
-                        }
 
                         preDexTask.inputs.files.files.each { f ->
                             if (f.path.endsWith(".jar")) {
-                                FreelineInjector.inject(excludeHackClasses, f as File, modules)
+                                FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
                                 jarDependencies.add(f.path)
                             }
                         }
@@ -321,23 +322,18 @@ class FreelinePlugin implements Plugin<Project> {
                 def backupMap = [:]
                 project.task(hackClassesBeforeDex) << {
                     def jarDependencies = []
-                    def modules = []
-                    project.rootProject.allprojects.each { pro ->
-                        modules.add("exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator)
-                    }
-
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
                                 backUpClass(backupMap, file as File, backUpDirPath as String)
-                                FreelineInjector.inject(excludeHackClasses, file as File, modules)
+                                FreelineInjector.inject(excludeHackClasses, file as File, modules.values())
                                 if (file.path.endsWith(".jar")) {
                                     jarDependencies.add(file.path)
                                 }
                             }
                         } else {
                             backUpClass(backupMap, f as File, backUpDirPath as String)
-                            FreelineInjector.inject(excludeHackClasses, f as File, modules)
+                            FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
                             }
@@ -373,6 +369,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def assembleTask = project.tasks.findByName("assemble${variant.name.capitalize()}")
                 if (assembleTask) {
                     assembleTask.doLast {
+                        FreelineAnnotationCollector.saveCollections(project, FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), modules)
                         FreelineUtils.addNewAttribute(project, 'apt', projectAptConfig)
                         FreelineUtils.addNewAttribute(project, 'retrolambda', projectRetrolambdaConfig)
                         FreelineUtils.addNewAttribute(project, 'databinding_compiler_jar', databindingCompilerJarPath)

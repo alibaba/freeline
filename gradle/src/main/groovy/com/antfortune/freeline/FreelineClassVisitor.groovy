@@ -1,5 +1,6 @@
 package com.antfortune.freeline
 
+import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
@@ -14,14 +15,28 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
 
     private static final String SUFFIX_ANDROIDANNOTATION = "_"
 
-    public boolean isHack = true;
+    public boolean isHack = true
 
-    public FreelineClassVisitor(int api, ClassWriter cw) {
+    public String className = null
+
+    public String filePath = null
+
+    public String entry = null
+
+    public boolean isJar = false
+
+    public def foundAnnos = []
+
+    public FreelineClassVisitor(String path, String entry, boolean isJar, int api, ClassWriter cw) {
         super(api, cw)
+        this.filePath = path
+        this.entry = entry
+        this.isJar = isJar
     }
 
     @Override
     void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        className = name;
         if ("android/app/Application".equals(superName)) {
             isHack = false;
         }
@@ -67,6 +82,19 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
                     return
                 }
                 super.visitMaxs(i, i1)
+            }
+
+            @Override
+            AnnotationVisitor visitAnnotation(String annoDesc, boolean visible) {
+                if (annoDesc != null) {
+                    FreelineAnnotationCollector.ANNOTATION_CLASSES.each { anno ->
+                        if (!foundAnnos.contains(anno) && annoDesc.contains(anno)) {
+                            foundAnnos.add(anno)
+                            FreelineAnnotationCollector.addNewAnno(anno, filePath, className, entry, isJar)
+                        }
+                    }
+                }
+                return super.visitAnnotation(annoDesc, visible)
             }
         }
         return mv;

@@ -96,12 +96,20 @@ class FreelineUtils {
     }
 
     public static void addNewAttribute(Project project, String key, def value) {
+        def description = readProjectDescription(project)
+        if (description != null) {
+            description[key] = value
+            saveJson(new JsonBuilder(description).toPrettyString(), joinPath(getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'), true)
+        }
+    }
+
+    public static def readProjectDescription(Project project) {
         def descriptionFile = new File(joinPath(getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'))
         if (descriptionFile.exists()) {
             def description = new JsonSlurper().parseText(descriptionFile.text)
-            description[key] = value
-            saveJson(new JsonBuilder(description).toPrettyString(), descriptionFile.absolutePath, true)
+            return description
         }
+        return null
     }
 
     public static String joinPath(String... sep) {

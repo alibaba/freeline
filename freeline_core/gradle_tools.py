@@ -831,19 +831,27 @@ class DataBindingProcessor(object):
             classpaths = []
 
             for import_node in imports:
-                imports_dict[import_node.attrib['name']] = import_node.attrib
+                if 'name' in import_node.attrib:
+                    imports_dict[import_node.attrib['name']] = import_node.attrib
+                if 'type' in import_node.attrib:
+                    classpath = import_node.attrib['type']
+                if classpath and classpath not in classpaths and not classpath.startswith(
+                        'android.') and not classpath.startswith('java.'):
+                    classpaths.append(classpath)
 
             for variable_node in variables:
-                variable_type = variable_node.attrib['type']
-                if '.' in variable_type:
-                    classpath = variable_type
-                elif variable_type in imports_dict:
-                    classpath = imports_dict[variable_type]['type']
-                else:
-                    classpath = None
+                if 'type' in variable_node.attrib:
+                    variable_type = variable_node.attrib['type']
+                    if '.' in variable_type:
+                        classpath = variable_type
+                    elif variable_type in imports_dict:
+                        classpath = imports_dict[variable_type]['type']
+                    else:
+                        classpath = None
 
-                if classpath and not classpath.startswith('android.') and not classpath.startswith('java.'):
-                    classpaths.append(classpath)
+                    if classpath and classpath not in classpaths and not classpath.startswith(
+                            'android.') and not classpath.startswith('java.'):
+                        classpaths.append(classpath)
 
             return classpaths
         return []

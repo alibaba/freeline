@@ -15,7 +15,7 @@ import java.util.zip.ZipEntry
  */
 class FreelineInjector {
 
-    public static void inject(List<String> excludeClasses, File file, List<String> modules) {
+    public static void inject(List<String> excludeClasses, File file, Collection<String> modules) {
         if (file.path.endsWith(".class")
                 && !isExcluded(file.path, excludeClasses)) {
             realInject(file)
@@ -44,7 +44,7 @@ class FreelineInjector {
         return false
     }
 
-    private static boolean isProjectModuleJar(String path, List<String> modules) {
+    private static boolean isProjectModuleJar(String path, Collection<String> modules) {
         for (String module : modules) {
             if (path.contains(module)) {
                 return true
@@ -61,7 +61,7 @@ class FreelineInjector {
                 FileInputStream fis = new FileInputStream(file)
                 FileOutputStream fos = new FileOutputStream(pending)
                 println "inject: ${file.path}"
-                byte[] bytes = hackClass(fis);
+                byte[] bytes = hackClass(file.path, null, false, fis);
                 fos.write(bytes)
                 fis.close()
                 fos.close()
@@ -81,7 +81,7 @@ class FreelineInjector {
 
                         if (entryName.endsWith(".class")) {
                             println "inject jar class: ${entryName}"
-                            jos.write(hackClass(is))
+                            jos.write(hackClass(file.path, entryName, true, is))
                         } else {
                             println "skip jar entry: ${entryName}"
                             jos.write(readBytes(is))
@@ -108,10 +108,10 @@ class FreelineInjector {
         }
     }
 
-    private static byte[] hackClass(InputStream inputStream) {
+    private static byte[] hackClass(String path, String entry, boolean isJar, InputStream inputStream) {
         ClassReader cr = new ClassReader(inputStream)
         ClassWriter cw = new ClassWriter(cr, 0)
-        ClassVisitor cv = new FreelineClassVisitor(Opcodes.ASM4, cw)
+        ClassVisitor cv = new FreelineClassVisitor(path, entry, isJar, Opcodes.ASM4, cw)
         cr.accept(cv, 0)
         return cw.toByteArray()
     }
