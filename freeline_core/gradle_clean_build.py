@@ -12,10 +12,11 @@ from logger import Logger
 
 
 class GradleCleanBuilder(CleanBuilder):
-    def __init__(self, config, task_engine, project_info=None):
+    def __init__(self, config, task_engine, project_info=None, wait_for_debugger=False):
         CleanBuilder.__init__(self, config, task_engine, builder_name='gradle_clean_builder')
         self._root_task = None
         self._project_info = project_info
+        self._wait_for_debugger = wait_for_debugger
 
     def check_build_environment(self):
         CleanBuilder.check_build_environment(self)
@@ -36,7 +37,7 @@ class GradleCleanBuilder(CleanBuilder):
         # 3. install / clean cache
         # 4. build base res / generate project info cache
         build_task = GradleCleanBuildTask(self._config)
-        install_task = InstallApkTask(self._adb, self._config)
+        install_task = InstallApkTask(self._adb, self._config, wait_for_debugger=self._wait_for_debugger)
         clean_all_cache_task = CleanAllCacheTask(self._config['build_cache_dir'], ignore=[
             'stat_cache.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml',
             'assets_dependencies.json', 'freeline_annotation_info.json'])

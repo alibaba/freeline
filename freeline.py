@@ -23,8 +23,8 @@ class Freeline(object):
 def get_parser():
     parser = ArgumentParser()
     parser.add_argument('-v', '--version', action='store_true', help='show version')
-    # parser.add_argument('-b', '--build', action='store_true', help='freeline build')
     parser.add_argument('-f', '--cleanBuild', action='store_true', help='force to execute a clean build')
+    parser.add_argument('-w', '--wait', action='store_true', help='make application wait for debugger')
     parser.add_argument('-a', '--all', action='store_true',
                         help="together with '-f', freeline will force to clean build all projects.")
     parser.add_argument('-c', '--clean', action='store_true', help='clean cache directory and workspace')
