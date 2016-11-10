@@ -21,14 +21,18 @@ class FreelineInjector {
             realInject(file)
         } else if (file.path.endsWith("classes.jar")) {
             println "find jar: ${file.path}"
-            if (file.absolutePath.contains("intermediates" + File.separator + "exploded-aar" + File.separator)
-                    && !file.absolutePath.contains("com.antfortune.freeline")
-                    && !file.absolutePath.contains("com.android.support")
-                    && isProjectModuleJar(file.absolutePath, modules)) {
+            if (checkInjection(file, modules)) {
                 println "inject jar: ${file.path}"
                 realInject(file)
             }
         }
+    }
+
+    public static boolean checkInjection(File file, Collection<String> modules) {
+        return (file.absolutePath.contains("intermediates" + File.separator + "exploded-aar" + File.separator)
+                    && !file.absolutePath.contains("com.antfortune.freeline")
+                    && !file.absolutePath.contains("com.android.support")
+                    && isProjectModuleJar(file.absolutePath, modules))
     }
 
     private static boolean isExcluded(String path, List<String> excludeClasses) {

@@ -325,14 +325,14 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
-                                backUpClass(backupMap, file as File, backUpDirPath as String)
+                                backUpClass(backupMap, file as File, backUpDirPath as String, modules.values())
                                 FreelineInjector.inject(excludeHackClasses, file as File, modules.values())
                                 if (file.path.endsWith(".jar")) {
                                     jarDependencies.add(file.path)
                                 }
                             }
                         } else {
-                            backUpClass(backupMap, f as File, backUpDirPath as String)
+                            backUpClass(backupMap, f as File, backUpDirPath as String, modules.values())
                             FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
@@ -515,13 +515,16 @@ class FreelinePlugin implements Plugin<Project> {
         }
     }
 
-    private static void backUpClass(def backupMap, File file, String backUpDirPath) {
+    private static void backUpClass(def backupMap, File file, String backUpDirPath, def modules) {
         String path = file.absolutePath
-        if (!FreelineUtils.isEmpty(path) && path.endsWith(".class") && isNeedBackUp(path)) {
-            File target = new File(backUpDirPath, String.valueOf(System.currentTimeMillis()))
-            FreelineUtils.copyFile(file, target)
-            backupMap[file.absolutePath] = target.absolutePath
-            println "back up ${file.absolutePath} to ${target.absolutePath}"
+        if (!FreelineUtils.isEmpty(path)) {
+            if (path.endsWith(".class")
+                    || (path.endsWith(".jar") && FreelineInjector.checkInjection(file, modules as Collection))) {
+                File target = new File(backUpDirPath, "${file.name}-${System.currentTimeMillis()}")
+                FreelineUtils.copyFile(file, target)
+                backupMap[file.absolutePath] = target.absolutePath
+                println "back up ${file.absolutePath} to ${target.absolutePath}"
+            }
         }
     }
 
@@ -539,7 +542,7 @@ class FreelinePlugin implements Plugin<Project> {
         backupMap.each { targetPath, sourcePath ->
             File sourceFile = new File(sourcePath as String)
             if (sourceFile.exists()) {
-                FreelineUtils.copyFile(sourceFile, new File(targetPath as String))
+                sourceFile.renameTo(new File(targetPath as String))
                 println "roll back ${targetPath}"
             }
         }
