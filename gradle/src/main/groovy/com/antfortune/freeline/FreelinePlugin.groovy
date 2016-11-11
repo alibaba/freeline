@@ -3,6 +3,7 @@ package com.antfortune.freeline
 import groovy.io.FileType
 import groovy.json.JsonBuilder
 import groovy.xml.XmlUtil
+import org.apache.commons.io.FileUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -521,7 +522,7 @@ class FreelinePlugin implements Plugin<Project> {
             if (path.endsWith(".class")
                     || (path.endsWith(".jar") && FreelineInjector.checkInjection(file, modules as Collection))) {
                 File target = new File(backUpDirPath, "${file.name}-${System.currentTimeMillis()}")
-                FreelineUtils.copyFile(file, target)
+                FileUtils.copyFile(file, target)
                 backupMap[file.absolutePath] = target.absolutePath
                 println "back up ${file.absolutePath} to ${target.absolutePath}"
             }
@@ -542,8 +543,14 @@ class FreelinePlugin implements Plugin<Project> {
         backupMap.each { targetPath, sourcePath ->
             File sourceFile = new File(sourcePath as String)
             if (sourceFile.exists()) {
-                sourceFile.renameTo(new File(targetPath as String))
-                println "roll back ${targetPath}"
+                try {
+                    File targetFile = new File(targetPath as String)
+                    FileUtils.deleteQuietly(targetFile)
+                    FileUtils.moveFile(sourceFile, new File(targetPath as String))
+                    println "roll back ${targetPath}"
+                } catch (Exception e) {
+                    println "roll back ${targetPath} failed: ${e.getMessage()}"
+                }
             }
         }
     }

@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     compile gradleApi()
+    compile 'commons-io:commons-io:2.4'
     compile 'com.squareup:javapoet:1.7.0'
     compile 'com.github.javaparser:javaparser-core:2.4.0'
 }

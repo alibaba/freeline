@@ -1,5 +1,6 @@
 package com.antfortune.freeline
 
+import org.apache.commons.io.FileUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
@@ -21,7 +22,7 @@ class FreelineConfigGenerateTask extends DefaultTask {
 
     @TaskAction
     public void action() {
-        FreelineUtils.deleteDirectory(outputDir)
+        FileUtils.deleteDirectory(outputDir)
 
         Map<String, String> configMap = new HashMap<String, String>();
         configMap.put("packageName", packageName);
