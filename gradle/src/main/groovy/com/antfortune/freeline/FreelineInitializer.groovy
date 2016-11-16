@@ -257,7 +257,9 @@ class FreelineInitializer {
         projectDescription.databinding_modules = []
         project.rootProject.allprojects.each { pro ->
             if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
-                if (pro.android.hasProperty("dataBinding") && pro.android.dataBinding.enabled) {
+                if (pro.android.hasProperty("dataBinding")
+                        && pro.android.dataBinding.enabled
+                        && projectDescription.project_source_sets[pro.name] != null) {
                     def data = [:]
                     String manifestPath = projectDescription.project_source_sets[pro.name].main_manifest_path
                     data.name = pro.name
