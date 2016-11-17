@@ -122,7 +122,7 @@ class Dispatcher(object):
         self._logger.reset()  # reset logger
         Logger.info(message)
         Logger.debug(message)
-        self._setup_clean_build_command(is_build_all_projects=False)
+        self._setup_clean_build_command(is_build_all_projects=False, wait_for_debugger=self._args.wait)
         self._exec_command(self._command)
 
     def _flush_footer(self, footer):
