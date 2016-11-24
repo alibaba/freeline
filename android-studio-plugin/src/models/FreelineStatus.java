@@ -1,9 +1,14 @@
 package models;
 
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import utils.FreelineUtil;
 import utils.LogUtil;
 
+import java.io.File;
 import java.util.Collection;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by pengwei on 2016/10/31.
@@ -63,7 +68,8 @@ public class FreelineStatus {
      * 满足一下三个条件
      * 1. 存在classpath 'com.antfortune.freeline:gradle:*'
      * 2. 存在apply plugin: 'com.antfortune.freeline'
-     * 3. 存在freeline_core、release_tools、freeline.py
+     * 3. 存在freeline文件夹、freeline.py
+     *
      * @return
      */
     public boolean hasInitFreeline() {

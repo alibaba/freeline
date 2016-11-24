@@ -19,6 +19,9 @@ import views.CheckUpdateDialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -28,7 +31,6 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
 
     @Override
     public void actionPerformed() {
-        FreelineUtil.hasInitFreeline(currentProject);
         if (FreelineUtil.checkInstall(currentProject)) {
             asyncTask(new GetServerVersion(this));
         }
@@ -174,7 +176,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
     /**
      * 获取服务器最新版本
      */
-    private class GetServerVersion implements Runnable {
+    public static class GetServerVersion implements Runnable {
         private GetServerCallback callback;
 
         public GetServerVersion(GetServerCallback callback) {
@@ -187,7 +189,12 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
                 return;
             }
             try {
-                String result = FreelineUtil.syncGetFreelineVersion();
+                URL url = new URL("http://jcenter.bintray.com/com/antfortune/freeline/gradle/maven-metadata.xml");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(5 * 1000);
+                conn.setRequestMethod("GET");
+                InputStream inStream = conn.getInputStream();
+                String result = StreamUtil.inputStream2String(inStream);
                 if (result != null && result.trim().length() != 0) {
                     GradleDependencyEntity entity = GradleDependencyEntity.parse(result);
                     if (entity != null && Utils.notEmpty(entity.getVersion())

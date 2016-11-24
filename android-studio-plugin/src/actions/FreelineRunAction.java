@@ -14,7 +14,7 @@ public class FreelineRunAction extends BaseAction {
         if (FreelineUtil.checkInstall(currentProject)) {
             String python = Utils.getPythonLocation();
             if (python == null) {
-                NotificationUtils.errorNotification("command 'python' not found");
+                NotificationUtils.pythonNotFound();
             } else {
                 FreelineTerminal.getInstance(currentProject).initAndExecute(new String[]{
                         python, "freeline.py", getArgs()});

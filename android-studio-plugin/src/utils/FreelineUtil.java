@@ -1,5 +1,6 @@
 package utils;
 
+import actions.UpdateAction;
 import com.android.tools.idea.gradle.AndroidGradleModel;
 import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
@@ -31,10 +32,9 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.content.impl.ContentImpl;
 import icons.PluginIcons;
-import models.ArtifactDependencyModelWrapper;
+import models.*;
 import models.Constant;
-import models.FreelineStatus;
-import models.GradleDependencyEntity;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 
@@ -42,12 +42,11 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Freeline Utility
@@ -153,22 +152,31 @@ public class FreelineUtil {
         Collection<VirtualFile> gradleFiles = GradleUtil.getAllGradleFile(project);
         status.setGradleBuildFiles(gradleFiles);
         for (VirtualFile file : gradleFiles) {
-            GradleBuildModel model = GradleBuildModel.parseBuildFile(file, project);
-            if (model != null) {
-                List<ArtifactDependencyModel> classPaths = model.buildscript().dependencies().artifacts();
-                for (ArtifactDependencyModel classpath : classPaths) {
-                    ArtifactDependencyModelWrapper wrapper = new ArtifactDependencyModelWrapper(classpath);
-                    if (wrapper.group().equals(Constant.FREELINE_CLASSPATH_GROUP)
-                            && wrapper.name().equals(Constant.FREELINE_CLASSPATH_ARTIFACT)) {
-                        status.setClasspathFile(file);
+            if (!status.isExistClasspath()) {
+                GradleBuildModel model = GradleBuildModel.parseBuildFile(file, project);
+                if (model != null) {
+                    List<ArtifactDependencyModel> classPaths = model.buildscript().dependencies().artifacts();
+                    for (ArtifactDependencyModel classpath : classPaths) {
+                        ArtifactDependencyModelWrapper wrapper = new ArtifactDependencyModelWrapper(classpath);
+                        if (wrapper.group().equals(Constant.FREELINE_CLASSPATH_GROUP)
+                                && wrapper.name().equals(Constant.FREELINE_CLASSPATH_ARTIFACT)) {
+                            status.setClasspathFile(file);
+                            break;
+                        }
                     }
                 }
             }
-            GradleBuildFile gradleBuildFile = new GradleBuildFile(file, project);
-            if (gradleBuildFile != null) {
-                List<String> plugins = gradleBuildFile.getPlugins();
-                if (plugins.contains(Constant.FREELINE_PLUGIN_ID)) {
-                    status.setPluginFile(file);
+            // 正则二次判断是否存在Freeline classpath
+            if (!status.isExistClasspath() && regularExistFreelineClassPath(file)) {
+                status.setClasspathFile(file);
+            }
+            if (!status.isExistPlugin()) {
+                GradleBuildFile gradleBuildFile = new GradleBuildFile(file, project);
+                if (gradleBuildFile != null) {
+                    List<String> plugins = gradleBuildFile.getPlugins();
+                    if (plugins.contains(Constant.FREELINE_PLUGIN_ID)) {
+                        status.setPluginFile(file);
+                    }
                 }
             }
             if (status.isExistClasspath() && status.isExistPlugin()) {
@@ -195,8 +203,12 @@ public class FreelineUtil {
      * @param project
      * @return
      */
-    public static boolean checkInstall(@NotNull Project project) {
-        FreelineStatus status = getFreelineStatus(project);
+    public static boolean checkInstall(@NotNull final Project project) {
+        final FreelineStatus status = getFreelineStatus(project);
+        if (GradleUtil.isSyncInProgress(project)) {
+            NotificationUtils.errorMsgDialog("Waiting for sync project to complete");
+            return false;
+        }
         if (status.hasInitFreeline()) {
             return true;
         }
@@ -204,7 +216,7 @@ public class FreelineUtil {
             NotificationUtils.errorMsgDialog("It's not an Android Gradle project Currently?");
             return false;
         }
-        if (DialogUtil.createDialog("Detected that you did not install Freeline, Whether install Automatically？",
+        if (DialogUtil.createDialog("Detected that you did not installFreeline Freeline, Whether installFreeline Automatically？",
                 "Install Freeline Automatically", "Cancel")) {
             Module[] modules = ModuleManager.getInstance(project).getModules();
             List<Pair<Module, PsiFile>> selectModulesList = new ArrayList<>();
@@ -212,25 +224,25 @@ public class FreelineUtil {
                 AndroidGradleModel model = AndroidGradleModel.get(module);
                 GradleBuildFile file = GradleBuildFile.get(module);
                 if (file != null && model != null) {
-                    if (!model.isLibrary()) {
+                    if (!model.getAndroidProject().isLibrary()) {
                         selectModulesList.add(Pair.create(module, file.getPsiFile()));
                     }
                 }
             }
             // 多个app模块的情况
             if (selectModulesList.size() > 1) {
-                DialogBuilder builder = new DialogBuilder();
+                final DialogBuilder builder = new DialogBuilder();
                 builder.setTitle("Install Freeline");
                 builder.resizable(false);
                 builder.setCenterPanel(new JLabel("There are multiple application modules, Please select the module to be installed Freeline.",
                         Messages.getInformationIcon(), SwingConstants.CENTER));
                 builder.addOkAction().setText("Cancel");
-                for (Pair<Module, PsiFile> pair : selectModulesList) {
+                for (final Pair<Module, PsiFile> pair : selectModulesList) {
                     builder.addAction(new AbstractAction(":" + pair.first.getName()) {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             builder.getDialogWrapper().close(DialogWrapper.CANCEL_EXIT_CODE);
-                            install(project, status, pair.getSecond());
+                            installFreeline(project, status, pair.getSecond());
                         }
                     });
                 }
@@ -238,7 +250,7 @@ public class FreelineUtil {
                     return false;
                 }
             } else if (selectModulesList.size() == 1) {
-                install(project, status, selectModulesList.get(0).getSecond());
+                installFreeline(project, status, selectModulesList.get(0).getSecond());
             } else {
                 NotificationUtils.errorMsgDialog("Can not found Application Module! Please Sync Project.");
                 return false;
@@ -254,7 +266,32 @@ public class FreelineUtil {
      * @param status
      * @param psiFile
      */
-    private static void install(Project project, FreelineStatus status, PsiFile psiFile) {
+    private static void installFreeline(final Project project, final FreelineStatus status, final PsiFile psiFile) {
+        ApplicationManager.getApplication().executeOnPooledThread(new UpdateAction.GetServerVersion(new GetServerCallback() {
+            @Override
+            public void onSuccess(final GradleDependencyEntity entity) {
+                LogUtil.d("获取版本号成功:" + entity);
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        installFreeline(project, status, psiFile, entity);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(String errMsg) {
+                LogUtil.d("获取版本号失败:" + errMsg);
+                NotificationUtils.errorNotification("Get Freeline Version Failure: " + errMsg);
+            }
+        }));
+    }
+
+    private static boolean needReformatCode = false;
+
+    private static void installFreeline(final Project project, final FreelineStatus status, final PsiFile psiFile,
+                                        final GradleDependencyEntity dependencyEntity) {
+        needReformatCode = false;
         CommandProcessor.getInstance().runUndoTransparentAction(new Runnable() {
             @Override
             public void run() {
@@ -263,25 +300,23 @@ public class FreelineUtil {
                     public void run() {
                         if (!status.isExistClasspath()) {
                             Collection<VirtualFile> collection = status.getGradleBuildFiles();
-                            GradleDependencyEntity dependencyEntity = syncGetFreelineVersionEntity();
                             if (dependencyEntity != null) {
                                 for (VirtualFile file : collection) {
                                     GradleBuildModel model = GradleBuildModel.parseBuildFile(file, project);
                                     List<ArtifactDependencyModel> artifactDependencyModels = model.buildscript().dependencies().artifacts();
-                                    boolean hadFind = false;
                                     for (ArtifactDependencyModel model1 : artifactDependencyModels) {
                                         ArtifactDependencyModelWrapper wrapper = new ArtifactDependencyModelWrapper(model1);
-                                        System.out.println(wrapper.group() + "&" + wrapper.name());
                                         if (wrapper.group().equals(Constant.ANDROID_GRADLE_TOOL_GROUP_NAME)) {
                                             ArtifactDependencySpec spec = new ArtifactDependencySpec(dependencyEntity.getArtifactId(),
-                                                    dependencyEntity.getGroupId(), dependencyEntity.getVersion());
+                                                    dependencyEntity.getGroupId(), dependencyEntity.getNewestReleaseVersion());
                                             model.buildscript().dependencies().addArtifact("classpath", spec);
                                             model.applyChanges();
-                                            hadFind = true;
+                                            needReformatCode = true;
+                                            status.setClasspathFile(file);
                                             break;
                                         }
                                     }
-                                    if (hadFind) {
+                                    if (status.isExistClasspath()) {
                                         break;
                                     }
                                 }
@@ -292,51 +327,48 @@ public class FreelineUtil {
                                 GradleUtil.applyPlugin(project, (GroovyFile) psiFile, Constant.FREELINE_PLUGIN_ID);
                             }
                         }
-                        GradleUtil.startSync(project, new GradleSyncListener.Adapter() {
-                            @Override
-                            public void syncSucceeded(@NotNull Project project) {
-                                super.syncSucceeded(project);
-                                GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
-                                    @Override
-                                    public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
-                                        super.onTaskOutput(id, text, stdOut);
-                                    }
-                                });
-                            }
-                        });
+                    }
+                });
+            }
+        });
+        GradleUtil.startSync(project, new GradleSyncListener.Adapter() {
+            @Override
+            public void syncSucceeded(@NotNull Project project) {
+                super.syncSucceeded(project);
+                if (needReformatCode && status.getClasspathFile() != null) {
+                    DocumentUtil.reformatCode(project, status.getClasspathFile());
+                }
+                LogUtil.d("Sync Project Finish, start download freeline.zip.");
+                GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
+                    @Override
+                    public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
+                        super.onTaskOutput(id, text, stdOut);
                     }
                 });
             }
         });
     }
 
+    public static final Pattern PATTERN_CLASSPATH = Pattern.compile("classpath\\s+'"
+            + Constant.FREELINE_CLASSPATH_GROUP + ":" + Constant.FREELINE_CLASSPATH_ARTIFACT + ":[\\d|\\.]*'");
+
     /**
-     * 同步获取Freeline版本
+     * 正则二次判断是否存在Freeline classpath
+     *
+     * @param file
      * @return
      */
-    public static String syncGetFreelineVersion() throws IOException {
-        URL url = new URL("http://jcenter.bintray.com/com/antfortune/freeline/gradle/maven-metadata.xml");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(5 * 1000);
-        conn.setRequestMethod("GET");
-        InputStream inStream = conn.getInputStream();
-        String result = StreamUtil.inputStream2String(inStream);
-        return result;
-    }
-
-    public static GradleDependencyEntity syncGetFreelineVersionEntity() {
+    public static boolean regularExistFreelineClassPath(VirtualFile file) {
         try {
-            String result = syncGetFreelineVersion();
-            if (result != null && result.trim().length() != 0) {
-                GradleDependencyEntity entity = GradleDependencyEntity.parse(result);
-                if (entity.getGroupId() != null && entity.getArtifactId() != null) {
-                    return entity;
-                }
+            if (file.exists()) {
+                String content = FileUtils.readFileToString(new File(file.getPath()));
+//                System.out.println(content);
+                Matcher matcher = PATTERN_CLASSPATH.matcher(content);
+                return matcher.find();
             }
         } catch (IOException e) {
-
+            e.printStackTrace();
         }
-        NotificationUtils.errorNotification("Get Freeline Version Failure.");
-        return null;
+        return false;
     }
 }

@@ -4,9 +4,7 @@ import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ProjectComponent;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.SimpleToolWindowPanel;
@@ -16,7 +14,7 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerEx;
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
-import com.jediterm.terminal.TerminalMode;
+import com.jediterm.terminal.Terminal;
 import com.jediterm.terminal.model.TerminalTextBuffer;
 import com.jediterm.terminal.ui.JediTermWidget;
 import icons.PluginIcons;
@@ -24,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.terminal.AbstractTerminalRunner;
 import org.jetbrains.plugins.terminal.JBTabbedTerminalWidget;
-import org.jetbrains.plugins.terminal.JBTerminalPanel;
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner;
 import utils.*;
 
@@ -33,6 +30,8 @@ import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
+import java.util.*;
+import java.util.List;
 
 /**
  * Created by pengwei on 16/9/15.
@@ -50,8 +49,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         return project.getComponent(FreelineTerminal.class);
     }
 
-    public JBTabbedTerminalWidget getTerminalWidget() {
-        ToolWindow window = getToolWindow();
+    public JBTabbedTerminalWidget getTerminalWidget(ToolWindow window) {
         window.show(null);
         if (myTerminalWidget == null) {
             JComponent parentPanel =  window.getContentManager().getContents()[0].getComponent();
@@ -64,6 +62,11 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
             }
         }
         return myTerminalWidget;
+    }
+
+    public JBTabbedTerminalWidget getTerminalWidget() {
+        ToolWindow window = getToolWindow();
+        return getTerminalWidget(window);
     }
 
     public JediTermWidget getCurrentSession() {
@@ -158,6 +161,13 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
             }
         });
         toolWindow.show(null);
+        JBTabbedTerminalWidget terminalWidget = getTerminalWidget(toolWindow);
+        if (terminalWidget != null && terminalWidget.getCurrentSession() != null) {
+            Terminal terminal = terminalWidget.getCurrentSession().getTerminal();
+            if (terminal != null) {
+                terminal.setCursorVisible(false);
+            }
+        }
     }
 
     private ToolWindow getToolWindow() {
@@ -270,35 +280,59 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
     }
 
     private static class RunAction extends BaseTerminalAction {
+        String pythonLocation;
         public RunAction(FreelineTerminal terminal) {
-            super(terminal, "Run Freeline", "Run Freeline", PluginIcons.FreelineIcon);
+            this(terminal, "Run Freeline", "Run Freeline", PluginIcons.FreelineIcon);
+        }
+
+        public RunAction(FreelineTerminal terminal, String text, String description, Icon icon) {
+            super(terminal, text, description, icon);
         }
 
         @Override
         public void doAction(AnActionEvent anActionEvent) {
-            terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py"});
+            pythonLocation = Utils.getPythonLocation();
+            if (pythonLocation == null) {
+                NotificationUtils.pythonNotFound();
+            } else {
+                terminal.executeShell(getArgs());
+            }
+        }
+
+        private String[] getArgs() {
+            List<String> args = new ArrayList<String>();
+            args.add(pythonLocation);
+            args.add("freeline.py");
+            if (args() != null) {
+                args.add(args());
+            }
+            return args.toArray(new String[]{});
+        }
+
+        protected String args() {
+            return null;
         }
     }
 
-    private static class DebugAction extends BaseTerminalAction {
+    private static class DebugAction extends RunAction {
         public DebugAction(FreelineTerminal terminal) {
             super(terminal, "Run Freeline -d", "Run Freeline -d", PluginIcons.StartDebugger);
         }
 
         @Override
-        public void doAction(AnActionEvent anActionEvent) {
-            terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py", "-d"});
+        protected String args() {
+            return "-d";
         }
     }
 
-    private static class ForceAction extends BaseTerminalAction {
+    private static class ForceAction extends RunAction {
         public ForceAction(FreelineTerminal terminal) {
             super(terminal, "Run Freeline -f", "Run Freeline -f", PluginIcons.QuickfixBulb);
         }
 
         @Override
-        public void doAction(AnActionEvent anActionEvent) {
-            terminal.executeShell(new String[]{Utils.getPythonLocation(), "freeline.py", "-f"});
+        protected String args() {
+            return "-f";
         }
     }
 
@@ -314,6 +348,7 @@ public class FreelineTerminal implements FocusListener, ProjectComponent {
         public void doAction(AnActionEvent anActionEvent) {
             if (terminal.getCurrentSession() != null) {
                 terminal.getCurrentSession().getTerminal().reset();
+                terminal.getCurrentSession().getTerminal().setCursorVisible(false);
             }
         }
     }

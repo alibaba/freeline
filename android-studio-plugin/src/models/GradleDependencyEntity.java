@@ -1,12 +1,10 @@
 package models;
 
 import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 import utils.Utils;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -20,6 +18,7 @@ public class GradleDependencyEntity {
     private String artifactId;
     private String version;
     private String updateTime;
+    private String newestReleaseVersion;
 
     public String getGroupId() {
         return groupId;
@@ -63,6 +62,7 @@ public class GradleDependencyEntity {
 
     public GradleDependencyEntity setVersion(String version) {
         this.version = version;
+        setNewestReleaseVersion(version);
         return this;
     }
 
@@ -83,18 +83,17 @@ public class GradleDependencyEntity {
             int eventType = xmlPullParser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 if (eventType == XmlPullParser.START_DOCUMENT) {
+
                 } else if (eventType == XmlPullParser.START_TAG) {
                     String name = xmlPullParser.getName();
                     if (name.equals("groupId")) {
                         entity.setGroupId(xmlPullParser.nextText());
-                    }
-                    if (name.equals("artifactId")) {
+                    } else if (name.equals("artifactId")) {
                         entity.setArtifactId(xmlPullParser.nextText());
-                    }
-                    if (name.equals("version")) {
-                        entity.setVersion(xmlPullParser.nextText());
-                    }
-                    if (name.equals("lastUpdated")) {
+                    } else if (name.equals("version")) {
+                        String version = xmlPullParser.nextText();
+                        entity.setVersion(version);
+                    } else if (name.equals("lastUpdated")) {
                         entity.setUpdateTime(xmlPullParser.nextText());
                     }
                 } else if (eventType == XmlPullParser.END_TAG) {
@@ -104,12 +103,20 @@ public class GradleDependencyEntity {
                 }
                 eventType = xmlPullParser.next();
             }
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return entity;
+    }
+
+    public String getNewestReleaseVersion() {
+        return newestReleaseVersion;
+    }
+
+    private void setNewestReleaseVersion(String version) {
+        if (version != null && version.split("\\.").length == 3) {
+            this.newestReleaseVersion = version;
+        }
     }
 
     @Override
@@ -119,6 +126,7 @@ public class GradleDependencyEntity {
                 ", artifactId='" + artifactId + '\'' +
                 ", version='" + version + '\'' +
                 ", updateTime='" + updateTime + '\'' +
+                ", newestReleaseVersion='" + newestReleaseVersion + '\'' +
                 '}';
     }
 }
