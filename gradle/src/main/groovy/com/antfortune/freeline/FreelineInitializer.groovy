@@ -19,6 +19,7 @@ class FreelineInitializer {
         println "Freeline init process start..."
 
         def mirror = project.hasProperty("mirror")
+        def freelinezip = FreelineUtils.getProperty(project, "freelineZip");
         def snapshot = project.hasProperty("snapshot")
         def freelineVersion = FreelineUtils.getProperty(project, "freelineVersion")
         def cdnUrl = FreelineUtils.getProperty(project, "freelineCdnUrl")
@@ -61,18 +62,25 @@ class FreelineInitializer {
                 url = json.assets[0].browser_download_url
             }
         }
-        println "Downloading release pack from ${url}"
-        println "Please wait a minute..."
-        def downloadFile = new File(project.rootDir, "freeline.zip.tmp")
-        if (downloadFile.exists()) {
-            downloadFile.delete()
-        }
 
         def ant = new AntBuilder()
-        ant.get(src: url, dest: downloadFile)
+        def downloadFile;
+        println "freelinezip" + freelinezip
+        if(freelinezip && new File(project.rootDir, freelinezip.toString()).exists()){
+            downloadFile =  new File(project.rootDir, freelinezip.toString());
+            println "Local folder have specified zip file" + freelinezip + ",so we can use this."
+        }else{
+            println "Downloading release pack from ${url}"
+            println "Please wait a minute..."
+            downloadFile = new File(project.rootDir, "freeline.zip.tmp")
+            if (downloadFile.exists()) {
+                downloadFile.delete()
+            }
+            ant.get(src: url, dest: downloadFile)
+        }
+
         downloadFile.renameTo("freeline.zip")
         println 'download success.'
-
 
         def freelineDir = new File(project.rootDir, "freeline")
         if (freelineDir.exists()) {
