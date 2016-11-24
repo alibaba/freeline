@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+from __future__ import print_function
 import sys
 from argparse import ArgumentParser
 
@@ -28,15 +29,15 @@ def get_parser():
     parser.add_argument('-a', '--all', action='store_true',
                         help="together with '-f', freeline will force to clean build all projects.")
     parser.add_argument('-c', '--clean', action='store_true', help='clean cache directory and workspace')
-    parser.add_argument('-d', '--debug', action='store_true', help='enable debug mode')
-    parser.add_argument('-i', '--init', action='store_true', help='init freeline project')
+    parser.add_argument('-d', '--debug', action='store_true', help='show freeline debug output (NOT DEBUG APPLICATION)')
+    # parser.add_argument('-i', '--init', action='store_true', help='init freeline project')
     parser.parse_args()
     return parser
 
 
 def main():
     if sys.version_info > (3, 0):
-        print 'Freeline only support Python 2.7+ now. Please use the correct version of Python for freeline.'
+        print('Freeline only support Python 2.7+ now. Please use the correct version of Python for freeline.')
         exit()
 
     parser = get_parser()

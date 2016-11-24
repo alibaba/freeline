@@ -14,7 +14,7 @@ NO_DEVICE_FOUND_MESSAGE = """\tPlease make sure your application is properly run
 \tCheck follow steps:
 \t1. Make sure the versions `python freeline.py -v`, freeline-gradle and freeline-runtime are the same;
 \t2. Make sure there is no network proxy.
-\t3.
+\t
 \tMore about this can see: https://github.com/alibaba/freeline/issues/152"""
 
 

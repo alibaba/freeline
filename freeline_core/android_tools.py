@@ -65,9 +65,8 @@ class InstallApkTask(Task):
             if not os.path.exists(self._apk_path):
                 raise FreelineException('apk not found.', 'apk path: {}, not exists.'.format(self._apk_path))
 
-            self.debug('start to install apk to device...')
-
             install_args = [self._adb, 'install', '-r', self._apk_path]
+            self.debug('start to install apk to device: {}'.format(' '.join(install_args)))
             output, err, code = cexec(install_args, callback=None)
 
             if 'Failure' in output:
