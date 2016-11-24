@@ -39,7 +39,7 @@ public class FreelineService extends Service {
         Log.i(LOG_TAG, "onStartCommand Received start id " + startId + ", intent: " + intent);
         LongLinkServer.start(this.getApplication(), Router.getInstance());
 
-        String marker = intent.getStringExtra("wakeup");
+        String marker = intent == null ? null : intent.getStringExtra("wakeup");
         if (TextUtils.isEmpty(marker)) {
             try {
                 setForegroundService();

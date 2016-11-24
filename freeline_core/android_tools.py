@@ -21,9 +21,10 @@ except ImportError:
 
 
 class InstallApkTask(Task):
-    def __init__(self, adb, config):
+    def __init__(self, adb, config, wait_for_debugger=False):
         Task.__init__(self, 'install_apk_task')
         self._adb = adb
+        self._wait_for_debugger = wait_for_debugger
 
     def __init_attributes(self):
         # reload freeline config
@@ -41,6 +42,7 @@ class InstallApkTask(Task):
         self.__init_attributes()
         self._check_connection()
         self._install_apk()
+        self._debug_app()
         self._launch_application()
 
     def _check_connection(self):
@@ -63,9 +65,8 @@ class InstallApkTask(Task):
             if not os.path.exists(self._apk_path):
                 raise FreelineException('apk not found.', 'apk path: {}, not exists.'.format(self._apk_path))
 
-            self.debug('start to install apk to device...')
-
             install_args = [self._adb, 'install', '-r', self._apk_path]
+            self.debug('start to install apk to device: {}'.format(' '.join(install_args)))
             output, err, code = cexec(install_args, callback=None)
 
             if 'Failure' in output:
@@ -74,10 +75,18 @@ class InstallApkTask(Task):
                 if 'Failure' in output:
                     raise FreelineException('install apk to device failed.', '{}\n{}'.format(output, err))
 
+    def _debug_app(self):
+        if self._wait_for_debugger:
+            adb_args = [Builder.get_adb(self._config), 'shell', 'am', 'set-debug-app', '-w', self._package]
+            self.debug('make application wait for debugger: {}'.format(' '.join(adb_args)))
+            cexec(adb_args, callback=None)
+
     def _launch_application(self):
         if self._package and self._launcher:
+            adb_args = [self._adb, 'shell', 'am', 'start', '-n', self._package + '/' + self._launcher]
             self.debug('start to launch application {}/{}'.format(self._package, self._launcher))
-            cexec([self._adb, 'shell', 'am', 'start', '-n', self._package + '/' + self._launcher], callback=None)
+            self.debug(' '.join(adb_args))
+            cexec(adb_args, callback=None)
 
 
 class ConnectDeviceTask(SyncTask):

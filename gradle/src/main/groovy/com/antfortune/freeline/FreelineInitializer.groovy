@@ -11,116 +11,11 @@ import java.security.InvalidParameterException
  */
 class FreelineInitializer {
 
-    private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/alibaba/freeline/releases/latest";
-    private static final String CDN_URL = "http://obr0ndq7a.bkt.clouddn.com/freeline";
-
     public static void initFreeline(Project project) {
-        println "Freeline init process start..."
-
-        def mirror = project.hasProperty("mirror")
-        def snapshot = project.hasProperty("snapshot")
-        def freelineVersion = FreelineUtils.getProperty(project, "freelineVersion")
-        def cdnUrl = FreelineUtils.getProperty(project, "freelineCdnUrl")
-        if (FreelineUtils.isEmpty(cdnUrl as String)) {
-            cdnUrl = CDN_URL
-        }
-
-        def url
-        if (snapshot) {
-            println "[NOTE] Download freeline snapshot enabled..."
-            url = "${cdnUrl}/snapshot.zip"
-        } else if (freelineVersion) {
-            println "[NOTE] Download freeline dependency for specific version ${freelineVersion}..."
-            url = "${cdnUrl}/freeline-v${freelineVersion}.zip"
-        } else {
-            def json = FreelineUtils.getJson(LATEST_RELEASE_URL)
-            if (json == null || json == '') {
-                println "Download Error: failed to get json from ${LATEST_RELEASE_URL}"
-                return
-            }
-
-            String latestVersion = json.name
-            String freelineGradleVersion = getFreelineGradleVersion(project)
-            int result = isFreelineGradleVersionNeedToBeUpdated(freelineGradleVersion, latestVersion)
-            if (result < 0) {
-                throw new RuntimeException("Your local freeline version ${freelineGradleVersion} is lower than " +
-                        "the lastest release version ${latestVersion}. Please update the freeline version in " +
-                        "build.gradle. If you still want the specific version of freeline, you can execute the " +
-                        "initial command with the extra parameter `-PfreelineVersion={your-wanted-version}`. " +
-                        "eg: `gradlew initFreeline -PfreelineVersion=${freelineGradleVersion}`")
-            } else if (result > 0) {
-                println "[WARNING] Your local freeline version ${freelineGradleVersion} is greater than the " +
-                        "lastest release version ${latestVersion}."
-            }
-
-            if (mirror) {
-                println "[NOTE] Download freeline dependency from mirror..."
-                url = "${cdnUrl}/${json.assets[0].name}"
-            } else {
-                url = json.assets[0].browser_download_url
-            }
-        }
-        println "Downloading release pack from ${url}"
-        println "Please wait a minute..."
-        def downloadFile = new File(project.rootDir, "freeline.zip.tmp")
-        if (downloadFile.exists()) {
-            downloadFile.delete()
-        }
-
-        def ant = new AntBuilder()
-        ant.get(src: url, dest: downloadFile)
-        downloadFile.renameTo("freeline.zip")
-        println 'download success.'
-
-
-        def freelineDir = new File(project.rootDir, "freeline")
-        if (freelineDir.exists()) {
-            FreelineUtils.deleteDirectory(freelineDir)
-            println 'removing existing freeline directory'
-        }
-        ant.unzip(src: "freeline.zip", dest: project.rootDir.absolutePath)
-        println 'unziped freeline.zip.'
-
-        if (FreelineUtils.isWindows()) {
-            FreelineUtils.deleteQuietly(new File(project.rootDir, "freeline_core"))
-            FreelineUtils.deleteQuietly(new File(project.rootDir, "freeline.py"))
-            FreelineUtils.copyDirectory(new File(freelineDir, "freeline_core"), new File(project.rootDir, "freeline_core"));
-            FreelineUtils.copyFile(new File(freelineDir, "freeline.py"), new File(project.rootDir, "freeline.py"))
-        } else {
-            Runtime.getRuntime().exec("chmod -R +x freeline")
-            Runtime.getRuntime().exec("ln -s freeline/freeline.py freeline.py")
-        }
-
-        def freelineZipFile = new File(project.rootDir, "freeline.zip")
-        if (freelineZipFile.exists()) {
-            freelineZipFile.delete()
-        }
-
+        println "Freeline initial process start..."
+        FreelineDownloader.execute(project)
         generateProjectDescription(project)
     }
-
-    private static int isFreelineGradleVersionNeedToBeUpdated(String freelineGradleVersion, String lastestVersion) {
-        if (FreelineUtils.isEmpty(freelineGradleVersion) || FreelineUtils.isEmpty(lastestVersion)) {
-            return 0
-        }
-        // Use custom class to avoid java.lang.NoClassDefFoundError in lower gradle version.
-        VersionParser versionParser = new VersionParser()
-        int result = new StaticVersionComparator().compare(versionParser.transform(freelineGradleVersion),
-                versionParser.transform(lastestVersion))
-        return result
-    }
-
-    private static String getFreelineGradleVersion(Project project) {
-        String moduleVersion = null
-        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
-            if (it.moduleGroup == "com.antfortune.freeline" && it.moduleName == "gradle") {
-                moduleVersion = it.moduleVersion
-                return false
-            }
-        }
-        return moduleVersion
-    }
-
 
     public static void generateProjectDescription(Project project) {
         def extension = project.extensions.findByName("freeline") as FreelineExtension
@@ -199,7 +94,7 @@ class FreelineInitializer {
 
         if (buildScript == null || buildScript == '') {
             // set default build script
-            def isRootModuleTheMainModule = project.name == projectDescription.main_project_name
+            def isRootModuleTheMainModule = project.rootProject.name == projectDescription.main_project_name
             projectDescription.build_script = FreelineGenerator.generateBuildScript(isRootModuleTheMainModule, projectDescription.main_project_name as String, productFlavor)
         }
 
@@ -256,7 +151,9 @@ class FreelineInitializer {
         projectDescription.databinding_modules = []
         project.rootProject.allprojects.each { pro ->
             if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
-                if (pro.android.hasProperty("dataBinding") && pro.android.dataBinding.enabled) {
+                if (pro.android.hasProperty("dataBinding")
+                        && pro.android.dataBinding.enabled
+                        && projectDescription.project_source_sets[pro.name] != null) {
                     def data = [:]
                     String manifestPath = projectDescription.project_source_sets[pro.name].main_manifest_path
                     data.name = pro.name

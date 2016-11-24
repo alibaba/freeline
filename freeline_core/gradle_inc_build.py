@@ -11,7 +11,8 @@ from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClie
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
     DatabindingDirectoryLookUp
 from task import find_root_tasks, find_last_tasks, Task
-from utils import get_file_content, write_file_content, is_windows_system, cexec, load_json_cache, get_md5
+from utils import get_file_content, write_file_content, is_windows_system, cexec, load_json_cache, get_md5, \
+    write_json_cache
 from tracing import Tracing
 from exceptions import FreelineException
 
@@ -536,8 +537,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         if os.path.exists(os.path.join(src_dir, java_src)):
                             existence = True
                             break
-                        # if not os.path.exists(os.path.join(src_dir, java_src)):
-                        #    android_tools.delete_class(dirpath, fn.replace('.class', ''))
                     if not existence:
                         android_tools.delete_class(dirpath, fn.replace('.class', ''))
 
@@ -649,11 +648,50 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             if 'apt' in self._changed_files:
                 for fpath in self._changed_files['apt']:
                     javacargs.append(fpath)
+                files = self._get_apt_related_files()
+                for fpath in files:
+                    if fpath and os.path.exists(fpath) and fpath not in self._changed_files['src'] and fpath not in \
+                            self._changed_files['apt']:
+                        self.debug('add apt related file: {}'.format(fpath))
+                        javacargs.append(fpath)
             javacargs.extend(self._extra_javac_args)
 
         javacargs.append('-d')
         javacargs.append(self._finder.get_patch_classes_cache_dir())
         return javacargs
+
+    def _get_apt_related_files(self):
+        path = self._get_apt_related_files_cache_path()
+        if os.path.exists(path):
+            return load_json_cache(path)
+        else:
+            info_path = os.path.join(self._cache_dir, 'freeline_annotation_info.json')
+            if os.path.exists(info_path):
+                info_cache = load_json_cache(info_path)
+                related_files = []
+                for anno, files in info_cache.iteritems():
+                    for info in files:
+                        if 'java_path' in info and info['java_path']:
+                            related_files.append(info['java_path'])
+                write_json_cache(self._get_apt_related_files_cache_path(), related_files)
+                return related_files
+        return []
+
+    def _append_new_related_files(self):
+        related_files = self._get_apt_related_files()
+
+        def append_files(file_list):
+            for fpath in file_list:
+                if fpath and fpath not in related_files:
+                    self.debug('add new related file: {}'.format(fpath))
+                    related_files.append(fpath)
+
+        append_files(self._changed_files['src'])
+        append_files(self._changed_files['apt'])
+        write_json_cache(self._get_apt_related_files_cache_path(), related_files)
+
+    def _get_apt_related_files_cache_path(self):
+        return os.path.join(self._cache_dir, 'apt_related_files_cache.json')
 
     def run_retrolambda(self):
         if self._is_need_javac and self._is_retrolambda_enabled:

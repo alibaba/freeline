@@ -3,7 +3,7 @@ apply plugin: 'java'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version '0.8.0'
+version '0.8.2'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     compile gradleApi()
+    compile 'commons-io:commons-io:2.4'
     compile 'com.squareup:javapoet:1.7.0'
     compile 'com.github.javaparser:javaparser-core:2.4.0'
 }

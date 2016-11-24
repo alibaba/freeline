@@ -41,7 +41,8 @@ class Dispatcher(object):
 
         if 'cleanBuild' in args and args.cleanBuild:
             is_build_all_projects = args.all
-            self._setup_clean_build_command(is_build_all_projects)
+            wait_for_debugger = args.wait
+            self._setup_clean_build_command(is_build_all_projects, wait_for_debugger)
         elif 'version' in args and args.version:
             version()
         elif 'clean' in args and args.clean:
@@ -66,17 +67,17 @@ class Dispatcher(object):
         if not self._args.version:  # and not self._args.init:
             self._logger_worker.join()
 
-    def _setup_clean_build_command(self, is_build_all_projects):
-        self._builder = self._setup_clean_builder(is_build_all_projects)
+    def _setup_clean_build_command(self, is_build_all_projects, wait_for_debugger):
+        self._builder = self._setup_clean_builder(is_build_all_projects, wait_for_debugger)
         from build_commands import CleanBuildCommand
         self._command = CleanBuildCommand(self._builder)
 
-    def _setup_clean_builder(self, is_build_all_projects):
+    def _setup_clean_builder(self, is_build_all_projects, wait_for_debugger):
         if 'project_type' in self._config:
             ptype = self._config['project_type']
             if ptype == 'gradle':
                 from gradle_clean_build import GradleCleanBuilder
-                return GradleCleanBuilder(self._config, self._task_engine)
+                return GradleCleanBuilder(self._config, self._task_engine, wait_for_debugger=wait_for_debugger)
 
         return None
 
@@ -121,7 +122,7 @@ class Dispatcher(object):
         self._logger.reset()  # reset logger
         Logger.info(message)
         Logger.debug(message)
-        self._setup_clean_build_command(is_build_all_projects=False)
+        self._setup_clean_build_command(is_build_all_projects=False, wait_for_debugger=self._args.wait)
         self._exec_command(self._command)
 
     def _flush_footer(self, footer):
