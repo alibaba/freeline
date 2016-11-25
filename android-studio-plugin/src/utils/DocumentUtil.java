@@ -1,8 +1,6 @@
 package utils;
 
-import com.android.tools.idea.editors.navigation.SelectionModel;
 import com.intellij.codeInsight.actions.OptimizeImportsProcessor;
-import com.intellij.codeInsight.actions.RearrangeCodeProcessor;
 import com.intellij.codeInsight.actions.ReformatCodeAction;
 import com.intellij.codeInsight.actions.ReformatCodeProcessor;
 import com.intellij.openapi.application.ApplicationManager;
@@ -30,7 +28,7 @@ public class DocumentUtil {
      * @param project
      * @param virtualFiles
      */
-    public static void reformatCode(Project project, VirtualFile virtualFiles) {
+    public static void reformatCode(final Project project, final VirtualFile virtualFiles) {
         ApplicationManager.getApplication().runWriteAction(new Runnable() {
             @Override
             public void run() {

@@ -2,7 +2,6 @@ package actions;
 
 import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
-import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
@@ -12,6 +11,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import models.ArtifactDependencyModelWrapper;
 import models.GradleDependencyEntity;
 import models.GetServerCallback;
+import models.GradleSyncHandler;
 import org.jetbrains.annotations.NotNull;
 import utils.*;
 import views.CheckUpdateDialog;
@@ -63,33 +63,17 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
                             }
                             file.applyChanges();
                         }
-                        GradleUtil.startSync(currentProject, gradleSyncListenerAdapter);
+                        GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
+                            @Override
+                            public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
+                                super.onTaskOutput(id, text, stdOut);
+                            }
+                        });
                     }
                 });
             }
         });
     }
-
-    /**
-     * gradle sync监听
-     */
-    private GradleSyncListener.Adapter gradleSyncListenerAdapter = new GradleSyncListener.Adapter() {
-        @Override
-        public void syncSucceeded(@NotNull Project project) {
-            GradleUtil.executeTask(currentProject, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
-                @Override
-                public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
-                    super.onTaskOutput(id, text, stdOut);
-                }
-            });
-        }
-
-        @Override
-        public void syncFailed(@NotNull Project project, @NotNull String errorMessage) {
-            super.syncFailed(project, errorMessage);
-            NotificationUtils.errorNotification("Gradle Sync Failure :" + errorMessage);
-        }
-    };
 
     /**
      * 处理结果
@@ -153,7 +137,7 @@ public class UpdateAction extends BaseAction implements GetServerCallback {
             @Override
             public void run() {
                 Collection<VirtualFile> gradleFiles = GradleUtil.getAllGradleFile(currentProject);
-                Map<GradleBuildModel, List<ArtifactDependencyModel>> fileListMap = new HashMap<>();
+                Map<GradleBuildModel, List<ArtifactDependencyModel>> fileListMap = new HashMap<GradleBuildModel, List<ArtifactDependencyModel>>();
                 for (VirtualFile file : gradleFiles) {
                     GradleBuildModel model = GradleBuildModel.parseBuildFile(file, currentProject);
                     if (model != null) {

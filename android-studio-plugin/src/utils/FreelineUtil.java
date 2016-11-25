@@ -6,7 +6,6 @@ import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencySpec;
 import com.android.tools.idea.gradle.parser.GradleBuildFile;
-import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.OSProcessHandler;
@@ -219,7 +218,7 @@ public class FreelineUtil {
         if (DialogUtil.createDialog("Detected that you did not installFreeline Freeline, Whether installFreeline Automatically？",
                 "Install Freeline Automatically", "Cancel")) {
             Module[] modules = ModuleManager.getInstance(project).getModules();
-            List<Pair<Module, PsiFile>> selectModulesList = new ArrayList<>();
+            List<Pair<Module, PsiFile>> selectModulesList = new ArrayList<Pair<Module, PsiFile>>();
             for (Module module : modules) {
                 AndroidGradleModel model = AndroidGradleModel.get(module);
                 GradleBuildFile file = GradleBuildFile.get(module);
@@ -331,20 +330,14 @@ public class FreelineUtil {
                 });
             }
         });
-        GradleUtil.startSync(project, new GradleSyncListener.Adapter() {
+        if (needReformatCode && status.getClasspathFile() != null) {
+            DocumentUtil.reformatCode(project, status.getClasspathFile());
+        }
+        LogUtil.d("Sync Project Finish, start download freeline.zip.");
+        GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
             @Override
-            public void syncSucceeded(@NotNull Project project) {
-                super.syncSucceeded(project);
-                if (needReformatCode && status.getClasspathFile() != null) {
-                    DocumentUtil.reformatCode(project, status.getClasspathFile());
-                }
-                LogUtil.d("Sync Project Finish, start download freeline.zip.");
-                GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
-                    @Override
-                    public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
-                        super.onTaskOutput(id, text, stdOut);
-                    }
-                });
+            public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
+                super.onTaskOutput(id, text, stdOut);
             }
         });
     }

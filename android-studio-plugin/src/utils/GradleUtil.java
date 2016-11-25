@@ -1,8 +1,6 @@
 package utils;
 
 import com.android.tools.idea.gradle.parser.GradleBuildFile;
-import com.android.tools.idea.gradle.project.GradleProjectImporter;
-import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.android.tools.idea.gradle.task.AndroidGradleTaskManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
@@ -15,6 +13,7 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
+import models.GradleSyncHandler;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementFactory;
@@ -32,12 +31,14 @@ public final class GradleUtil {
 
     /**
      * gradle sync
+     * 暂时不推荐使用
      *
      * @param project
-     * @param listener
+     * @param handler
      */
-    public static void startSync(Project project, GradleSyncListener listener) {
-        GradleProjectImporter.getInstance().requestProjectSync(project, listener);
+    @Deprecated
+    private static void startSync(Project project, GradleSyncHandler handler) {
+        GradleSyncUtil.startSync(project, handler);
     }
 
     /**
@@ -50,12 +51,12 @@ public final class GradleUtil {
      */
     public static void executeTask(Project project, String taskName, String args, ExternalSystemTaskNotificationListener listener) {
         AndroidGradleTaskManager manager = new AndroidGradleTaskManager();
-        List<String> taskNames = new ArrayList<>();
+        List<String> taskNames = new ArrayList<String>();
         if (taskName != null) {
             taskNames.add(taskName);
         }
-        List<String> vmOptions = new ArrayList<>();
-        List<String> params = new ArrayList<>();
+        List<String> vmOptions = new ArrayList<String>();
+        List<String> params = new ArrayList<String>();
         if (args != null) {
             params.add(args);
         }
@@ -136,8 +137,8 @@ public final class GradleUtil {
                 Object value = instance.invoke(null, project);
                 Method inProgress = gradleSyncClass.getMethod("isSyncInProgress");
                 Object b = inProgress.invoke(value);
-                if (b instanceof Boolean) {
-                    return (boolean) b;
+                if (b != null && b instanceof Boolean) {
+                    return Boolean.valueOf(b.toString());
                 }
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
