@@ -1,10 +1,7 @@
 package utils;
 
 import com.android.tools.idea.gradle.parser.GradleBuildFile;
-import com.android.tools.idea.gradle.project.GradleProjectImporter;
-import com.android.tools.idea.gradle.project.GradleSyncListener;
 import com.android.tools.idea.gradle.task.AndroidGradleTaskManager;
-import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId;
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener;
@@ -13,17 +10,18 @@ import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
+import models.GradleSyncHandler;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyPsiElementFactory;
-import org.jetbrains.plugins.groovy.lang.psi.api.statements.GrBlockStatement;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.GrStatement;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrExpression;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -33,12 +31,14 @@ public final class GradleUtil {
 
     /**
      * gradle sync
+     * 暂时不推荐使用
      *
      * @param project
-     * @param listener
+     * @param handler
      */
-    public static void startSync(Project project, GradleSyncListener listener) {
-        GradleProjectImporter.getInstance().requestProjectSync(project, listener);
+    @Deprecated
+    private static void startSync(Project project, GradleSyncHandler handler) {
+        GradleSyncUtil.startSync(project, handler);
     }
 
     /**
@@ -51,18 +51,17 @@ public final class GradleUtil {
      */
     public static void executeTask(Project project, String taskName, String args, ExternalSystemTaskNotificationListener listener) {
         AndroidGradleTaskManager manager = new AndroidGradleTaskManager();
-        List<String> taskNames = new ArrayList<>();
+        List<String> taskNames = new ArrayList<String>();
         if (taskName != null) {
             taskNames.add(taskName);
         }
-        List<String> vmOptions = new ArrayList<>();
-        List<String> params = new ArrayList<>();
+        List<String> vmOptions = new ArrayList<String>();
+        List<String> params = new ArrayList<String>();
         if (args != null) {
             params.add(args);
         }
         if (listener == null) {
-            listener = new ExternalSystemTaskNotificationListenerAdapter() {
-            };
+            listener = new ExternalSystemTaskNotificationListenerAdapter() {};
         }
         manager.executeTasks(
                 ExternalSystemTaskId.create(GradleConstants.SYSTEM_ID, ExternalSystemTaskType.EXECUTE_TASK, project),
@@ -114,5 +113,41 @@ public final class GradleUtil {
                 applyPlugin(project, (GroovyFile) psiFile, pluginId);
             }
         }
+    }
+
+    /**
+     * 是否在同步过程中
+     *
+     * @return
+     */
+    public static boolean isSyncInProgress(Project project) {
+        Class<?> gradleSyncClass = null;
+        try {
+            gradleSyncClass = Class.forName("com.android.tools.idea.gradle.project.sync.GradleSyncState");
+        } catch (ClassNotFoundException e) {
+            try {
+                gradleSyncClass = Class.forName("com.android.tools.idea.gradle.GradleSyncState");
+            } catch (ClassNotFoundException e1) {
+
+            }
+        }
+        if (gradleSyncClass != null) {
+            try {
+                Method instance = gradleSyncClass.getMethod("getInstance", Project.class);
+                Object value = instance.invoke(null, project);
+                Method inProgress = gradleSyncClass.getMethod("isSyncInProgress");
+                Object b = inProgress.invoke(value);
+                if (b != null && b instanceof Boolean) {
+                    return Boolean.valueOf(b.toString());
+                }
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }

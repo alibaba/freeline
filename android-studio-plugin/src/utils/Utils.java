@@ -27,7 +27,7 @@ public final class Utils {
             if (process.waitFor() == 0) {
                 return "python";
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
         }
         try {
             if (!SystemInfo.isWindows) {

@@ -2,3 +2,4 @@
 .git
 *.iml
 out
+*.jar

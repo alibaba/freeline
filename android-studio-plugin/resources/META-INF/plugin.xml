@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <id>com.apkfuns.plugin.freeline</id>
     <name>Freeline Plugin</name>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262、舞影凌风</vendor>
 
     <description><![CDATA[
@@ -22,8 +22,8 @@
     <change-notes><![CDATA[
       <ul>
       <li>
-         <b>1.1.0</b><br/>
-          add Automatic integration
+         <b>1.1.2</b><br/>
+          add Automatic integration, support Android studio 2.3
       </li>
       <li>
          <b>1.0.9</b><br/>
@@ -60,7 +60,7 @@
     <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.OpenTerminal"
+        <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.FreelineIcon"
                     factoryClass="views.FreelineToolWindowFactory" secondary="false"/>
 
         <!-- Freeline Run Configuration Type define -->
