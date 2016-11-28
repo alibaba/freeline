@@ -4,8 +4,6 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import org.gradle.api.Project
 
-import java.nio.channels.FileChannel
-
 /**
  * Created by huangyong on 16/7/19.
  */
@@ -27,12 +25,7 @@ class FreelineUtils {
     }
 
     public static String getFreelineCacheDir(String rootDirPath) {
-        String projectCacheDir = FreelineGenerator.generateStringMD5(rootDirPath)
-        def freelineCacheDir = new File(FreelineUtils.joinPath(System.properties['user.home'].toString(), ".freeline", "cache", projectCacheDir))
-        if (!freelineCacheDir.exists() || !freelineCacheDir.isDirectory()) {
-            freelineCacheDir.mkdirs()
-        }
-        return freelineCacheDir.absolutePath
+        return rootDirPath
     }
 
     public static String getDefaultApkPath(List<String> apks, String buildDir, String projectName, String productFlavor) {
@@ -99,12 +92,12 @@ class FreelineUtils {
         def description = readProjectDescription(project)
         if (description != null) {
             description[key] = value
-            saveJson(new JsonBuilder(description).toPrettyString(), joinPath(getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'), true)
+            saveJson(new JsonBuilder(description).toPrettyString(), joinPath(getFreelineCacheDir(project.rootDir.absolutePath), Constants.FREELINE_PRO_DESC_FILE_NAME), true)
         }
     }
 
     public static def readProjectDescription(Project project) {
-        def descriptionFile = new File(joinPath(getFreelineCacheDir(project.rootDir.absolutePath), 'project_description.json'))
+        def descriptionFile = new File(joinPath(getFreelineCacheDir(project.rootDir.absolutePath), Constants.FREELINE_PRO_DESC_FILE_NAME))
         if (descriptionFile.exists()) {
             def description = new JsonSlurper().parseText(descriptionFile.text)
             return description

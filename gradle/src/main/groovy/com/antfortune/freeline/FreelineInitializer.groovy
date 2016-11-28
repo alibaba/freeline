@@ -173,7 +173,7 @@ class FreelineInitializer {
         def json = new JsonBuilder(projectDescription).toPrettyString()
         println json
 
-        FreelineUtils.saveJson(json, FreelineUtils.joinPath(projectDescription.freeline_cache_dir, 'project_description.json'), true)
+        FreelineUtils.saveJson(json, FreelineUtils.joinPath(projectDescription.freeline_cache_dir, Constants.FREELINE_PRO_DESC_FILE_NAME), true)
     }
 
     private static def getMinSdkVersion(Project project, String manifestPath) {

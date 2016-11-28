@@ -152,7 +152,7 @@ def get_cache_dir():
 
 def read_freeline_config(config_path=None):
     if not config_path:
-        config_path = os.path.join(get_cache_dir(), 'project_description.json')
+        config_path = os.path.join(os.getcwd(), 'freeline_project_description.json')
 
     if os.path.isfile(config_path):
         config = load_json_cache(config_path)
