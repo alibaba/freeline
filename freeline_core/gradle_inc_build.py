@@ -256,6 +256,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                                        and self._config['retrolambda'][self._name]['enabled']
         self._is_databinding_enabled = 'databinding_modules' in self._config and self._name in self._config[
             'databinding_modules']
+        self._is_dagger_enabled = 'apt_libraries' in self._config and self._config['apt_libraries']['dagger']
         self._apt_output_dir = None
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
@@ -648,19 +649,29 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             if 'apt' in self._changed_files:
                 for fpath in self._changed_files['apt']:
                     javacargs.append(fpath)
-                files = self._get_apt_related_files()
-                for fpath in files:
-                    if fpath and os.path.exists(fpath) and fpath not in self._changed_files['src'] and fpath not in \
-                            self._changed_files['apt']:
-                        self.debug('add apt related file: {}'.format(fpath))
-                        javacargs.append(fpath)
+
+            filter_tags = []
+            if self._is_databinding_enabled:
+                filter_tags.extend(['BindingAdapter', 'BindingConversion', 'Bindable'])
+
+            if self._is_dagger_enabled:
+                filter_tags.extend(['DaggerComponent', 'DaggerModule'])
+
+            files = self._get_apt_related_files(filter_tags=filter_tags)
+            for fpath in files:
+                if fpath and os.path.exists(fpath) and fpath not in self._changed_files['src']:
+                    if 'apt' in self._changed_files and fpath in self._changed_files['apt']:
+                        continue
+                    self.debug('add apt related file: {}'.format(fpath))
+                    javacargs.append(fpath)
+
             javacargs.extend(self._extra_javac_args)
 
         javacargs.append('-d')
         javacargs.append(self._finder.get_patch_classes_cache_dir())
         return javacargs
 
-    def _get_apt_related_files(self):
+    def _get_apt_related_files(self, filter_tags=None):
         path = self._get_apt_related_files_cache_path()
         if os.path.exists(path):
             return load_json_cache(path)
@@ -670,6 +681,10 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 info_cache = load_json_cache(info_path)
                 related_files = []
                 for anno, files in info_cache.iteritems():
+                    if filter_tags and anno not in filter_tags:
+                        self.debug('ignore annotation: {}'.format(anno))
+                        continue
+
                     for info in files:
                         if 'java_path' in info and info['java_path']:
                             related_files.append(info['java_path'])

@@ -3,6 +3,7 @@ package com.antfortune.freeline
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
@@ -40,12 +41,19 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
         if ("android/app/Application".equals(superName)) {
             isHack = false;
         }
-        if (name.endsWith(SUFFIX_ANDROIDANNOTATION)) {
-            println "find AndroidAnnotation class name: ${name}, freeline will remove the final tag"
-            super.visit(version, access & (~ACC_FINAL), name, signature, superName, interfaces)
-        } else {
-            super.visit(version, access, name, signature, superName, interfaces)
-        }
+//        if (name.endsWith(SUFFIX_ANDROIDANNOTATION)) {
+//            println "find AndroidAnnotation class name: ${name}, freeline will remove the final tag"
+//            super.visit(version, access & (~ACC_FINAL), name, signature, superName, interfaces)
+//        } else {
+//            super.visit(version, access, name, signature, superName, interfaces)
+//        }
+        super.visit(version, access & (~ACC_FINAL), name, signature, superName, interfaces)
+    }
+
+    @Override
+    AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        collectAnno(desc)
+        return super.visitAnnotation(desc, visible)
     }
 
     @Override
@@ -86,18 +94,34 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
 
             @Override
             AnnotationVisitor visitAnnotation(String annoDesc, boolean visible) {
-                if (annoDesc != null) {
-                    FreelineAnnotationCollector.ANNOTATION_CLASSES.each { anno ->
-                        if (!foundAnnos.contains(anno) && annoDesc.contains(anno)) {
-                            foundAnnos.add(anno)
-                            FreelineAnnotationCollector.addNewAnno(anno, filePath, className, entry, isJar)
-                        }
-                    }
-                }
+                collectAnno(annoDesc)
                 return super.visitAnnotation(annoDesc, visible)
             }
         }
         return mv;
+    }
+
+    @Override
+    FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        FieldVisitor fv = super.visitField(access, name, desc, signature, value)
+        return new FieldVisitor(ASM4, fv) {
+            @Override
+            AnnotationVisitor visitAnnotation(String annoDesc, boolean visible) {
+                collectAnno(annoDesc)
+                return super.visitAnnotation(annoDesc, visible)
+            }
+        }
+    }
+
+    private void collectAnno(String desc) {
+        if (desc != null) {
+            FreelineAnnotationCollector.ANNOTATION_CLASSES.each { anno ->
+                if (!foundAnnos.contains(anno) && desc.contains(anno)) {
+                    foundAnnos.add(anno)
+                    FreelineAnnotationCollector.addNewAnno(anno, filePath, className, entry, isJar)
+                }
+            }
+        }
     }
 
 }

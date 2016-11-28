@@ -12,12 +12,24 @@ class FreelineAnnotationCollector {
         "Landroid/databinding/BindingAdapter;",
         "Landroid/databinding/BindingConversion;",
         "Landroid/databinding/Bindable;",
+        "Ldagger/Component;",
+        "Ldagger/Module;",
+        "Lbutterknife/BindView;",
+        "Lbutterknife/Bind;",
+        "Lbutterknife/OnClick;",
+        "Ljavax/inject/Inject;"
     ]
 
     public static final def ANNOTATION_TARGETS = [
         "Landroid/databinding/BindingAdapter;": "BindingAdapter",
         "Landroid/databinding/BindingConversion;": "BindingConversion",
-        "Landroid/databinding/Bindable;": "Bindable"
+        "Landroid/databinding/Bindable;": "Bindable",
+        "Ldagger/Component;": "DaggerComponent",
+        "Ldagger/Module;": "DaggerModule",
+        "Lbutterknife/BindView;": "BKBindView",
+        "Lbutterknife/Bind;": "BKBind",
+        "Lbutterknife/OnClick;": "BKOnClick",
+        "Ljavax/inject/Inject;": "Inject"
     ]
 
     private static def sAnnotationCollection = [:]
