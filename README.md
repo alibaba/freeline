@@ -111,6 +111,8 @@ python freeline.py
 ## Limitations
 - Sync incremental resource pack to the device first time may be a bit slow
 - Removing res/values is not supported, which may cause aapt exception
+- Not support Jack compile
+- Not support Kotlin/Groovy/Scala
 
 ## Contributing
 We are always very happy to have contributions, whether for trivial cleanups, big new features or other material rewards.
