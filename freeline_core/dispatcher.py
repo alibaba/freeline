@@ -6,7 +6,7 @@ import threading
 import time
 
 from command import AbstractCommand
-from exceptions import NoConfigFoundException, CheckSyncStateException, FreelineException, NoInstallationException, \
+from exceptions import CheckSyncStateException, FreelineException, NoInstallationException, \
     FileMissedException
 from logger import Logger, LoggerWorker
 from task_engine import TaskEngine
@@ -158,7 +158,21 @@ def read_freeline_config(config_path=None):
         config = load_json_cache(config_path)
         return config
 
-    raise NoConfigFoundException(config_path)
+    print("#############################################")
+    print("#                   ERROR                   #")
+    print("#############################################")
+    print("# Project description file not found: ")
+    print("#     -> {}".format(config_path))
+    print("#")
+    print("# To solve this error, please execute the command below:")
+    print("#")
+    print("# - Windows[CMD]: gradlew checkBeforeCleanBuild")
+    print("# - Linux/Mac: ./gradlew checkBeforeCleanBuild")
+    print("#")
+    print("# Then, this problem will be solved.")
+    print("#")
+    print("#############################################")
+    exit()
 
 
 class CleanAllCacheCommand(AbstractCommand):
