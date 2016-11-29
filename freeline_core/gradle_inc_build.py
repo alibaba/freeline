@@ -717,28 +717,24 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         '-Dretrolambda.outputDir={}'.format(target_dir)]
 
             if lambda_config['supportIncludeFiles']:
+                files_stat_path = os.path.join(self._cache_dir, self._name, 'lambda_files_stat.json')
+
                 include_files = []
-                classes = []
+                if os.path.exists(files_stat_path):
+                    files_stat = load_json_cache(files_stat_path)
+                else:
+                    files_stat = {}
+
                 for dirpath, dirnames, files in os.walk(target_dir):
                     for fn in files:
-                        if fn.endswith('.class'):
-                            classes.append(os.path.relpath(os.path.join(dirpath, fn), target_dir))
-
-                src_dirs = self._config['project_source_sets'][self._name]['main_src_directory']
-                for fpath in self._changed_files['src']:
-                    short_path = fpath.replace('.java', '.class')
-                    for src_dir in src_dirs:
-                        if src_dir in short_path:
-                            short_path = os.path.relpath(fpath, src_dir).replace('.java', '')
-                            break
-
-                    for clazz in classes:
-                        if short_path + '.class' in clazz or short_path + '$' in clazz or 'R.class' in clazz \
-                                or 'R$' in clazz or short_path + '_' in clazz:
-                            include_file = os.path.join(target_dir, clazz)
-                            if os.path.exists(include_file):
-                                self.debug('incremental build lambda file: {}'.format(include_file))
-                                include_files.append(include_file)
+                        fpath = os.path.join(dirpath, fn)
+                        if fpath not in files_stat:
+                            include_files.append(fpath)
+                            self.debug('incremental build new lambda file: {}'.format(fpath))
+                        else:
+                            if os.path.getmtime(fpath) > files_stat[fpath]['mtime']:
+                                include_files.append(fpath)
+                                self.debug('incremental build lambda file: {}'.format(fpath))
 
                 include_files_param = os.pathsep.join(include_files)
                 if len(include_files_param) > 3496:
@@ -768,6 +764,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
             if code != 0:
                 raise FreelineException('retrolambda compile failed.', '{}\n{}'.format(output, err))
+
+            if lambda_config['supportIncludeFiles']:
+                for fpath in include_files:
+                    if fpath not in files_stat:
+                        files_stat[fpath] = {}
+                    files_stat[fpath]['mtime'] = os.path.getmtime(fpath)
+                write_json_cache(files_stat_path, files_stat)
+                self.debug('save lambda files stat to {}'.format(files_stat_path))
 
     def __save_parms_to_file(self, path, params):
         if os.path.exists(path):
