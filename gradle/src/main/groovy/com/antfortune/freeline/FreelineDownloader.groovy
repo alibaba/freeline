@@ -19,7 +19,7 @@ class FreelineDownloader {
     private static final String PARAM_LOCAL = "freelineLocal"
 
     private static final String GITHUB_API = "https://api.github.com/repos/alibaba/freeline/releases/latest"
-    private static final String FREELINE_API = "http://api.freelinebuild.com/versions/latest"
+    private static final String FREELINE_API = "https://www.freelinebuild.com/api/versions/latest"
     private static final String CDN_URL = "http://static.freelinebuild.com/freeline"
 
     public static void execute(Project project) {
@@ -128,16 +128,16 @@ class FreelineDownloader {
     }
 
     private static String fetchData(Project project, String cdnUrl, boolean mirror) {
-        def json = fetchDataFromAPI()
+        def json = fetchDataFromAPI(project)
         if (json != null) {
             String version = json.freelineVersion.version
             checkVersion(project, version)
             return getDownloadUrl(mirror, cdnUrl, version, json.freelineVersion.download_url as String)
         }
 
-        json = fetchDataFromGithub()
+        json = fetchDataFromGithub(project)
         if (json != null) {
-            String version = json.assets[0].name
+            String version = json.name
             checkVersion(project, version)
             return getDownloadUrl(mirror, cdnUrl, version, json.assets[0].browser_download_url as String)
         }
@@ -153,23 +153,24 @@ class FreelineDownloader {
         }
     }
 
-    private static def fetchDataFromAPI() {
+    private static def fetchDataFromAPI(Project project) {
         try {
             def json = FreelineUtils.getJson(FREELINE_API)
             return json
         } catch (Exception e) {
-            println "[ERROR] Fetching data from api occurs error: ${e.getMessage()}"
+            println "[ERROR] Fetching data from api occurs error"
             return null
         }
     }
 
-    private static def fetchDataFromGithub() {
+    private static def fetchDataFromGithub(Project project) {
         try {
             def json = FreelineUtils.getJson(GITHUB_API)
             if (json == null || json == '') {
                 println "Download Error: failed to get json from ${GITHUB_API}"
                 return null
             }
+            return json
         } catch (Exception e) {
             println "[ERROR] Fetching data from github occurs error: ${e.getMessage()}"
             return null
