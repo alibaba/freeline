@@ -67,6 +67,25 @@ class FreelineUtils {
         return buildBackupDir.absolutePath
     }
 
+    public static String getAndroidGradlePluginVersion(Project project) {
+        return getGradlePluginVersion(project, "com.android.tools.build", "gradle")
+    }
+
+    public static String getFreelineGradlePluginVersion(Project project) {
+        return getGradlePluginVersion(project, "com.antfortune.freeline", "gradle")
+    }
+
+    public static String getGradlePluginVersion(Project project, String moduleGroup, String moduleName) {
+        String version = "0.0.0"
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == moduleGroup && it.moduleName == moduleName) {
+                version = it.moduleVersion
+                return false
+            }
+        }
+        return version
+    }
+
     public static def getJson(String url) {
         return new JsonSlurper().parseText(new URL(url).text)
     }

@@ -32,6 +32,8 @@ class FreelineInitializer {
         def projectDescription = [:]
 
         projectDescription.project_type = 'gradle'
+        projectDescription.android_gradle_plugin_version = FreelineUtils.getAndroidGradlePluginVersion(project)
+        projectDescription.freeline_gradle_plugin_version = FreelineUtils.getFreelineGradlePluginVersion(project)
         projectDescription.java_home = getJavaHome()
         projectDescription.freeline_cache_dir = FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath)
         projectDescription.auto_dependency = autoDependency

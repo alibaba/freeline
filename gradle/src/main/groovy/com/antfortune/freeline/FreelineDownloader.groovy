@@ -177,7 +177,7 @@ class FreelineDownloader {
     }
 
     private static void checkVersion(Project project, String latestVersion) {
-        String freelineGradleVersion = getFreelineGradleVersion(project)
+        String freelineGradleVersion = FreelineUtils.getFreelineGradlePluginVersion(project)
         int result = isFreelineGradleVersionNeedToBeUpdated(freelineGradleVersion, latestVersion)
         if (result < 0) {
             throw new GradleException("Your local freeline version ${freelineGradleVersion} is lower than " +
@@ -200,17 +200,6 @@ class FreelineDownloader {
         int result = new StaticVersionComparator().compare(versionParser.transform(freelineGradleVersion),
                 versionParser.transform(lastestVersion))
         return result
-    }
-
-    private static String getFreelineGradleVersion(Project project) {
-        String moduleVersion = null
-        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
-            if (it.moduleGroup == "com.antfortune.freeline" && it.moduleName == "gradle") {
-                moduleVersion = it.moduleVersion
-                return false
-            }
-        }
-        return moduleVersion
     }
 
 }

@@ -11,6 +11,7 @@ from exceptions import CheckSyncStateException, FreelineException, NoInstallatio
 from logger import Logger, LoggerWorker
 from task_engine import TaskEngine
 from utils import is_windows_system, md5string, load_json_cache
+from version import FREELINE_VERSION
 
 
 class Dispatcher(object):
@@ -31,6 +32,7 @@ class Dispatcher(object):
         self._config = read_freeline_config()
         self._args = args
         self.debug('command line args: ' + str(args))
+        self._print_versions()
         Logger.info('[INFO] preparing for tasks...')
 
         if is_windows_system() or ('debug' in args and args.debug):
@@ -80,6 +82,12 @@ class Dispatcher(object):
                 return GradleCleanBuilder(self._config, self._task_engine, wait_for_debugger=wait_for_debugger)
 
         return None
+
+    def _print_versions(self):
+        if 'android_gradle_plugin_version' in self._config:
+            self.debug('*** Android Gradle Plugin Version: {}'.format(self._config['android_gradle_plugin_version']))
+            self.debug('*** Freeline Gradle Plugin Version: {}'.format(self._config['freeline_gradle_plugin_version']))
+        self.debug('*** Freeline Python Version: {}'.format(FREELINE_VERSION))
 
     def _exec_command(self, command):
         footer = '[DEBUG] --------------------------------------------------------'
