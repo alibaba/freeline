@@ -38,6 +38,15 @@ public class CheckUpdateDialog extends JDialog {
         updateContent.add(serverUpdateTimeTx);
         updateContent.add(new JTitle("Local Version"));
         updateContent.add(localVersionTx);
+        updateContent.add(new JTitle("Version History"));
+        MulLabel history = new MulLabel("<a href='#'>github.com/alibaba/freeline/releases</a>", true);
+        history.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                Utils.openUrl("https://github.com/alibaba/freeline/releases");
+            }
+        });
+        updateContent.add(history);
         updateContent.add(new JTitle("Official Website"));
         MulLabel website = new MulLabel("<a href='#'>github.com/alibaba/freeline</a>", true);
         website.addMouseListener(new MouseAdapter() {
@@ -47,8 +56,7 @@ public class CheckUpdateDialog extends JDialog {
             }
         });
         updateContent.add(website);
-        updateContent.add(new MulLabel("注:点击更新后会自动gradle sync并下载最新freeline.zip工具包"));
-        updateContent.add(new MulLabel("NOTE: Click update automatically gradle sync and download the latest freeline.zip Kit"));
+        updateContent.add(new MulLabel("NOTE: Click update button will sync project automatically and download the latest<br/>freeline.zip Kit", true));
         setResizable(false);
         setLocationCenter();
         buttonCancel.addActionListener(new ActionListener() {
