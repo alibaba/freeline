@@ -6,11 +6,12 @@ import threading
 import time
 
 from command import AbstractCommand
-from exceptions import NoConfigFoundException, CheckSyncStateException, FreelineException, NoInstallationException, \
+from exceptions import CheckSyncStateException, FreelineException, NoInstallationException, \
     FileMissedException
 from logger import Logger, LoggerWorker
 from task_engine import TaskEngine
 from utils import is_windows_system, md5string, load_json_cache
+from version import FREELINE_VERSION
 
 
 class Dispatcher(object):
@@ -31,6 +32,7 @@ class Dispatcher(object):
         self._config = read_freeline_config()
         self._args = args
         self.debug('command line args: ' + str(args))
+        self._print_versions()
         Logger.info('[INFO] preparing for tasks...')
 
         if is_windows_system() or ('debug' in args and args.debug):
@@ -80,6 +82,12 @@ class Dispatcher(object):
                 return GradleCleanBuilder(self._config, self._task_engine, wait_for_debugger=wait_for_debugger)
 
         return None
+
+    def _print_versions(self):
+        if 'android_gradle_plugin_version' in self._config:
+            self.debug('*** Android Gradle Plugin Version: {}'.format(self._config['android_gradle_plugin_version']))
+            self.debug('*** Freeline Gradle Plugin Version: {}'.format(self._config['freeline_gradle_plugin_version']))
+        self.debug('*** Freeline Python Version: {}'.format(FREELINE_VERSION))
 
     def _exec_command(self, command):
         footer = '[DEBUG] --------------------------------------------------------'
@@ -152,13 +160,27 @@ def get_cache_dir():
 
 def read_freeline_config(config_path=None):
     if not config_path:
-        config_path = os.path.join(get_cache_dir(), 'project_description.json')
+        config_path = os.path.join(os.getcwd(), 'freeline_project_description.json')
 
     if os.path.isfile(config_path):
         config = load_json_cache(config_path)
         return config
 
-    raise NoConfigFoundException(config_path)
+    print("#############################################")
+    print("#                   ERROR                   #")
+    print("#############################################")
+    print("# Project description file not found: ")
+    print("#     -> {}".format(config_path))
+    print("#")
+    print("# To solve this error, please execute the command below:")
+    print("#")
+    print("# - Windows[CMD]: gradlew checkBeforeCleanBuild")
+    print("# - Linux/Mac: ./gradlew checkBeforeCleanBuild")
+    print("#")
+    print("# Then, this problem will be solved.")
+    print("#")
+    print("#############################################")
+    exit()
 
 
 class CleanAllCacheCommand(AbstractCommand):

@@ -104,6 +104,9 @@ python freeline.py
 ## Limitations
 - 第一次增量资源编译的时候可能会有点慢
 - 不支持删除带id的资源，否则可能导致aapt编译出错
+- 暂不支持抽象类的增量编译
+- 不支持开启 Jack 编译
+- 不支持 Kotlin/Groovy/Scala
 
 ## Contributing
 不论是小的修改，还是大的feature更新，我们都非常欢迎大家为Freeline贡献代码。

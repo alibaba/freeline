@@ -91,6 +91,21 @@ class FreelinePlugin implements Plugin<Project> {
                     FreelineUtils.addNewAttribute(project, 'apk_path', defaultApkPath)
                 }
 
+                // find the correct application id
+                def mergedApplicationId = variant.mergedFlavor.applicationId
+                if (mergedApplicationId) {
+                    def description = FreelineUtils.readProjectDescription(project)
+                    if (mergedApplicationId != description['debug_package']) {
+                        println "find new application id: ${mergedApplicationId}"
+                        //FreelineUtils.addNewAttribute(project, "debug_package", mergedApplicationId)
+                        if (variant.buildType.applicationIdSuffix) {
+                            FreelineUtils.addNewAttribute(project, "debug_package", mergedApplicationId + variant.buildType.applicationIdSuffix)
+                        } else {
+                            FreelineUtils.addNewAttribute(project, "debug_package", mergedApplicationId)
+                        }
+                    }
+                }
+
                 // add addtional aapt args
                 def publicKeeperGenPath = FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "public_keeper.xml")
                 project.android.aaptOptions.additionalParameters("-P", publicKeeperGenPath)
@@ -136,6 +151,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def addtionalJars = []
                 def projectAptConfig = [:]
                 def projectRetrolambdaConfig = [:]
+                def aptLibraries = ['dagger': false, 'butterknife': false]
 
                 project.rootProject.allprojects.each { pro ->
                     if (pro.plugins.hasPlugin("com.android.application") || pro.plugins.hasPlugin("com.android.library")) {
@@ -220,6 +236,19 @@ class FreelinePlugin implements Plugin<Project> {
                             projectRetrolambdaConfig[pro.name] = lambdaConfig
                         } else {
                             println '[WARNING] JDK8 not found, skip retrolambda.'
+                        }
+                    }
+
+                    if (aptEnabled) {
+                        if (pro.configurations.findByName("compile") != null) {
+                            pro.configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
+                                if (it.moduleGroup == 'com.google.dagger'
+                                    || it.moduleGroup == 'com.squareup.dagger') {
+                                    aptLibraries.dagger = true
+                                } else if (it.moduleGroup == 'com.jakewharton' && it.moduleName == 'butterknife') {
+                                    aptLibraries.butterknife = true
+                                }
+                            }
                         }
                     }
                 }
@@ -374,6 +403,7 @@ class FreelinePlugin implements Plugin<Project> {
                         FreelineUtils.addNewAttribute(project, 'apt', projectAptConfig)
                         FreelineUtils.addNewAttribute(project, 'retrolambda', projectRetrolambdaConfig)
                         FreelineUtils.addNewAttribute(project, 'databinding_compiler_jar', databindingCompilerJarPath)
+                        FreelineUtils.addNewAttribute(project, 'apt_libraries', aptLibraries)
                         rollBackClasses(backupMap)
                     }
                 }

@@ -7,6 +7,8 @@ class Constants {
 
     public static final String FREELINE_BUILD_CACHE_DIR = "freeline"
 
+    public static final String FREELINE_PRO_DESC_FILE_NAME = "freeline_project_description.json"
+
     public static final List<String> FREELINE_CLASSES = new ArrayList<>()
 
     static {

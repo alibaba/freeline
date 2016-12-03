@@ -32,6 +32,8 @@ class FreelineInitializer {
         def projectDescription = [:]
 
         projectDescription.project_type = 'gradle'
+        projectDescription.android_gradle_plugin_version = FreelineUtils.getAndroidGradlePluginVersion(project)
+        projectDescription.freeline_gradle_plugin_version = FreelineUtils.getFreelineGradlePluginVersion(project)
         projectDescription.java_home = getJavaHome()
         projectDescription.freeline_cache_dir = FreelineUtils.getFreelineCacheDir(project.rootDir.absolutePath)
         projectDescription.auto_dependency = autoDependency
@@ -48,8 +50,8 @@ class FreelineInitializer {
         projectDescription.build_tools_directory = FreelineUtils.joinPath(projectDescription.sdk_directory, 'build-tools', projectDescription.build_tools_version)
         projectDescription.compile_sdk_version = project.android.compileSdkVersion.toString()
         projectDescription.compile_sdk_directory = FreelineUtils.joinPath(projectDescription.sdk_directory, 'platforms', projectDescription.compile_sdk_version)
-        projectDescription.package = packageName
-        projectDescription.debug_package = packageName
+        projectDescription.package = packageName  // package -> the package name in the manifest file of main module
+        projectDescription.debug_package = project.android.defaultConfig.applicationId  // applicationId -> debug_package
         projectDescription.main_manifest_path = project.android.sourceSets.main.manifest.srcFile.path
         projectDescription.launcher = launcher
         projectDescription.apk_path = apkPath
@@ -59,8 +61,14 @@ class FreelineInitializer {
         projectDescription.android_gradle_version = getAndroidGradleVersion(project)
         projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_version as String)
 
-        if (packageName == null || packageName == '') {
-            projectDescription.package = FreelineParser.getPackageName(project.android.defaultConfig.applicationId as String, projectDescription.main_manifest_path as String)
+        if (FreelineUtils.isEmpty(packageName)) {
+            projectDescription.package = FreelineParser.getPackage(projectDescription.main_manifest_path as String)
+            if (FreelineUtils.isEmpty(projectDescription.package as String)) {
+                projectDescription.package = projectDescription.debug_package
+            }
+        }
+
+        if (FreelineUtils.isEmpty(projectDescription.debug_package as String)) {
             projectDescription.debug_package = projectDescription.package
         }
 
@@ -69,6 +77,7 @@ class FreelineInitializer {
             invalidFlavor = false;
         }
 
+        boolean applicationSuffixAdded = false
         project.android.applicationVariants.each { baseVariant ->
             if (productFlavor) {
                 if (productFlavor.equals(baseVariant.flavorName)) {
@@ -76,9 +85,10 @@ class FreelineInitializer {
                 }
             }
             def buildType = baseVariant.buildType;
-            if ("debug".equalsIgnoreCase(buildType.name)) {
+            if (!applicationSuffixAdded && "debug".equalsIgnoreCase(buildType.name as String)) {
                 if (buildType.applicationIdSuffix) {
-                    projectDescription.debug_package = projectDescription.package + buildType.applicationIdSuffix
+                    projectDescription.debug_package = projectDescription.debug_package + buildType.applicationIdSuffix
+                    applicationSuffixAdded = true
                 }
             }
         }
@@ -173,7 +183,7 @@ class FreelineInitializer {
         def json = new JsonBuilder(projectDescription).toPrettyString()
         println json
 
-        FreelineUtils.saveJson(json, FreelineUtils.joinPath(projectDescription.freeline_cache_dir, 'project_description.json'), true)
+        FreelineUtils.saveJson(json, FreelineUtils.joinPath(projectDescription.freeline_cache_dir, Constants.FREELINE_PRO_DESC_FILE_NAME), true)
     }
 
     private static def getMinSdkVersion(Project project, String manifestPath) {
