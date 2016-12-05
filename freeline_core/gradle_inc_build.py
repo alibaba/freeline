@@ -635,20 +635,21 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         return False
 
     def _generate_java_compile_args(self, extra_javac_args_enabled=False):
-        javacargs = [self._javac, '-encoding', 'UTF-8', '-g']
+        javacargs = [self._javac]
+        arguments = ['-encoding', 'UTF-8', '-g']
         if not self._is_retrolambda_enabled:
-            javacargs.extend(['-target', '1.7', '-source', '1.7'])
+            arguments.extend(['-target', '1.7', '-source', '1.7'])
 
-        javacargs.append('-cp')
-        javacargs.append(os.pathsep.join(self._classpaths))
+        arguments.append('-cp')
+        arguments.append(os.pathsep.join(self._classpaths))
 
         for fpath in self._changed_files['src']:
-            javacargs.append(fpath)
+            arguments.append(fpath)
 
         if extra_javac_args_enabled:
             if 'apt' in self._changed_files:
                 for fpath in self._changed_files['apt']:
-                    javacargs.append(fpath)
+                    arguments.append(fpath)
 
             filter_tags = []
             if self._is_databinding_enabled:
@@ -663,12 +664,29 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     if 'apt' in self._changed_files and fpath in self._changed_files['apt']:
                         continue
                     self.debug('add apt related file: {}'.format(fpath))
-                    javacargs.append(fpath)
+                    arguments.append(fpath)
 
-            javacargs.extend(self._extra_javac_args)
+            arguments.extend(self._extra_javac_args)
 
-        javacargs.append('-d')
-        javacargs.append(self._finder.get_patch_classes_cache_dir())
+        arguments.append('-d')
+        arguments.append(self._finder.get_patch_classes_cache_dir())
+
+        # ref: https://support.microsoft.com/en-us/kb/830473
+        if is_windows_system():
+            arguments_length = sum(map(len, arguments))
+            if arguments_length > 8000:
+                argument_file_path = os.path.join(self._finder.get_module_cache_dir(), 'javac_args_file')
+                self.debug('arguments length: {} > 8000, save args to {}'.format(arguments_length, argument_file_path))
+
+                if os.path.exists(argument_file_path):
+                    os.remove(argument_file_path)
+
+                arguments_content = ' '.join(arguments)
+                self.debug('javac arguments: ' + arguments_content)
+                write_file_content(argument_file_path, arguments_content)
+                arguments = ['@{}'.format(argument_file_path)]
+
+        javacargs.extend(arguments)
         return javacargs
 
     def _get_apt_related_files(self, filter_tags=None):

@@ -259,6 +259,12 @@ class DirectoryFinder(object):
             os.makedirs(cache_dir)
         return cache_dir
 
+    def get_module_cache_dir(self):
+        cache_dir = os.path.join(self._cache_dir, self._module_name)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        return cache_dir
+
     @staticmethod
     def get_r_file_path(target_dir):
         for dirpath, dirnames, files in os.walk(target_dir):
