@@ -58,8 +58,7 @@ class FreelineInitializer {
         projectDescription.extra_dep_res_paths = extraResourcesDependencies
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
-        projectDescription.android_gradle_version = getAndroidGradleVersion(project)
-        projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_version as String)
+        projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_plugin_version as String)
 
         if (FreelineUtils.isEmpty(packageName)) {
             projectDescription.package = FreelineParser.getPackage(projectDescription.main_manifest_path as String)
@@ -203,17 +202,6 @@ class FreelineInitializer {
         int result = new StaticVersionComparator().compare(versionParser.transform(androidGradleVersion),
                 versionParser.transform("2.2.0"))
         return result >= 0
-    }
-
-    private static String getAndroidGradleVersion(Project project) {
-        String moduleVersion = null
-        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
-            if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
-                moduleVersion = it.moduleVersion
-                return false
-            }
-        }
-        return moduleVersion
     }
 
     private static def createSourceSets(Project pro, def flavor, def buildType) {
