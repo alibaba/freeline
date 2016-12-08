@@ -37,6 +37,8 @@ class FreelineExtension {
 
     boolean retrolambdaEnabled = true
 
+    List<String> useMd5Paths = []
+
     FreelineExtension(Project project) {
     }
 }

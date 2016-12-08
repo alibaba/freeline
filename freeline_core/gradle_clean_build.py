@@ -39,7 +39,7 @@ class GradleCleanBuilder(CleanBuilder):
         build_task = GradleCleanBuildTask(self._config)
         install_task = InstallApkTask(self._adb, self._config, wait_for_debugger=self._wait_for_debugger)
         clean_all_cache_task = CleanAllCacheTask(self._config['build_cache_dir'], ignore=[
-            'stat_cache.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml',
+            'stat_cache.json','stat_cache_md5.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml',
             'assets_dependencies.json', 'freeline_annotation_info.json'])
         build_base_resource_task = BuildBaseResourceTask(self._config, self._project_info)
         generate_stat_task = GenerateFileStatTask(self._config)

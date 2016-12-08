@@ -28,6 +28,7 @@ class FreelineInitializer {
         def extraResourcesDependencies = extension.extraResourceDependencyPaths
         def excludeResourceDependencyPaths = extension.excludeResourceDependencyPaths
         def autoDependency = extension.autoDependency
+        def useMd5Paths = extension.useMd5Paths
 
         def projectDescription = [:]
 
@@ -56,6 +57,11 @@ class FreelineInitializer {
         projectDescription.launcher = launcher
         projectDescription.apk_path = apkPath
         projectDescription.extra_dep_res_paths = extraResourcesDependencies
+        def useMd5PathArray = [];
+        for(String path : useMd5Paths){
+            useMd5PathArray.add(project.rootDir.absolutePath + File.separator + path);
+        }
+        projectDescription.use_md5_paths = useMd5PathArray
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
         projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_plugin_version as String)
