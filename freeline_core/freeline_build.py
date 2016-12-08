@@ -3,6 +3,7 @@ from __future__ import print_function
 from command import AbstractCommand
 from exceptions import NoConfigFoundException
 from logger import Logger
+from utils import load_json_cache
 
 
 class FreelineBuildCommand(AbstractCommand):
@@ -19,6 +20,7 @@ class FreelineBuildCommand(AbstractCommand):
 
     def execute(self):
         file_changed_dict = self._scan_command.execute()
+        file_changed_md5_dict = self._setup_get_file_changed_bymd5()
 
         if self._dispatch_policy.is_need_clean_build(self._config, file_changed_dict):
             self._setup_clean_builder(file_changed_dict)
@@ -33,6 +35,11 @@ class FreelineBuildCommand(AbstractCommand):
             self._build_command = IncrementalBuildCommand(self._builder)
 
         self._build_command.execute()
+
+    def _setup_get_file_changed_bymd5(self):
+          if self._project_type == 'gradle':
+              file_changed_md5_dict = load_json_cache(self._config['build_cache_dir'] + 'stat_cache_md5.json')
+          return file_changed_md5_dict
 
     def _setup(self):
         if not self._config:

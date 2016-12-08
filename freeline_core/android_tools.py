@@ -9,7 +9,7 @@ from logger import Logger
 from builder import Builder
 from task import Task, SyncTask, IncrementalBuildTask
 from utils import cexec, write_file_content, get_file_content, merge_xml, get_md5, load_json_cache, is_windows_system, \
-    write_json_cache, calculate_typed_file_count, remove_namespace
+    write_json_cache, calculate_typed_file_count, remove_namespace, read_content
 from command import AbstractCommand
 from exceptions import FreelineException
 from sync_client import SyncClient
@@ -180,7 +180,16 @@ class UpdateStatTask(Task):
                             stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
 
         write_json_cache(cache_path, stat_cache)
-
+        cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
+        stat_cache_md5 = load_json_cache(cache_path_md5)
+        if 'use_md5_paths' in self._config and self._config['use_md5_paths'] is not None:
+                    arr = self._config['use_md5_paths']
+                    for path in arr:
+                        path = path.strip()
+                        #read content,Generate MD5
+                        md5 = get_md5(path);
+                        stat_cache_md5[path] = md5
+        write_json_cache(cache_path_md5, stat_cache_md5)
 
 class DirectoryFinder(object):
     def __init__(self, module_name, cache_dir):

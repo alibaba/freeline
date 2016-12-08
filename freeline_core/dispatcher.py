@@ -152,7 +152,7 @@ def version():
 
 
 def get_cache_dir():
-    cache_dir_path = os.path.join(os.path.expanduser('~'), '.freeline', 'cache', md5string(os.getcwd().decode("utf-8")))
+    cache_dir_path = os.path.join(os.getcwd())
     if not os.path.exists(cache_dir_path):
         os.makedirs(cache_dir_path)
     return cache_dir_path
@@ -160,7 +160,7 @@ def get_cache_dir():
 
 def read_freeline_config(config_path=None):
     if not config_path:
-        config_path = os.path.join(os.getcwd(), 'freeline_project_description.json')
+        config_path = os.path.join(get_cache_dir(), 'freeline_project_description.json')
 
     if os.path.isfile(config_path):
         config = load_json_cache(config_path)
