@@ -535,7 +535,7 @@ class FreelinePlugin implements Plugin<Project> {
         manifest.application."@android:name" = "com.antfortune.freeline.FreelineApplication"
 
         manifestFile.delete()
-        manifestFile << XmlUtil.serialize(manifest)
+        manifestFile.write(XmlUtil.serialize(manifest), "utf-8")
     }
 
     private static int getMinSdkVersion(def mergedFlavor, String manifestPath) {
