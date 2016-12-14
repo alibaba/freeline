@@ -114,6 +114,7 @@ public class CliMain {
             ExportDataBindingInfo.run(sdkDirectory, layoutInfoDirectory);
         } catch (Exception e) {
             System.err.println("process databinding error: " + e.getMessage() + "\n");
+            System.exit(1);
         }
     }
 
