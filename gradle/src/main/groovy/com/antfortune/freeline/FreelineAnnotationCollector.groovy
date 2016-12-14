@@ -14,9 +14,6 @@ class FreelineAnnotationCollector {
         "Landroid/databinding/Bindable;",
         "Ldagger/Component;",
         "Ldagger/Module;",
-        "Lbutterknife/BindView;",
-        "Lbutterknife/Bind;",
-        "Lbutterknife/OnClick;",
         "Ljavax/inject/Inject;"
     ]
 
@@ -26,9 +23,6 @@ class FreelineAnnotationCollector {
         "Landroid/databinding/Bindable;": "Bindable",
         "Ldagger/Component;": "DaggerComponent",
         "Ldagger/Module;": "DaggerModule",
-        "Lbutterknife/BindView;": "BKBindView",
-        "Lbutterknife/Bind;": "BKBind",
-        "Lbutterknife/OnClick;": "BKOnClick",
         "Ljavax/inject/Inject;": "Inject"
     ]
 
