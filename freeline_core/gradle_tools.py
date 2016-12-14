@@ -79,8 +79,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         else:
             is_root_config_changed = os.path.getmtime(os.path.join('build.gradle')) > last_clean_build_time
 
-        is_root_config_changed = False
         if(is_root_config_changed):
+            Logger.debug('project build.gradle  modifed')
             return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
         settings_path = os.path.join(os.getcwd() + '\\settings.gradle')
         setting_path_from_stat = array_has_path(stat_cache_md5,settings_path)
@@ -88,6 +88,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             is_root_config_changed = if_file_change_by_md5(setting_path_from_stat,last_clean_build_time,stat_cache_md5[setting_path_from_stat])
         else:
             is_root_config_changed = os.path.getmtime(os.path.join('settings.gradle')) > last_clean_build_time
+        if(is_root_config_changed):
+            Logger.debug('project setting.gradle modifed')
         return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
 
     def _scan_module_changes(self, module_name, module_path):
@@ -182,8 +184,9 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             stat['mtime'] = mtime
             self._stat_cache[module_name][fpath] = stat
             if should_check_md5:
-                print('use md5 check,and path:'+fpath)
-                return self.__check_changes_by_md5(fpath)
+                md5_modify = self.__check_changes_by_md5(fpath)
+                self.debug('find {} has modification.but md5 check is {}.'.format(fpath,md5_modify))
+                return md5_modify
             return True
 
         if should_check_size:
@@ -199,7 +202,6 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         from utils import if_file_change_by_md5
         if self._stat_cache_md5.has_key(fpath):
            if get_md5(fpath) == self._stat_cache_md5[fpath]:
-              print('fpath:'+fpath+',md5 same')
               return False
         return True
 

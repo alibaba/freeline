@@ -170,7 +170,6 @@ def if_file_change_by_md5(fpath, compare_time, md5):
     if (os.path.getmtime(os.path.join(fpath)) <= compare_time):
         return False
     is_change = get_md5(fpath) != md5
-    print('path:'+fpath+',time change,and md5 result is:'+str(is_change))
     return is_change
 
 def read_content(fpath):
@@ -186,7 +185,7 @@ def read_content(fpath):
             file_object.close()
     return content
 
-#判断路径下是否含有输入路径，如果有则返回，没有返回null
+#If the array contains 'path' return the str in array,others return none.
 def array_has_path(md5_array,fpath):
     for str in md5_array:
        if str.replace('//','').lower() == fpath.replace('//','').lower():
