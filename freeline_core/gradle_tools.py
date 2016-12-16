@@ -750,6 +750,8 @@ class DataBindingProcessor(object):
             if module_config['name'] in source_sets:
                 module_name = module_config['name']
                 for rdir in source_sets[module_name]['main_res_directory']:
+                    if not os.path.exists(rdir):
+                        continue
                     output_res_dir = DatabindingDirectoryLookUp.create_target_res_path(
                         self._config['build_cache_dir'],
                         module_name, rdir)
