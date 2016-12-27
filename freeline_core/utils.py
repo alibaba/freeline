@@ -165,6 +165,34 @@ def get_text_by_tag(root, tag):
     element = root.find(tag)
     return element.text if element is not None else ''
 
+def if_file_change_by_md5(fpath, compare_time, md5):
+    last_clean_build_time = os.path.getmtime(fpath) if os.path.exists(fpath) else 0
+    if (os.path.getmtime(os.path.join(fpath)) <= compare_time):
+        return False
+    is_change = get_md5(fpath) != md5
+    print('path:'+fpath+',time change,and md5 result is:'+str(is_change))
+    return is_change
+
+def read_content(fpath):
+    if not os.path.exists(fpath):
+        pass
+    if os.path.isfile(fpath):
+        try:
+            file_object = open(fpath)
+            content = file_object.read()
+        except Exception:
+            pass
+        finally:
+            file_object.close()
+    return content
+
+#判断路径下是否含有输入路径，如果有则返回，没有返回null
+def array_has_path(md5_array,fpath):
+    for str in md5_array:
+       if str.replace('//','').lower() == fpath.replace('//','').lower():
+           return str
+    return None
+
 
 class HashableDict(dict):
     def __hash__(self):
