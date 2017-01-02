@@ -709,8 +709,9 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         continue
 
                     for info in files:
-                        if 'java_path' in info and info['java_path']:
-                            related_files.append(info['java_path'])
+                        if info['module'] == self._name or info['module'] in self._module_info['local_module_dep']:
+                            if 'java_path' in info and info['java_path']:
+                                related_files.append(info['java_path'])
                 write_json_cache(self._get_apt_related_files_cache_path(), related_files)
                 return related_files
         return []
