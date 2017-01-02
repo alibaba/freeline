@@ -431,6 +431,11 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
+
+        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0:
+            aapt_args.append('--ignore-ids')
+            aapt_args.append(':'.join(self._config['ignore_resource_ids']))
+
         return aapt_args, final_changed_list
 
     def recover_original_file_path(self):

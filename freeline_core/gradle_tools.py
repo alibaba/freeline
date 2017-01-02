@@ -727,6 +727,10 @@ class BuildBaseResourceTask(Task):
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
 
+        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0:
+            aapt_args.append('--ignore-ids')
+            aapt_args.append(':'.join(self._config['ignore_resource_ids']))
+
         self.debug('aapt exec: ' + ' '.join(aapt_args))
         output, err, code = cexec(aapt_args, callback=None)
 

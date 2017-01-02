@@ -27,6 +27,8 @@ class FreelineExtension {
 
     List<String> excludeHackClasses = []
 
+    List<String> ignoreResourceIds = []
+
     boolean foceLowerVersion = false
 
     boolean applicationProxy = true
