@@ -67,8 +67,11 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         final_apk_path = self._config['apk_path']
         last_clean_build_time = os.path.getmtime(final_apk_path) if os.path.exists(final_apk_path) else 0
         is_root_config_changed = os.path.getmtime(os.path.join('build.gradle')) > last_clean_build_time
+
         if not is_root_config_changed:
-            is_root_config_changed = os.path.getmtime(os.path.join('settings.gradle')) > last_clean_build_time
+            settings_path = os.path.join('settings.gradle')
+            if os.path.exists(settings_path):
+                is_root_config_changed = os.path.getmtime(settings_path) > last_clean_build_time
 
         return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
 
@@ -998,7 +1001,7 @@ def fix_package_name(config, manifest):
 
 def get_all_modules(dir_path):
     settings_path = os.path.join(dir_path, 'settings.gradle')
-    if os.path.isfile(settings_path):
+    if os.path.exists(settings_path):
         data = get_file_content(settings_path)
         modules = []
         for item in re.findall(r'''['"]:(.*?)['"]''', data):
