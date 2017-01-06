@@ -4,18 +4,18 @@
 
 [![Release Version](https://img.shields.io/badge/release-0.8.4-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
 
-*Freeline* is a super fast build tool for Android and an alternative to Instant Run. Caching reusable class files and resource indices, it enables incrementally building Android apps, and optionally deploying the update to your device with hot swap.
+*Freeline* is a super fast build tool for Android and an alternative to Instant Run. Caching reusable class files and resource indices, it enables incremental building Android apps, and optionally deploying the updates to your device by hot swap.
 
 See [Freeline official website](https://www.freelinebuild.com) for more information.
 
-Developed and used by **Ant Fortune ([about us](https://www.antfortune.com/ "about us")) Android Team**, Freeline has been significantly saving time in daily work. Inspiring by **Buck** and **Instant Run** but faster than ever, Freeline can finish an incremental build in just a few seconds. No more recompile and reinstall again and again before seeing your modifications, Freeline brings life-changing development experience for Android.
+Developed and used by **Ant Fortune ([about us](https://www.antfortune.com/ "about us")) Android Team**, Freeline has been significantly saving time in daily work. Inspiring by **Buck** and **Instant Run** but faster than ever, Freeline can make an incremental build in just a few seconds. No more recompile and reinstall again and again before seeing your modifications, Freeline brings life-changing development experience for Android.
 
 [中文说明](README-zh.md)
 
 ## Freeline Insights
 Freeline splits the build task into several small tasks that run concurrently. It makes full use of the compiled cache files to implement a real incremental build and uses some components of Buck such as dx and DexMerger to speed up the build tasks. Freeline runs a socket server in a separate process on device side, which connects with build tool on developer's machine, so that deployment can still take effects even if the main process crashes.
 
-Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement. Freeline support dynamic swap native so, you don't need to re-build your project after native so files changed. 
+Freeline uses multi-dex solution for incremental dex hot swapping. A deeply optimized version of **aapt** tool (**FreelineAapt**) is made to generate incremental resource pack, which is several times faster than the original aapt tool and the resouce pack can be as small as 1kb. MonkeyPatcher from Instant Run is utilized to make hot resource replacement. Freeline support dynamic swap native .so library, you don't need to re-build your project after native .so files changed. 
 
 Freeline will automatically switch between full build and incremental build.
 
