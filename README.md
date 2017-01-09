@@ -85,7 +85,7 @@ If you have a complex project structure, you may need to use freeline DSL to cus
 ## Usage
 You can install freeline plugin in Android Studio for quick usage.
 
-How to install? In Android Studio, go to Preferences → Plugins → Browse repositories and search for `freeline`.
+How to install? In Android Studio, go to `File → Settings... → Plugins → Browse repositories...` and search for `freeline`.
 
 ![](http://ww4.sinaimg.cn/large/65e4f1e6gw1f82eknaeudj20tk01omxe.jpg)
 
