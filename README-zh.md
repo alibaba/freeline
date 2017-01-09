@@ -79,7 +79,7 @@ android {
 ## Usage
 Freeline 最快捷的使用方法就是直接安装 Android Studio 插件。
 
-在 Android Studio 中，通过以下路径 Preferences → Plugins → Browse repositories，搜索“freeline”，并安装。
+在 Android Studio 中，通过以下路径 `File → Settings... → Plugins → Browse repositories...`，搜索“freeline”，并安装。
 
 ![](http://ww4.sinaimg.cn/large/65e4f1e6gw1f82eknaeudj20tk01omxe.jpg)
 
