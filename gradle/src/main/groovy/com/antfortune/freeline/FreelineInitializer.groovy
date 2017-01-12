@@ -60,7 +60,7 @@ class FreelineInitializer {
         projectDescription.exclude_dep_res_paths = excludeResourceDependencyPaths
         projectDescription.main_r_path = FreelineGenerator.generateMainRPath(projectDescription.build_directory.toString(), productFlavor, projectDescription.package.toString())
         projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_plugin_version as String)
-        projectDescription.ignore_resource_ids = ignoreResourceIds
+        projectDescription.ignore_resource_ids = FreelineCompat.compatIgnoreResourceIds(ignoreResourceIds)
 
         if (FreelineUtils.isEmpty(packageName)) {
             projectDescription.package = FreelineParser.getPackage(projectDescription.main_manifest_path as String)
