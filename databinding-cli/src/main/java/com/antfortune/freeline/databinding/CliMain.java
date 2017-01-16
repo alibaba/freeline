@@ -114,13 +114,14 @@ public class CliMain {
             ExportDataBindingInfo.run(sdkDirectory, layoutInfoDirectory);
         } catch (Exception e) {
             System.err.println("process databinding error: " + e.getMessage() + "\n");
+            e.printStackTrace();
             System.exit(1);
         }
     }
 
     private static void printHelpMessage(Options optionsContainer) {
         String header = "\nUse databinding-cli to process the layout files without gradle.\n";
-        String footer = "\nPlease report issues at https://github.com/alibaba/freeline/issues\n";
+        String footer = "\nFreeline DataBidning CLI 1.0.2, Please report issues at https://github.com/alibaba/freeline/issues\n";
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("java -jar databinding-cli.jar", header, optionsContainer, footer, true);
     }
