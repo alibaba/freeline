@@ -432,7 +432,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
 
-        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0:
+        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0 and not is_windows_system():
             aapt_args.append('--ignore-ids')
             aapt_args.append(':'.join(self._config['ignore_resource_ids']))
 

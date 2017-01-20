@@ -8,7 +8,7 @@ from freeline_build import ScanChangedFilesCommand, DispatchPolicy
 from logger import Logger
 from sync_client import SyncClient
 from exceptions import FreelineException, FileMissedException
-from utils import curl, write_json_cache, load_json_cache, cexec, md5string, remove_namespace
+from utils import curl, write_json_cache, load_json_cache, cexec, md5string, remove_namespace, is_windows_system
 from task import Task
 from builder import Builder
 
@@ -727,7 +727,7 @@ class BuildBaseResourceTask(Task):
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
 
-        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0:
+        if 'ignore_resource_ids' in self._config and len(self._config['ignore_resource_ids']) > 0 and not is_windows_system():
             aapt_args.append('--ignore-ids')
             aapt_args.append(':'.join(self._config['ignore_resource_ids']))
 
