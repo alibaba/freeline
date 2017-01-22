@@ -41,6 +41,8 @@ class FreelineExtension {
 
     boolean retrolambdaEnabled = true
 
+    boolean useSystemGradle = false
+
     FreelineExtension(Project project) {
     }
 }

@@ -1019,6 +1019,15 @@ def get_classpath_by_src_path(module, sdir, src_path):
         return src_path.replace('.java', '.class').replace(sdir, target_dir)
 
 
+def get_gradle_executable(config):
+    if 'use_system_gradle' in config and config['use_system_gradle']:
+        return 'gradle'
+    elif is_windows_system():
+        return 'gradlew'
+    else:
+        return './gradlew'
+
+
 def fix_package_name(config, manifest):
     if config and config['package'] != config['debug_package']:
         finder = GradleDirectoryFinder(config['main_project_name'], config['main_project_dir'],
