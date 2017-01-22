@@ -135,6 +135,9 @@ class AndroidSyncClient(SyncClient):
     def _is_need_sync_res(self):
         pass
 
+    def _is_need_sync_native(self):
+        pass
+
 
 class CleanAllCacheTask(Task):
     def __init__(self, cache_dir, ignore=None):
@@ -166,6 +169,9 @@ class UpdateStatTask(Task):
     def execute(self):
         cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
         stat_cache = load_json_cache(cache_path)
+        cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
+        stat_cache_md5 = load_json_cache(cache_path_md5)
+
         for module, file_dict in self._changed_files.iteritems():
             for key, files in file_dict.iteritems():
                 if key != 'apt':
@@ -176,10 +182,14 @@ class UpdateStatTask(Task):
                             if fpath not in stat_cache[module]:
                                 stat_cache[module][fpath] = {}
 
+                            if fpath in stat_cache_md5:
+                                stat_cache_md5[fpath] = get_md5(fpath)
+
                             stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
                             stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
 
         write_json_cache(cache_path, stat_cache)
+        write_json_cache(cache_path_md5, stat_cache_md5)
 
 
 class DirectoryFinder(object):
