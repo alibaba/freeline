@@ -29,6 +29,8 @@ class FreelineExtension {
 
     List<String> ignoreResourceIds = []
 
+    List<String> checkSourcesMd5 = []
+
     boolean foceLowerVersion = false
 
     boolean applicationProxy = true
