@@ -5,9 +5,10 @@ import os
 
 from android_tools import InstallApkTask, CleanAllCacheTask
 from builder import CleanBuilder
-from gradle_tools import GenerateFileStatTask, BuildBaseResourceTask, get_project_info, GenerateAptFilesStatTask
+from gradle_tools import GenerateFileStatTask, BuildBaseResourceTask, get_project_info, GenerateAptFilesStatTask, \
+    get_gradle_executable
 from task import CleanBuildTask, Task
-from utils import cexec, load_json_cache, write_json_cache, is_windows_system
+from utils import cexec, load_json_cache, write_json_cache
 from logger import Logger
 
 
@@ -39,12 +40,12 @@ class GradleCleanBuilder(CleanBuilder):
         build_task = GradleCleanBuildTask(self._config)
         install_task = InstallApkTask(self._adb, self._config, wait_for_debugger=self._wait_for_debugger)
         clean_all_cache_task = CleanAllCacheTask(self._config['build_cache_dir'], ignore=[
-            'stat_cache.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json', 'public_keeper.xml',
-            'assets_dependencies.json', 'freeline_annotation_info.json'])
+            'stat_cache.json', 'stat_cache_md5.json', 'apktime', 'jar_dependencies.json', 'resources_dependencies.json',
+            'public_keeper.xml', 'assets_dependencies.json', 'freeline_annotation_info.json'])
         build_base_resource_task = BuildBaseResourceTask(self._config, self._project_info)
         generate_stat_task = GenerateFileStatTask(self._config)
         append_stat_task = GenerateFileStatTask(self._config, is_append=True)
-        read_project_info_task = GradleReadProjectInfoTask()
+        read_project_info_task = GradleReadProjectInfoTask(self._config)
         generate_project_info_task = GradleGenerateProjectInfoTask(self._config)
         generate_apt_file_stat_task = GenerateAptFilesStatTask()
 
@@ -64,14 +65,12 @@ class GradleCleanBuilder(CleanBuilder):
 
 
 class GradleReadProjectInfoTask(Task):
-    def __init__(self):
+    def __init__(self, config):
         Task.__init__(self, 'read_project_info_task')
+        self._config = config
 
     def execute(self):
-        command = './gradlew -q checkBeforeCleanBuild'
-        if is_windows_system():
-            command = 'gradlew.bat -q checkBeforeCleanBuild'
-
+        command = '{} -q checkBeforeCleanBuild'.format(get_gradle_executable(self._config))
         output, err, code = cexec(command.split(' '), callback=None)
         if code != 0:
             from exceptions import FreelineException

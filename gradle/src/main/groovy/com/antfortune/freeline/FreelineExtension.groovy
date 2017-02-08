@@ -27,6 +27,10 @@ class FreelineExtension {
 
     List<String> excludeHackClasses = []
 
+    List<String> ignoreResourceIds = []
+
+    List<String> checkSourcesMd5 = []
+
     boolean foceLowerVersion = false
 
     boolean applicationProxy = true
@@ -36,6 +40,8 @@ class FreelineExtension {
     boolean aptEnabled = true
 
     boolean retrolambdaEnabled = true
+
+    boolean useSystemGradle = false
 
     FreelineExtension(Project project) {
     }

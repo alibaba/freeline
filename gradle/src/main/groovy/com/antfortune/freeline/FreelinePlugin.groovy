@@ -16,7 +16,7 @@ import org.gradle.util.VersionNumber
  */
 class FreelinePlugin implements Plugin<Project> {
 
-    String freelineVersion = "0.8.2"
+    String freelineVersion = "0.8.5"
 
     @Override
     void apply(Project project) {
@@ -173,45 +173,7 @@ class FreelinePlugin implements Plugin<Project> {
                         }
 
                         // find apt config
-                        def isAptEnabled = pro.plugins.hasPlugin("android-apt")
-                        def javaCompile = getJavaCompileTask(variant, pro)
-
-                        if (aptEnabled && isAptEnabled && javaCompile) {
-                            println "Freeline found ${pro.name} apt plugin enabled."
-                            javaCompile.outputs.upToDateWhen { false }
-                            javaCompile.doFirst {
-                                def aptConfiguration = pro.configurations.findByName("apt")
-                                if (aptConfiguration && !aptConfiguration.empty) {
-                                    def aptOutputDir
-                                    if (pro.plugins.hasPlugin("com.android.application")) {
-                                        aptOutputDir = new File(pro.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
-                                    } else {
-                                        aptOutputDir = new File(pro.buildDir, "generated/source/apt/release").absolutePath
-                                    }
-                                    def processorPath = (aptConfiguration + javaCompile.classpath).asPath
-
-                                    boolean disableDiscovery = javaCompile.options.compilerArgs.indexOf('-processorpath') == -1
-
-                                    int processorIndex = javaCompile.options.compilerArgs.indexOf('-processor')
-                                    def processor = null
-                                    if (processorIndex != -1) {
-                                        processor = javaCompile.options.compilerArgs.get(processorIndex + 1)
-                                    }
-
-                                    def aptArgs = []
-                                    javaCompile.options.compilerArgs.each { arg ->
-                                        if (arg.toString().startsWith('-A')) {
-                                            aptArgs.add(arg)
-                                        }
-                                    }
-
-                                    def aptConfig = ['enabled': isAptEnabled, 'disableDiscovery': disableDiscovery, 'aptOutput': aptOutputDir, 'processorPath': processorPath, 'processor': processor, 'aptArgs': aptArgs]
-                                    projectAptConfig[pro.name] = aptConfig
-                                }
-                            }
-                        } else {
-                            println "Freeline not found apt plugin for $pro.name[aptEnabled: $aptEnabled, isAptEnabled: $isAptEnabled, javaCompile: ${javaCompile == null}]"
-                        }
+                        findAptConfig(pro, variant, projectAptConfig)
                     }
 
                     // find retrolambda config
@@ -535,7 +497,7 @@ class FreelinePlugin implements Plugin<Project> {
         manifest.application."@android:name" = "com.antfortune.freeline.FreelineApplication"
 
         manifestFile.delete()
-        manifestFile << XmlUtil.serialize(manifest)
+        manifestFile.write(XmlUtil.serialize(manifest), "utf-8")
     }
 
     private static int getMinSdkVersion(def mergedFlavor, String manifestPath) {
@@ -655,6 +617,64 @@ class FreelinePlugin implements Plugin<Project> {
             }
         }
         return javaCompile
+    }
+
+    private static def findAptConfig(Project project, def variant, def projectAptConfig) {
+        def javaCompile = getJavaCompileTask(variant, project)
+
+        def aptConfiguration = project.configurations.findByName("apt")
+        def isAptEnabled = project.plugins.hasPlugin("android-apt") && aptConfiguration != null && !aptConfiguration.empty
+
+        def annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
+        def isAnnotationProcessor = annotationProcessorConfig != null && !annotationProcessorConfig.empty
+
+        if ((isAptEnabled || isAnnotationProcessor) && javaCompile) {
+            println "Freeline found ${project.name} apt plugin enabled."
+            javaCompile.outputs.upToDateWhen { false }
+            javaCompile.doFirst {
+                def aptOutputDir
+                if (project.plugins.hasPlugin("com.android.application")) {
+                    aptOutputDir = new File(project.buildDir, "generated/source/apt/${variant.dirName}").absolutePath
+                } else {
+                    aptOutputDir = new File(project.buildDir, "generated/source/apt/release").absolutePath
+                }
+
+                def configurations = javaCompile.classpath
+                if (isAptEnabled) {
+                    configurations += aptConfiguration
+                }
+                if (isAnnotationProcessor) {
+                    configurations += annotationProcessorConfig
+                }
+
+                def processorPath = configurations.asPath
+
+                boolean disableDiscovery = javaCompile.options.compilerArgs.indexOf('-processorpath') == -1
+
+                int processorIndex = javaCompile.options.compilerArgs.indexOf('-processor')
+                def processor = null
+                if (processorIndex != -1) {
+                    processor = javaCompile.options.compilerArgs.get(processorIndex + 1)
+                }
+
+                def aptArgs = []
+                javaCompile.options.compilerArgs.each { arg ->
+                    if (arg.toString().startsWith('-A')) {
+                        aptArgs.add(arg)
+                    }
+                }
+
+                def aptConfig = ['enabled': true,
+                                 'disableDiscovery': disableDiscovery,
+                                 'aptOutput': aptOutputDir,
+                                 'processorPath': processorPath,
+                                 'processor': processor,
+                                 'aptArgs': aptArgs]
+                projectAptConfig[project.name] = aptConfig
+            }
+        } else {
+            println "Freeline doesn't found apt plugin for $project.name"
+        }
     }
 
 }
