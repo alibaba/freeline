@@ -1,7 +1,7 @@
 package utils;
 
 import actions.UpdateAction;
-import com.android.tools.idea.gradle.AndroidGradleModel;
+
 import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencySpec;
@@ -224,12 +224,9 @@ public class FreelineUtil {
             Module[] modules = ModuleManager.getInstance(project).getModules();
             List<Pair<Module, PsiFile>> selectModulesList = new ArrayList<Pair<Module, PsiFile>>();
             for (Module module : modules) {
-                AndroidGradleModel model = AndroidGradleModel.get(module);
                 GradleBuildFile file = GradleBuildFile.get(module);
-                if (file != null && model != null) {
-                    if (!model.getAndroidProject().isLibrary()) {
-                        selectModulesList.add(Pair.create(module, file.getPsiFile()));
-                    }
+                if (file != null && !GradleUtil.isLibrary(file)) {
+                    selectModulesList.add(Pair.create(module, file.getPsiFile()));
                 }
             }
             // 多个app模块的情况
