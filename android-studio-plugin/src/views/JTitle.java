@@ -11,6 +11,6 @@ public class JTitle extends JLabel {
     public JTitle(String text) {
         super(text);
         setFont(new Font("微软雅黑", Font.BOLD, 15));
-        setBorder(BorderFactory.createEmptyBorder(8,0,0,0));
+        setBorder(BorderFactory.createEmptyBorder(10,0,0,0));
     }
 }

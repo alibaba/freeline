@@ -18,7 +18,7 @@ public class MulLabel extends JLabel {
     public MulLabel(String text, boolean html) {
         super(text);
         if (html) {
-            setText("<html>" + text + "</html>");
+            setHtml(text);
         }
         setBorder(BorderFactory.createEmptyBorder(3,0,3,0));
     }

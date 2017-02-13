@@ -1,7 +1,7 @@
 package utils;
 
 import actions.UpdateAction;
-import com.android.tools.idea.gradle.AndroidGradleModel;
+
 import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
 import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencySpec;
@@ -37,13 +37,12 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.groovy.lang.psi.GroovyFile;
 
+import java.util.*;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -215,17 +214,19 @@ public class FreelineUtil {
             NotificationUtils.errorMsgDialog("It's not an Android Gradle project Currently?");
             return false;
         }
+        if (status.isExistClasspath() && status.isExistPlugin() && !status.isExistFreelineCore()) {
+            NotificationUtils.errorNotification("Execute task initFreeline and download freeline dependencies...");
+            initFreeline(project);
+            return false;
+        }
         if (DialogUtil.createDialog("Detected that you did not installFreeline Freeline, Whether installFreeline Automatically？",
                 "Install Freeline Automatically", "Cancel")) {
             Module[] modules = ModuleManager.getInstance(project).getModules();
             List<Pair<Module, PsiFile>> selectModulesList = new ArrayList<Pair<Module, PsiFile>>();
             for (Module module : modules) {
-                AndroidGradleModel model = AndroidGradleModel.get(module);
                 GradleBuildFile file = GradleBuildFile.get(module);
-                if (file != null && model != null) {
-                    if (!model.getAndroidProject().isLibrary()) {
-                        selectModulesList.add(Pair.create(module, file.getPsiFile()));
-                    }
+                if (file != null && !GradleUtil.isLibrary(file)) {
+                    selectModulesList.add(Pair.create(module, file.getPsiFile()));
                 }
             }
             // 多个app模块的情况
@@ -334,12 +335,7 @@ public class FreelineUtil {
             DocumentUtil.reformatCode(project, status.getClasspathFile());
         }
         LogUtil.d("Sync Project Finish, start download freeline.zip.");
-        GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
-            @Override
-            public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
-                super.onTaskOutput(id, text, stdOut);
-            }
-        });
+        initFreeline(project);
     }
 
     public static final Pattern PATTERN_CLASSPATH = Pattern.compile("classpath\\s+'"
@@ -355,7 +351,6 @@ public class FreelineUtil {
         try {
             if (file.exists()) {
                 String content = FileUtils.readFileToString(new File(file.getPath()));
-//                System.out.println(content);
                 Matcher matcher = PATTERN_CLASSPATH.matcher(content);
                 return matcher.find();
             }
@@ -363,5 +358,18 @@ public class FreelineUtil {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * 执行./gradlew initFreeline
+     * @param project
+     */
+    public static void initFreeline(Project project) {
+        GradleUtil.executeTask(project, "initFreeline", "-Pmirror", new ExternalSystemTaskNotificationListenerAdapter() {
+            @Override
+            public void onTaskOutput(@NotNull ExternalSystemTaskId id, @NotNull String text, boolean stdOut) {
+                super.onTaskOutput(id, text, stdOut);
+            }
+        });
     }
 }

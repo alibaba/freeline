@@ -150,4 +150,19 @@ public final class GradleUtil {
         }
         return false;
     }
+
+    /**
+     * 项目是否为library库
+     * @param file
+     * @return
+     */
+    public static boolean isLibrary(GradleBuildFile file) {
+        if (file != null) {
+            List plugins = file.getPlugins();
+            if (plugins != null && plugins.size() > 0) {
+                return plugins.contains("com.android.library") || plugins.contains("android-library");
+            }
+        }
+        return true;
+    }
 }
