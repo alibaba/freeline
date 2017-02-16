@@ -1,8 +1,8 @@
 <idea-plugin version="2">
     <id>com.apkfuns.plugin.freeline</id>
     <name>Freeline Plugin</name>
-    <version>1.1.3</version>
-    <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262、舞影凌风</vendor>
+    <version>1.1.4</version>
+    <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262, 舞影凌风</vendor>
 
     <description><![CDATA[
       android studio plugin for <a href='https://github.com/alibaba/freeline'>Freeline</a><br/><br/>
@@ -21,6 +21,11 @@
 
     <change-notes><![CDATA[
       <ul>
+      <li>
+          <b>1.1.4</b><br/>
+          Add feedback channel
+        </li>
+      <li>
       <li>
           <b>1.1.3</b><br/>
           fix V2.3 beta2-3 crash
@@ -60,25 +65,26 @@
     <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Freeline" anchor="bottom" icon="PluginIcons.FreelineIcon"
-                    factoryClass="views.FreelineToolWindowFactory" secondary="false"/>
+        <toolWindow id="Freeline" anchor="bottom" icon="/icons/icon.png"
+                    factoryClass="com.antfortune.freeline.idea.views.FreelineToolWindowFactory" secondary="false"/>
 
         <!-- Freeline Run Configuration Type define -->
-        <configurationType implementation="configuration.FreeConfigurationType"
+        <configurationType implementation="com.antfortune.freeline.idea.configuration.FreeConfigurationType"
                            id="com.antfortune.freeline.plugin.config.FreeRunType"/>
 
         <!-- Freeline project UI service -->
-        <projectService serviceImplementation="utils.FreeUIManager"
-                        serviceInterface="utils.FreeUIManager"
+        <projectService serviceImplementation="com.antfortune.freeline.idea.utils.FreeUIManager"
+                        serviceInterface="com.antfortune.freeline.idea.utils.FreeUIManager"
                         id="com.antfortune.freeline.plugin.service.FreeUIManager"/>
+
+        <applicationService serviceImplementation="com.antfortune.freeline.idea.models.FreelineConfiguration" />
 
     </extensions>
 
     <actions>
         <!-- Freeline default run action -->
-        <action id="Plugin_Freeline_Run" class="actions.FreelineRunAction"
-                text="Run Freeline" description="Run Freeline"
-                icon="PluginIcons.FreelineIcon">
+        <action id="Plugin_Freeline_Run" class="com.antfortune.freeline.idea.actions.FreelineRunAction"
+                text="Run Freeline" description="Run Freeline">
             <add-to-group group-id="ToolbarRunGroup" anchor="after" relative-to-action="RunnerActions"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift F10"/>
         </action>
@@ -90,20 +96,22 @@
 
         <!-- Freeline tools -->
         <group id="Plugin_Freeline_Tools" text="Freeline" description="Freeline" popup="true">
-            <action id="Plugin_Freeline_Run_Debug" class="actions.DebugRunAction" text="Run Freeline Debug"
-                    description="Run Freeline Debug"
-                    icon="PluginIcons.StartDebugger">
+            <action id="Plugin_Freeline_Run_Debug" class="com.antfortune.freeline.idea.actions.DebugRunAction" text="Run Freeline Debug"
+                    description="Run Freeline Debug">
             </action>
-            <separator/>
-            <action id="Plugin_Freeline_Run_Force" class="actions.ForceRunAction" text="Run Freeline Force"
-                    description="Run Freeline Force"
-                    icon="PluginIcons.QuickfixBulb">
+            <action id="Plugin_Freeline_Run_Force" class="com.antfortune.freeline.idea.actions.ForceRunAction" text="Run Freeline Force"
+                    description="Run Freeline Force">
             </action>
-            <separator/>
-            <action id="Plugin_Freeline_Run_Update" class="actions.UpdateAction" text="Check Freeline Update"
-                    description="Check Update"
-                    icon="PluginIcons.GradleSync">
+            <action id="Plugin_Freeline_Run_Update" class="com.antfortune.freeline.idea.actions.UpdateAction" text="Check Freeline Update"
+                    description="Check Update">
             </action>
+            <separator />
+            <action id="Plugin_Freeline_Crash_Reporter" class="com.antfortune.freeline.idea.actions.CrashReporterAction" text="Disable Crash Reporter"
+                    description="Disable Crash Reporter" />
+            <action id="Plugin_Freeline_Using_Report" class="com.antfortune.freeline.idea.actions.UsingReportAction" text="I'm using Freeline!"
+                    description="I'm using Freeline!" />
+            <action id="Plugin_Freeline_Feedback" class="com.antfortune.freeline.idea.actions.FeedbackAction" text="Send Feedback"
+                    description="Send Feedback" />
             <add-to-group group-id="BuildMenu" anchor="last"/>
         </group>
 
@@ -115,8 +123,8 @@
 
     <project-components>
         <component>
-            <interface-class>views.FreelineTerminal</interface-class>
-            <implementation-class>views.FreelineTerminal</implementation-class>
+            <interface-class>com.antfortune.freeline.idea.views.FreelineTerminal</interface-class>
+            <implementation-class>com.antfortune.freeline.idea.views.FreelineTerminal</implementation-class>
         </component>
     </project-components>
 
