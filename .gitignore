@@ -1,4 +1,7 @@
-/.idea
+*.iml
+.gradle
+local.properties
 .DS_Store
-.freeline_cache
-*.pyc
+build/
+captures/
+.idea/

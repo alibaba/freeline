@@ -1,0 +1,36 @@
+group 'com.antfortune.freeline'
+version '1.0.2'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.7
+
+def compilerVersion = '2.1.3'
+def cliJarName = 'databinding-cli.jar'
+
+def isBuildForJdk8 = hasProperty("jdk8")
+if (isBuildForJdk8) {
+    compilerVersion = '2.2.0'
+    cliJarName = 'databinding-cli8.jar'
+}
+
+println "build with compiler version $compilerVersion"
+println "output jar name: $cliJarName"
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile "com.android.databinding:compilerCommon:$compilerVersion"
+    compile "commons-cli:commons-cli:1.3.1"
+}
+
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.antfortune.freeline.databinding.CliMain'
+        attributes 'Manifest-Version': version
+    }
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    archiveName cliJarName
+}
