@@ -1023,7 +1023,7 @@ def get_gradle_executable(config):
     if 'use_system_gradle' in config and config['use_system_gradle']:
         return 'gradle'
     elif is_windows_system():
-        return 'gradlew'
+        return 'gradlew.bat'
     else:
         return './gradlew'
 
