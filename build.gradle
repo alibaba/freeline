@@ -8,7 +8,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.2.3'
-        classpath 'com.antfortune.freeline:gradle:0.8.5'
+        classpath 'com.antfortune.freeline:gradle:0.8.6'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'

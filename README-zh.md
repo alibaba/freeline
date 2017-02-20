@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-[![Release Version](https://img.shields.io/badge/release-0.8.5-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
+[![Release Version](https://img.shields.io/badge/release-0.8.6-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
 
 Freeline 是 Android 平台上的秒级编译方案，Instant Run 的替代品，也可以从 [Freeline 官方主页](https://www.freelinebuild.com/)来获取更多的信息。
 
@@ -51,7 +51,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.8.5'
+        classpath 'com.antfortune.freeline:gradle:0.8.6'
     }
 }
 ````
