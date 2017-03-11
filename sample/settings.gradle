@@ -1,4 +1,0 @@
-include ':app', ':common', ':resources', ':ThirdParty:share', ':ThirdParty:payment', ':pure_java'
-includeFlat 'runtime'
-include ':runtime:runtime'
-include ':runtime:runtime-no-op'

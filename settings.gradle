@@ -1,0 +1,20 @@
+// freeline sample
+include ':freeline-sample:app'
+include ':freeline-sample:common'
+include ':freeline-sample:resources'
+include ':freeline-sample:ThirdParty:share'
+include ':freeline-sample:ThirdParty:payment'
+include ':freeline-sample:PureJavaLib'
+
+// freeline runtime
+include ':freeline-runtime'
+include ':freeline-runtime-no-op'
+
+// freeline databinding-cli
+include ':freeline-databinding-cli'
+
+// freeline gradle plugin
+include ':freeline-gradle-plugin'
+
+// freeline studio plugin
+include ':freeline-studio-plugin'
