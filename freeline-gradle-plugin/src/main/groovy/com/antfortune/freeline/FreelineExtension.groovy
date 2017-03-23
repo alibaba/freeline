@@ -43,6 +43,8 @@ class FreelineExtension {
 
     boolean useSystemGradle = false
 
+    boolean forceVersionName = false
+
     FreelineExtension(Project project) {
     }
 }
