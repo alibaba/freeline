@@ -7,14 +7,17 @@ include ':freeline-sample:ThirdParty:payment'
 include ':freeline-sample:PureJavaLib'
 
 // freeline runtime
-include ':freeline-runtime'
-include ':freeline-runtime-no-op'
+include ':runtime'
+project(':runtime').projectDir = new File('freeline-runtime')
+include ':runtime-no-op'
+project(':runtime-no-op').projectDir = new File('freeline-runtime-no-op')
 
 // freeline databinding-cli
 include ':freeline-databinding-cli'
 
 // freeline gradle plugin
-include ':freeline-gradle-plugin'
+include ':gradle'
+project(':gradle').projectDir = new File('freeline-gradle-plugin')
 
 // freeline studio plugin
 include ':freeline-studio-plugin'

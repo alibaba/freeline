@@ -42,11 +42,13 @@ class FreelineAnnotationCollector {
         sAnnotationCollection.keySet().each { key ->
             sAnnotationCollection[key].each { value ->
                 if (value['isJar']) {
-                    modules.each { m, sep ->
-                        if (value['path'].contains(sep)) {
-                            value['module'] = m
-                            value['java_path'] = findJavaPath(description, m as String, value['className'] as String)
-                            return false
+                    modules.each { m, mappers ->
+                        for (String mapper : mappers) {
+                            if (value['path'].contains(mapper)) {
+                                value['module'] = m
+                                value['java_path'] = findJavaPath(description, m as String, value['className'] as String)
+                                return false
+                            }
                         }
                     }
                 } else {
