@@ -2,7 +2,7 @@
 
 ![Freeline](http://ww4.sinaimg.cn/large/006tNc79gw1f6ooza8pkuj30h804gjrk.jpg)
 
-[![Release Version](https://img.shields.io/badge/release-0.8.6-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
+[![Release Version](https://img.shields.io/badge/release-0.8.7-red.svg)](https://github.com/alibaba/freeline/releases) [![BSD3 License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://github.com/alibaba/freeline/blob/master/LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/alibaba/freeline/pulls)
 
 *Freeline* is a super fast build tool for Android and an alternative to Instant Run. Caching reusable class files and resource indices, it enables incremental building Android apps, and optionally deploying the updates to your device by hot swap.
 
@@ -57,7 +57,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.antfortune.freeline:gradle:0.8.6'
+        classpath 'com.antfortune.freeline:gradle:0.8.7'
     }
 }
 ````
