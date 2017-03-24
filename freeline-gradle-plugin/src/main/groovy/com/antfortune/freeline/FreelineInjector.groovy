@@ -15,7 +15,7 @@ import java.util.zip.ZipEntry
  */
 class FreelineInjector {
 
-    public static void inject(List<String> excludeClasses, File file, Collection<String> modules) {
+    public static void inject(List<String> excludeClasses, File file, Collection<List<String>> modules) {
         if (file.path.endsWith(".class")
                 && !isExcluded(file.path, excludeClasses)) {
             realInject(file)
@@ -28,8 +28,8 @@ class FreelineInjector {
         }
     }
 
-    public static boolean checkInjection(File file, Collection<String> modules) {
-        return (file.absolutePath.contains("intermediates" + File.separator + "exploded-aar" + File.separator)
+    public static boolean checkInjection(File file, Collection<List<String>> modules) {
+        return (file.absolutePath.contains("build" + File.separator + "intermediates" + File.separator)
                     && !file.absolutePath.contains("com.antfortune.freeline")
                     && !file.absolutePath.contains("com.android.support")
                     && isProjectModuleJar(file.absolutePath, modules))
@@ -48,10 +48,12 @@ class FreelineInjector {
         return false
     }
 
-    private static boolean isProjectModuleJar(String path, Collection<String> modules) {
-        for (String module : modules) {
-            if (path.contains(module)) {
-                return true
+    private static boolean isProjectModuleJar(String path, Collection<List<String>> modules) {
+        for (List<String> mappers : modules) {
+            for (String mapper : mappers) {
+                if (path.contains(mapper)) {
+                    return true
+                }
             }
         }
         return false

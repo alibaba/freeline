@@ -47,7 +47,7 @@ class FreelinePlugin implements Plugin<Project> {
             if (!project.plugins.hasPlugin("com.android.application")) {
                 throw new RuntimeException("Freeline plugin can only be applied for android application module.")
             }
-            
+
             project.android.applicationVariants.each { variant ->
                 def extension = project.extensions.findByName("freeline") as FreelineExtension
                 def productFlavor = extension.productFlavor
@@ -57,7 +57,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def applicationProxy = extension.applicationProxy
                 def aptEnabled = extension.aptEnabled
                 def retrolambdaEnabled = extension.retrolambdaEnabled
-                def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild");
+                def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild")
 
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
@@ -285,7 +285,11 @@ class FreelinePlugin implements Plugin<Project> {
                 def modules = [:]
                 project.rootProject.allprojects.each { pro ->
                     //modules.add("exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator)
-                    modules[pro.name] = "exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator
+                    //modules[pro.name] = "exploded-aar" + File.separator + pro.group + File.separator + pro.name + File.separator
+                    modules[pro.name] = [
+                            "exploded-aar${File.separator}${pro.group}${File.separator}${pro.name}${File.separator}",
+                            "${pro.name}${File.separator}build${File.separator}intermediates${File.separator}bundles${File.separator}"
+                    ]
                 }
 
                 if (preDexTask) {
@@ -333,6 +337,12 @@ class FreelinePlugin implements Plugin<Project> {
                     }
 
                     if (preDexTask == null) {
+                        def providedConf = project.configurations.findByName("provided")
+                        if (providedConf) {
+                            def providedJars = providedConf.asPath.split(File.pathSeparator)
+                            jarDependencies.addAll(providedJars)
+                        }
+
                         jarDependencies.addAll(addtionalJars)  // add all additional jars to final jar dependencies
                         def json = new JsonBuilder(jarDependencies).toPrettyString()
                         project.logger.info(json)
@@ -437,7 +447,10 @@ class FreelinePlugin implements Plugin<Project> {
             project.rootProject.allprojects.each { p ->
                 if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
                     def mapper = ["match" : "", "path" : []]
-                    mapper.match = "exploded-aar${File.separator}${p.group}${File.separator}${p.name}${File.separator}"
+                    mapper.match = [
+                            "exploded-aar${File.separator}${p.group}${File.separator}${p.name}${File.separator}",
+                            "${p.name}${File.separator}build${File.separator}intermediates${File.separator}bundles${File.separator}"
+                    ]
                     if (type == "resources") {
                         p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     } else if (type == "assets") {
@@ -458,14 +471,16 @@ class FreelinePlugin implements Plugin<Project> {
                 if (f.exists() && f.isDirectory()) {
                     def path = f.absolutePath
                     println "find resource path: ${path}"
-                    if (path.contains("exploded-aar")) {
+                    if (path.contains("exploded-aar") || path.contains("build-cache") || path.contains("intermediates")) {
                         def marker = false
                         mappers.each { mapper ->
-                            if (path.contains(mapper.match as String)) {
-                                mapper.path.collect(resourcesDependencies.local_resources) {it}
-                                println "add local resource: ${path}"
-                                marker = true
-                                return false
+                            mapper.match.each { matcher ->
+                                if (path.contains(matcher as String)) {
+                                    mapper.path.collect(resourcesDependencies.local_resources) {it}
+                                    println "add local resource: ${path}"
+                                    marker = true
+                                    return false
+                                }
                             }
                         }
                         if (!marker) {
