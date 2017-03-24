@@ -1,20 +1,19 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.antfortune.freeline'
-apply plugin: 'android-apt'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.2"
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
 
     defaultConfig {
         applicationId "com.antfortune.freeline.sample"
-        minSdkVersion 14
-        targetSdkVersion 24
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
         manifestPlaceholders = [
-            SUPPORT_RTL: false
+                SUPPORT_RTL: false
         ]
     }
     buildTypes {
@@ -46,7 +45,6 @@ android {
 
     productFlavors {
         normal {
-
         }
 
         develop {
@@ -56,30 +54,24 @@ android {
     useLibrary 'org.apache.http.legacy'
 }
 
-apt {
-    arguments {
-        androidManifestFile variant.outputs[0]?.processResources?.manifestFile
-        resourcePackageName "com.antfortune.freeline.sample"
-    }
-}
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:24.2.0'
+    compile deps.appcompatV7
+
     compile project(":freeline-sample:common")
     compile project(":freeline-sample:PureJavaLib")
     compile project(":freeline-sample:ThirdParty:share")
     compile project(":freeline-sample:ThirdParty:payment")
 
-    debugCompile project(":freeline-runtime")
-    releaseCompile project(":freeline-runtime-no-op")
-    testCompile project(":freeline-runtime-no-op")
-    monkeyCompile project(":freeline-runtime-no-op")
+    debugCompile deps.freelineRuntime
+    releaseCompile deps.freelineRuntimeNoOp
+    testCompile deps.freelineRuntimeNoOp
+    monkeyCompile deps.freelineRuntimeNoOp
 
     compile 'com.jakewharton:butterknife:8.4.0'
-    apt 'com.jakewharton:butterknife-compiler:8.4.0'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
 
-    apt "org.androidannotations:androidannotations:4.1.0"
     compile "org.androidannotations:androidannotations-api:4.1.0"
+    annotationProcessor "org.androidannotations:androidannotations:4.1.0"
 }

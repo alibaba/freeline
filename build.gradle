@@ -7,11 +7,10 @@ buildscript {
         maven { url 'http://dl.bintray.com/jetbrains/intellij-plugin-service' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.3'
-        classpath 'com.antfortune.freeline:gradle:0.8.6'
+        classpath 'com.android.tools.build:gradle:2.3.0'
+        classpath 'com.antfortune.freeline:gradle:1.0.0-SNAPSHOT'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
-        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'me.tatarka:gradle-retrolambda:3.2.5'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -27,3 +26,26 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+def supportLibVersion = '25.1.1'
+
+ext {
+    freelineDevVersion = '0.8.6-SNAPSHOT'
+    freelineReleaseVersion = '0.8.6'
+    minSdkVersion = 14
+    targetSdkVersion = 25
+    compileSdkVersion = 25
+    buildToolsVersion = '25.0.2'
+}
+
+def deps = [
+        appcompatV7: "com.android.support:appcompat-v7:$supportLibVersion",
+        supportV4: "com.android.support:support-v4:$supportLibVersion",
+        recyclerview: "com.android.support:recyclerview-v7:$supportLibVersion",
+        design: "com.android.support:design:$supportLibVersion",
+
+        freelineRuntime: "com.antfortune.freeline:runtime:$freelineReleaseVersion",
+        freelineRuntimeNoOp: "com.antfortune.freeline:runtime-no-op:$freelineReleaseVersion"
+]
+
+ext.deps = deps
