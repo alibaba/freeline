@@ -57,6 +57,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def applicationProxy = extension.applicationProxy
                 def aptEnabled = extension.aptEnabled
                 def retrolambdaEnabled = extension.retrolambdaEnabled
+                def forceVersionName = extension.forceVersionName
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild")
 
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
@@ -71,6 +72,10 @@ class FreelinePlugin implements Plugin<Project> {
 
                 if (!freelineBuild) {
                     return
+                }
+
+                if (forceVersionName) {
+                    variant.mergedFlavor.versionName = "FREELINE"
                 }
 
                 if (isProguardEnable(project, variant)) {
