@@ -41,9 +41,9 @@ See the following table for changes support.
 
 || Java | drawable, layout, etc. | res/values | native so|
 |:-----:|:----:|:----:|:----:|:----:|
-| add    | √    | √    |√ |   √   |     
-| change    | √    |  √   |√ |   √   | 
-| remove   | √    |   √  |x|   -   | 
+| add | √ | √ | √ | √ |     
+| change | √ | √ | √ | √ | 
+| remove | √ | √ | x | - | 
 
 
 Freeline has been tested with API versions 17, 19, 22, 23 on the android emulators, a Nexus 6p running marshmallow and a smartisan running Kitkat. Incremental resource patch would be much faster if the android device is running Lolipop or above.
