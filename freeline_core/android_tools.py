@@ -186,7 +186,7 @@ class UpdateStatTask(Task):
                                 stat_cache_md5[fpath] = get_md5(fpath)
 
                             stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
-                            stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
+                            stat_cache[module][fpath]['md5'] = get_md5(fpath)
 
         write_json_cache(cache_path, stat_cache)
         write_json_cache(cache_path_md5, stat_cache_md5)
