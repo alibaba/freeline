@@ -180,12 +180,12 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             stat['mtime'] = mtime
             self._stat_cache[module_name][fpath] = stat
 
-        md5 = get_md5(fpath)
-        if md5 != stat['md5']:
-            self.debug('find {} has modification.'.format(fpath))
-            stat['md5'] = md5
-            self._stat_cache[module_name][fpath] = stat
-            return True
+            md5 = get_md5(fpath)
+            if md5 != stat['md5']:
+                self.debug('find {} has modification.'.format(fpath))
+                stat['md5'] = md5
+                self._stat_cache[module_name][fpath] = stat
+                return True
         return False
 
 
