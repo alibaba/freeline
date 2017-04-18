@@ -169,6 +169,8 @@ class UpdateStatTask(Task):
     def execute(self):
         cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
         stat_cache = load_json_cache(cache_path)
+        cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
+        stat_cache_md5 = load_json_cache(cache_path_md5)
 
         for module, file_dict in self._changed_files.iteritems():
             for key, files in file_dict.iteritems():
@@ -180,10 +182,14 @@ class UpdateStatTask(Task):
                             if fpath not in stat_cache[module]:
                                 stat_cache[module][fpath] = {}
 
+                            if fpath in stat_cache_md5:
+                                stat_cache_md5[fpath] = get_md5(fpath)
+
                             stat_cache[module][fpath]['mtime'] = os.path.getmtime(fpath)
-                            stat_cache[module][fpath]['md5'] = get_md5(fpath)
+                            stat_cache[module][fpath]['size'] = os.path.getsize(fpath)
 
         write_json_cache(cache_path, stat_cache)
+        write_json_cache(cache_path_md5, stat_cache_md5)
 
 
 class DirectoryFinder(object):
@@ -760,6 +766,30 @@ def is_res_sub_dir(dir_name):
 def get_incremental_dex_path(cache_dir):
     return os.path.join(get_incremental_dex_dir(cache_dir), 'merged.dex')
 
+# 获取dex增量更新备份路径
+def get_backup_merged_dex_path(cache_dir):
+    return os.path.join(get_backup_inc_path_dir(cache_dir), 'merged_backup.dex')
+
+# 获取增量更新备份目录
+def get_backup_inc_path_dir(cache_dir):
+    dir_path = os.path.join(cache_dir, 'freeline-inc')
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    return dir_path
+
+# 获取res增量更新备份路径
+def get_backup_res_pack_dir(cache_dir):
+    dir_path = os.path.join(get_backup_inc_path_dir(cache_dir), 'res-pack')
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    return dir_path
+
+# 获取native增量更新备份路径
+def get_backup_native_dir(cache_dir):
+    dir_path = os.path.join(get_backup_inc_path_dir(cache_dir), 'native')
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+    return dir_path
 
 def get_incremental_dex_dir(cache_dir):
     dir_path = os.path.join(cache_dir, 'freeline-dexes')

@@ -1,12 +1,16 @@
 # -*- coding:utf8 -*-
 import os
 import re
+import json
+import time
+import zipfile
 
 import android_tools
-from utils import get_file_content
+from android_tools import InstallApkTask
+from utils import get_file_content, copy, delete_file
 from freeline_build import ScanChangedFilesCommand, DispatchPolicy
 from logger import Logger
-from sync_client import SyncClient
+from sync_client import SyncClient, get_last_sync_ticket, get_apk_created_ticket
 from exceptions import FreelineException, FileMissedException
 from utils import curl, write_json_cache, load_json_cache, cexec, md5string, remove_namespace, get_md5, is_windows_system
 from task import Task
@@ -25,15 +29,18 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         self._changed_files = {}
         self.project_info = None
         self._stat_cache = None
+        self._stat_cache_md5 = None
         self._finder = GradleDirectoryFinder(self._config['main_project_name'], self._config['main_project_dir'],
                                              self._config['build_cache_dir'])
 
     def execute(self):
         cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
+        cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
         if not os.path.exists(cache_path):
             raise FileMissedException('{} not found.'.format(cache_path), '     re-run clean build.')
 
         self._stat_cache = load_json_cache(cache_path)
+        self._stat_cache_md5 = load_json_cache(cache_path_md5)
 
         project_info_cache_path = os.path.join(self._config['build_cache_dir'], 'project_info_cache.json')
         if os.path.exists(project_info_cache_path):
@@ -42,7 +49,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             self.project_info = get_project_info(self._config)
             write_json_cache(project_info_cache_path, self.project_info)
 
-        build_info = self._get_build_info()
+        build_info = self._get_build_info(self._stat_cache_md5)
 
         for module_name, module_info in self.project_info.iteritems():
             if module_name in self._stat_cache:
@@ -52,7 +59,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
         self._mark_changed_flag()
 
-        return {'projects': self._changed_files, 'build_info': build_info}
+        return {'projects': self._changed_files, 'build_info': build_info, 'stat_md5': self._stat_cache_md5}
 
     def _mark_changed_flag(self):
         info = self._changed_files.values()
@@ -63,28 +70,23 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             if not android_tools.is_res_changed(cache_dir) and len(bundle['res']) > 0:
                 android_tools.mark_res_changed(cache_dir)
 
-    def _get_build_info(self):
+    def _get_build_info(self, stat_cache_md5):
         final_apk_path = self._config['apk_path']
         last_clean_build_time = os.path.getmtime(final_apk_path) if os.path.exists(final_apk_path) else 0
         root_config_path = os.path.join(os.getcwd(), 'build.gradle')
 
-        is_root_config_changed = False
-        if os.path.getmtime(root_config_path) > last_clean_build_time:
-            md5 = get_md5(root_config_path)
-            if root_config_path not in self._stat_cache:
-                is_root_config_changed = True
-            elif self._stat_cache[root_config_path]['md5'] != md5:
-                is_root_config_changed = True
+        is_root_config_changed = os.path.getmtime(root_config_path) > last_clean_build_time
+        if is_root_config_changed and root_config_path in stat_cache_md5 and not self.__check_changes_by_md5(
+                root_config_path):
+            is_root_config_changed = False
 
         if not is_root_config_changed:
             settings_path = os.path.join(os.getcwd(), 'settings.gradle')
             if os.path.exists(settings_path):
-                if os.path.getmtime(settings_path) > last_clean_build_time:
-                    md5 = get_md5(settings_path)
-                    if settings_path not in self._stat_cache:
-                        is_root_config_changed = True
-                    elif self._stat_cache[settings_path]['md5'] != md5:
-                        is_root_config_changed = True
+                is_root_config_changed = os.path.getmtime(settings_path) > last_clean_build_time
+                if is_root_config_changed and settings_path in stat_cache_md5 and not self.__check_changes_by_md5(
+                        settings_path):
+                    is_root_config_changed = False
 
         return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
 
@@ -93,7 +95,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
         # scan bulid.gradle
         config_path = os.path.join(module_path, 'build.gradle')
-        if self.__check_changes(module_name, config_path, module_cache):
+        if self.__check_changes(module_name, config_path, module_cache, should_check_size=False, should_check_md5=True):
             self._changed_files[module_name]['config'].append(config_path)
 
         # scan libs dirs
@@ -111,7 +113,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         if module_name in self._config['project_source_sets']:
             # scan manifest
             manifest = self._config['project_source_sets'][module_name]['main_manifest_path']
-            if self.__check_changes(module_name, manifest, module_cache):
+            if self.__check_changes(module_name, manifest, module_cache, should_check_size=False,
+                                    should_check_md5=True):
                 self._changed_files[module_name]['manifest'].append(manifest)
 
             # scan native so
@@ -147,7 +150,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if '.DS_Store' in fn:
                                     continue
                                 fpath = os.path.join(sub_dir_path, fn)
-                                if self.__check_changes(module_name, fpath, module_cache):
+                                if self.__check_changes(module_name, fpath, module_cache, should_check_size=True):
                                     self._changed_files[module_name]['res'].append(fpath)
 
             # scan src
@@ -165,7 +168,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if self.__check_changes(module_name, fpath, module_cache):
                                     self._changed_files[module_name]['src'].append(fpath)
 
-    def __check_changes(self, module_name, fpath, module_cache):
+    def __check_changes(self, module_name, fpath, module_cache, should_check_size=False, should_check_md5=False):
         if not fpath:
             return False
 
@@ -180,13 +183,28 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             stat['mtime'] = mtime
             self._stat_cache[module_name][fpath] = stat
 
-            md5 = get_md5(fpath)
-            if md5 != stat['md5']:
+            # md5 checker
+            if should_check_md5:
+                md5_modified = self.__check_changes_by_md5(fpath)
+                if not md5_modified:
+                    self.debug('but {} has no content modification (by md5)'.format(fpath))
+                return md5_modified
+
+            return True
+
+        if should_check_size:
+            size = os.path.getsize(fpath)
+            if size != stat['size']:
                 self.debug('find {} has modification.'.format(fpath))
-                stat['md5'] = md5
+                stat['size'] = size
                 self._stat_cache[module_name][fpath] = stat
                 return True
         return False
+
+    def __check_changes_by_md5(self, fpath):
+        if fpath in self._stat_cache_md5 and get_md5(fpath) == self._stat_cache_md5[fpath]:
+            return False
+        return True
 
 
 class GenerateFileStatTask(Task):
@@ -196,7 +214,9 @@ class GenerateFileStatTask(Task):
         self._config = config
         self._is_append = is_append
         self._stat_cache = {}
+        self._stat_cache_md5 = {}
         self._cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
+        self._cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
 
     def execute(self):
         if self._is_append:  # reload config while append mode
@@ -204,6 +224,7 @@ class GenerateFileStatTask(Task):
             from dispatcher import read_freeline_config
             self._config = read_freeline_config()
             self._stat_cache = load_json_cache(self._cache_path)
+            self._stat_cache_md5 = load_json_cache(self._cache_path_md5)
 
         if 'modules' in self._config:
             all_modules = self._config['modules']
@@ -228,6 +249,7 @@ class GenerateFileStatTask(Task):
         else:
             self._fill_cache_map(all_modules)
             self._save_cache()
+        self._save_cache_md5()
 
     def _fill_cache_map(self, all_modules):
         for module in all_modules:
@@ -235,18 +257,18 @@ class GenerateFileStatTask(Task):
             self._stat_cache[module['name']] = {}
             self._save_module_stat(module['name'], module['path'])
 
-        root_config_path = os.path.join(os.getcwd(), 'build.gradle')
-        md5 = get_md5(root_config_path)
-        self._stat_cache[root_config_path] = {'md5': md5}
-
-        settings_path = os.path.join(os.getcwd(), 'settings.gradle')
-        md5 = get_md5(settings_path)
-        self._stat_cache[settings_path] = {'md5': md5}
-
     def _save_cache(self):
         if os.path.exists(self._cache_path):
             os.remove(self._cache_path)
         write_json_cache(self._cache_path, self._stat_cache)
+
+    def _save_cache_md5(self):
+        if os.path.exists(self._cache_path_md5):
+            os.remove(self._cache_path_md5)
+        if 'check_sources_md5' in self._config and self._config['check_sources_md5'] is not None:
+            for fpath in self._config['check_sources_md5']:
+                self._stat_cache_md5[fpath] = get_md5(fpath)
+        write_json_cache(self._cache_path_md5, self._stat_cache_md5)
 
     def _save_module_stat(self, module_name, module_path):
         # scan bulid.gradle
@@ -309,7 +331,7 @@ class GenerateFileStatTask(Task):
 
     def __save_stat(self, module, fpath):
         if fpath is not None and os.path.exists(fpath):
-            self._stat_cache[module][fpath] = {'mtime': os.path.getmtime(fpath), 'md5': get_md5(fpath)}
+            self._stat_cache[module][fpath] = {'mtime': os.path.getmtime(fpath), 'size': os.path.getsize(fpath)}
 
 
 class GradleDispatchPolicy(DispatchPolicy):
@@ -442,6 +464,224 @@ class GradleMergeDexTask(android_tools.MergeDexTask):
         android_tools.MergeDexTask.__init__(self, cache_dir, all_modules)
         self._all_modules = [project_info[module]['name'] for module in self._all_modules]
 
+'''
+备份每一次增量打包的产物,方便更换手机时进行推送,不用重新打包
+'''
+class GradleBackupIncProductTask(Task):
+    def __init__(self, config, cache_dir, modules, project_info):
+        Task.__init__(self, 'gradle_backup_inc_product_task')
+        self._config = config
+        self._cache_dir = cache_dir
+        self._all_modules = modules
+        self._project_info = project_info
+
+    def execute(self):
+        merge_dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
+        if os.path.exists(merge_dex_path):
+            backup_merged_dex_path = android_tools.get_backup_merged_dex_path(self._cache_dir)
+            copy(merge_dex_path, backup_merged_dex_path)
+
+        last_syncid = str(get_last_sync_ticket(self._cache_dir))
+        native_path = get_sync_native_file_path(self._cache_dir)
+        if os.path.exists(native_path):
+            backup_native_dir = android_tools.get_backup_native_dir(self._cache_dir)
+            backup_native_path = os.path.join(backup_native_dir, "native_" + last_syncid + ".zip")
+            copy(native_path, backup_native_path)
+
+        backup_res_pack_dir = android_tools.get_backup_res_pack_dir(self._cache_dir)
+
+
+        for module in self._all_modules:
+            finder = GradleDirectoryFinder(module, self._project_info[module]['path'], self._cache_dir)
+            fpath = finder.get_dst_res_pack_path(module)
+            sync_status = finder.get_sync_file_path()
+
+            if not os.path.exists(sync_status) or not os.path.exists(fpath):
+                continue
+
+            backup_res_pack_path = os.path.join(backup_res_pack_dir, module + "_" + last_syncid + ".pack")
+            copy(fpath, backup_res_pack_path)
+
+'''
+检测手机里面是否安装了对应的包,没用安装就安装上一次的基准包
+'''
+class GradleCheckMobileChangeTask(Task):
+    def __init__(self, client, cache_dir, config):
+        Task.__init__(self, 'gradle_check_mobile_change_task')
+        self._client = client
+        self._cache_dir = cache_dir
+        self._config = config
+        self._adb = Builder.get_adb(self._config)
+
+    def execute(self):
+        try:
+            had_install = self._client.check_installation()
+            if not had_install:
+                self.install_apk()
+                usetimes = 0
+                command = [self._adb, 'shell', 'ps', '|', 'grep', self._config['debug_package']+":freeline"]
+                self.debug(command)
+                while usetimes < 10:
+                    output, err, code = cexec(command, callback=None)
+                    result = re.findall((self._config['debug_package']+":freeline").replace('.', '\.'), output)
+                    if len(result) == 1:
+                        break
+                    time.sleep(10)
+                    usetimes = usetimes + 1
+                time.sleep(10)
+                last_sync_ticket = get_last_sync_ticket(self._cache_dir)
+                apktime = get_apk_created_ticket(android_tools.get_apktime_path(self._config))
+                self._client.scan_to_get_port(apktime+last_sync_ticket, apktime)
+        except FreelineException as e:
+            raise e
+        except Exception:
+            import traceback
+            raise FreelineException('install apk to device failed.', traceback.format_exc())
+
+    def install_apk(self):
+        install_task = InstallApkTask(self._adb, self._config)
+        install_task.execute()
+
+'''
+推送基准校验缺失的增量包
+'''
+class GradlePushHistoryIncTask(Task):
+    def __init__(self, client, cache_dir, config):
+        Task.__init__(self, 'gradle_push_history_inc_task')
+        self._client = client
+        self._cache_dir = cache_dir
+        self._config = config
+        self._adb = Builder.get_adb(self._config)
+
+    def execute(self):
+        try:
+            last_sync_ticket = get_last_sync_ticket(self._cache_dir)
+            apktime = get_apk_created_ticket(android_tools.get_apktime_path(self._config))
+
+            client_apktime, client_sync_ticket = self._client.get_sync_ticket()
+            self.debug("client_apktime:{},client_sync_ticket:{},apktime:{},last_sync_ticket{}".format(
+                client_apktime, client_sync_ticket, apktime, last_sync_ticket))
+
+            self.push_inc_product(client_sync_ticket, last_sync_ticket)
+        except FreelineException as e:
+            raise e
+        except Exception:
+            import traceback
+            raise FreelineException('get sync ticket failed', traceback.format_exc())
+
+    def push_inc_product(self, client_sync_ticket, last_sync_ticket):
+        if client_sync_ticket < last_sync_ticket:
+            self.push_history_res(client_sync_ticket)
+            self.push_history_dex()
+            self.push_history_native(client_sync_ticket)
+            self._client.sync_state(True)
+
+    # 推送历史增量res
+    def push_history_res(self, client_sync_ticket):
+        backup_inc_res_dir = android_tools.get_backup_res_pack_dir(self._cache_dir)
+        need_push_filesname = {}
+        need_push_ids = []
+        for parent, dirnames, filenames in os.walk(backup_inc_res_dir):
+            for filename in filenames:
+                syncid = int(filename.split('_')[-1].split('.')[0])
+                if syncid <= client_sync_ticket:
+                    continue
+                need_push_ids.append(syncid)
+                if need_push_filesname.has_key(syncid):
+                    need_push_filesname[syncid].append(filename)
+                else:
+                    need_push_filesname[syncid] = [filename]
+
+        need_push_ids = sorted(need_push_ids)
+
+        can_sync_inc_res = False
+        for i in need_push_ids:
+            for filename in need_push_filesname[i]:
+                self.debug(filename)
+                file_path = os.path.join(parent, filename)
+                mode = 'increment' if self._client._is_art else 'full'
+
+                if not can_sync_inc_res and self._client._is_art:
+                    self._client.check_base_res_exist()
+                    self._client.push_full_res_pack()
+                    can_sync_inc_res = True
+
+                self.debug('start to sync {} incremental res pack...'.format(filename))
+                self.debug('{} pack size: {}kb'.format(filename, os.path.getsize(file_path) / 1000))
+                with open(file_path, 'rb') as fp:
+                    url = 'http://127.0.0.1:{}/pushResource?mode={}&bundleId={}'.format(self._client._port, mode, 'base-res')
+                    self.debug('pushres: ' + url)
+                    result, err, code = curl(url, body=fp.read())
+                    if code != 0:
+                        raise FreelineException('sync incremental respack failed', err.message)
+
+                    self.debug('sync {} incremental res pack finished'.format(filename))
+
+    # 推送历史增量native
+    def push_history_native(self, client_sync_ticket):
+        backup_inc_native_dir = android_tools.get_backup_native_dir(self._cache_dir)
+        need_push_filesname = {}
+        need_push_ids = []
+        for parent, dirnames, filenames in os.walk(backup_inc_native_dir):
+            for filename in filenames:
+                if filename.find('_') != -1:
+                    syncid = int(filename.split('_')[-1].split('.')[0])
+                    if syncid <= client_sync_ticket:
+                        continue
+                    need_push_ids.append(syncid)
+                    need_push_filesname[syncid] = filename
+
+        need_push_ids = sorted(need_push_ids)
+
+        merge_zip_path = self.merge_native_zip(backup_inc_native_dir, need_push_ids, need_push_filesname)
+
+        self.debug('start to sync native file...')
+        with open(merge_zip_path, "rb") as fp:
+            url = "http://127.0.0.1:{}/pushNative?restart".format(self._client._port)
+            self.debug("pushNative: "+url)
+            result, err, code = curl(url, body=fp.read())
+            self.debug("code: {}".format(code))
+
+
+    # 把多个增量包里面的so文件进行合并
+    def merge_native_zip(self, backup_inc_native_dir, need_push_ids, need_push_filesname):
+        native_zip_path = get_sync_native_file_path(self._cache_dir)
+        native_zip_filename = os.path.basename(native_zip_path)
+        native_zip_path = os.path.join(backup_inc_native_dir, native_zip_filename)
+
+        temp_dir = os.path.join(backup_inc_native_dir, "temp")
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
+        for id in need_push_ids:
+            zip_filename = os.path.join(backup_inc_native_dir, need_push_filesname[id])
+            f = zipfile.ZipFile(zip_filename)
+            f.extractall(temp_dir)
+            f.close()
+
+        f = zipfile.ZipFile(native_zip_path, 'w', zipfile.ZIP_DEFLATED)
+        for parent, dirnames, filenames in os.walk(temp_dir):
+            for filename in filenames:
+                f.write(os.path.join(parent, filename))
+        f.close
+        delete_file(temp_dir)
+        return native_zip_path
+
+    # 推送历史增量dex
+    def push_history_dex(self):
+        history_merged_dex_path = android_tools.get_backup_merged_dex_path(self._cache_dir)
+        dex_name = os.path.basename(history_merged_dex_path)
+        if os.path.exists(history_merged_dex_path):
+            self.debug('start to sync incremental dex...')
+            with open(history_merged_dex_path, 'rb') as fp:
+                url = 'http://127.0.0.1:{}/pushDex?dexName={}'.format(self._client._port, dex_name.replace('_backup.dex', ''))
+                self.debug('pushdex: ' + url)
+                result, err, code = curl(url, body=fp.read())
+                if code != 0:
+                    from exceptions import FreelineException
+                    raise FreelineException('sync incremental dex failed.', err.message)
+        else:
+            self.debug('no incremental dexes in {}'.format(history_merged_dex_path))
 
 class GradleSyncTask(android_tools.SyncTask):
     def __init__(self, client, cache_dir):
@@ -512,6 +752,18 @@ class GradleSyncClient(SyncClient):
                 # if code != 0:
                 #     from exceptions import FreelineException
                 #     raise FreelineException("sync native dex failed.",err.message)
+
+    def get_sync_ticket(self):
+        url = 'http://127.0.0.1:{}/getSyncTicket'.format(self._port)
+        self.debug("url=============" + str(url))
+        result, err, code = curl(url)
+        if code != 0:
+            raise FreelineException('get sync ticket failed', err.message)
+        result = result.replace("'", '"')
+        result = json.loads(result)
+        if result["apkBuildFlag"] and result["lastSync"]:
+            return result["apkBuildFlag"], result["lastSync"] - result["apkBuildFlag"]
+        return 0, 0
 
     def sync_incremental_res(self):
         mode = 'increment' if self._is_art else 'full'
@@ -740,8 +992,8 @@ class BuildBaseResourceTask(Task):
         aapt_args.append(base_resource_path)
         aapt_args.append('--debug-mode')
         aapt_args.append('--no-version-vectors')
-        aapt_args.append('--resoucres-md5-cache-path')
-        aapt_args.append(os.path.join(self._config['build_cache_dir'], "arsc_cache.dat"))
+        #aapt_args.append('--resoucres-md5-cache-path')
+        #aapt_args.append(os.path.join(self._config['build_cache_dir'], "arsc_cache.dat"))
         aapt_args.append('--ignore-assets')
         aapt_args.append('public_id.xml:public.xml:*.bak:.*')
 

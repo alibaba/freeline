@@ -69,6 +69,15 @@ def copy(src, dst):
         else:
             print('Directory not copied. Error: {}'.format(e.message))
 
+def delete_file(dst):
+    try:
+        if os.path.isfile(dst):
+            os.remove(dst)
+        else:
+            shutil.rmtree(dst)
+    except Exception as e:
+        print('remove file failed. Error: {}'.format(e.message))
+
 
 def get_md5(fpath):
     m = md5()

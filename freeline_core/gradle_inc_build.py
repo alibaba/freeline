@@ -9,7 +9,7 @@ from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncD
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
-    DatabindingDirectoryLookUp
+    DatabindingDirectoryLookUp, GradleBackupIncProductTask, GradleCheckMobileChangeTask, GradlePushHistoryIncTask
 from task import find_root_tasks, find_last_tasks, Task
 from utils import get_file_content, write_file_content, is_windows_system, cexec, load_json_cache, get_md5, \
     write_json_cache
@@ -127,10 +127,20 @@ class GradleIncBuilder(IncrementalBuilder):
         sync_task = GradleSyncTask(sync_client, self._config['build_cache_dir'])
         update_stat_task = android_tools.UpdateStatTask(self._config, self._changed_files['projects'])
 
+        backup_inc_product_task = GradleBackupIncProductTask(self._config, self._config["build_cache_dir"],
+                                                        self._all_modules, self._project_info)
+        check_mobile_change_task = GradleCheckMobileChangeTask(sync_client, self._config["build_cache_dir"],
+                                                          self._config)
+        push_inc_product_task = GradlePushHistoryIncTask(sync_client, self._config["build_cache_dir"],
+                                                         self._config)
+
         map(lambda task: task.add_child_task(merge_dex_task), last_tasks)
-        connect_task.add_child_task(sync_task)
+        connect_task.add_child_task(check_mobile_change_task)
+        check_mobile_change_task.add_child_task(push_inc_product_task)
+        push_inc_product_task.add_child_task(sync_task)
         merge_dex_task.add_child_task(sync_task)
-        sync_task.add_child_task(clean_cache_task)
+        sync_task.add_child_task(backup_inc_product_task)
+        backup_inc_product_task.add_child_task(clean_cache_task)
         clean_cache_task.add_child_task(update_stat_task)
 
         # self._task_engine.add_root_task(find_root_tasks(task_list))
