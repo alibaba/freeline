@@ -4,6 +4,7 @@ import os
 import re
 import time
 import datetime
+import json
 
 import android_tools
 from builder import Builder
@@ -52,15 +53,12 @@ class SyncClient(object):
 
     def check_installation(self):
         commands = [self._adb, 'shell', 'pm', 'list', 'packages', self._config['debug_package']]
+        self.debug(commands)
         output, err, code = cexec(commands, callback=None)
-        result = re.findall(self._config['debug_package'].replace('.', '\.') + '\s+\Z', output)
-        if len(result) != 1:
-            self.debug('No package named {} been installed to your device'.format(self._config['package']))
-            from exceptions import NoInstallationException
-            raise NoInstallationException(
-                'No package named {} been installed to your device'.format(self._config['debug_package']),
-                '\tUse `adb shell pm list packages {}` to check app installation.'.format(
-                    self._config['debug_package']))
+        result = re.findall(self._config['debug_package'].replace('.', '\.') + '\s', output)
+        if len(result) == 1:
+            return True
+        return False
 
     def ensure_device_status(self):
         if not self._check_screen_status():
@@ -69,7 +67,18 @@ class SyncClient(object):
 
     def connect_device(self):
         self.debug('start to connect device...')
+        if not self.check_installation():
+            return
         sync_value, uuid = self._get_check_values()
+        self.scan_to_get_port(sync_value, uuid)
+
+        if self._port == 0:
+            self.check_device_connection()
+            commands = [self._adb, 'uninstall', self._config['debug_package']]
+            cexec(commands, callback=None)
+        self.debug('find device port: {}'.format(self._port))
+
+    def scan_to_get_port(self, sync_value, uuid):
         self._port = self.scan_device_port(sync_value, uuid)
 
         if self._port == 0:
@@ -82,16 +91,6 @@ class SyncClient(object):
                 time.sleep(0.2)
                 self.debug('try to connect device {} times...'.format(i))
 
-        if self._port == 0:
-            self.check_device_connection()
-            self.check_installation()
-            message = 'Freeline server in app {} not found. Please make sure your application is properly running in ' \
-                      'your device.'.format(self._config['debug_package'])
-            self.debug(message)
-            from exceptions import NoDeviceFoundException
-            raise NoDeviceFoundException(message, NO_DEVICE_FOUND_MESSAGE)
-        self.debug('find device port: {}'.format(self._port))
-
     def close_connection(self):
         if self._port != 0:
             cexec([self._adb, 'forward', '--remove', 'tcp:{}'.format(self._port)], callback=None)
@@ -102,21 +101,18 @@ class SyncClient(object):
         for i in range(0, 10):
             cexec([self._adb, 'forward', 'tcp:{}'.format(PORT_START + i), 'tcp:{}'.format(PORT_START + i)],
                   callback=None)
-            url = 'http://127.0.0.1:{}/checkSync?sync={}&uuid={}'.format(PORT_START + i, sync_value, uuid)
+            url = 'http://127.0.0.1:{}/getSyncTicket'.format(PORT_START + i)
+            self.debug('url===='+url)
             result, err, code = curl(url)
             if code == 0 and result is not None:
-                result = int(result)
-                self.debug('server result is {}'.format(result))
-                if result == 0:
-                    self.debug('check sync value failed, maybe you need a clean build.')
-                    from exceptions import CheckSyncStateException
-                    raise CheckSyncStateException('check sync value failed, maybe you need a clean build.',
-                                                  'NO CAUSE')
-                elif result == -1:
-                    continue
-                else:
-                    port = PORT_START + i
-                    break
+                try:
+                    result = json.loads(result.replace("'", '"'))
+                    self.debug(result)
+                    if result["apkBuildFlag"] == uuid:
+                        port = PORT_START + i
+                        break
+                except Exception, e:
+                    pass
 
         for i in range(0, 10):
             if (PORT_START + i) != port:
@@ -160,7 +156,7 @@ class SyncClient(object):
                 self.debug('no incremental dexes in {}'.format(dex_dir))
 
     def sync_state(self, is_need_restart):
-        if self._is_need_sync_dex() or self._is_need_sync_res() or self._is_need_sync_native():
+        if self._is_need_sync_dex() or self._is_need_sync_res() or self._is_need_sync_native() or is_need_restart:
             self.debug('start to sync close longlink...')
             restart_char = 'restart' if is_need_restart else 'no'
             if self._is_need_sync_native():

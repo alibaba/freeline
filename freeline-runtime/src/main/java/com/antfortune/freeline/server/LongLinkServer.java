@@ -14,6 +14,7 @@ import com.antfortune.freeline.router.schema.PushFullResourcePackSchema;
 import com.antfortune.freeline.router.schema.PushNativeSchema;
 import com.antfortune.freeline.router.schema.PushResourceSchema;
 import com.antfortune.freeline.router.schema.RestartSchema;
+import com.antfortune.freeline.router.schema.GetSyncTicketSchema;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -172,6 +173,7 @@ public class LongLinkServer extends EmbedHttpServer {
         sRouter.registerSchema(new PushResourceSchema());
         sRouter.registerSchema(new RestartSchema());
         sRouter.registerSchema(new PushNativeSchema());
+        sRouter.registerSchema(new GetSyncTicketSchema());
     }
 
 }
