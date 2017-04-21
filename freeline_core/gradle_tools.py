@@ -29,18 +29,15 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         self._changed_files = {}
         self.project_info = None
         self._stat_cache = None
-        self._stat_cache_md5 = None
         self._finder = GradleDirectoryFinder(self._config['main_project_name'], self._config['main_project_dir'],
                                              self._config['build_cache_dir'])
 
     def execute(self):
         cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
-        cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
         if not os.path.exists(cache_path):
             raise FileMissedException('{} not found.'.format(cache_path), '     re-run clean build.')
 
         self._stat_cache = load_json_cache(cache_path)
-        self._stat_cache_md5 = load_json_cache(cache_path_md5)
 
         project_info_cache_path = os.path.join(self._config['build_cache_dir'], 'project_info_cache.json')
         if os.path.exists(project_info_cache_path):
@@ -49,7 +46,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             self.project_info = get_project_info(self._config)
             write_json_cache(project_info_cache_path, self.project_info)
 
-        build_info = self._get_build_info(self._stat_cache_md5)
+        build_info = self._get_build_info()
 
         for module_name, module_info in self.project_info.iteritems():
             if module_name in self._stat_cache:
@@ -59,7 +56,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
         self._mark_changed_flag()
 
-        return {'projects': self._changed_files, 'build_info': build_info, 'stat_md5': self._stat_cache_md5}
+        return {'projects': self._changed_files, 'build_info': build_info}
 
     def _mark_changed_flag(self):
         info = self._changed_files.values()
@@ -70,23 +67,28 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             if not android_tools.is_res_changed(cache_dir) and len(bundle['res']) > 0:
                 android_tools.mark_res_changed(cache_dir)
 
-    def _get_build_info(self, stat_cache_md5):
+    def _get_build_info(self):
         final_apk_path = self._config['apk_path']
         last_clean_build_time = os.path.getmtime(final_apk_path) if os.path.exists(final_apk_path) else 0
         root_config_path = os.path.join(os.getcwd(), 'build.gradle')
 
-        is_root_config_changed = os.path.getmtime(root_config_path) > last_clean_build_time
-        if is_root_config_changed and root_config_path in stat_cache_md5 and not self.__check_changes_by_md5(
-                root_config_path):
-            is_root_config_changed = False
+        is_root_config_changed = False
+        if os.path.getmtime(root_config_path) > last_clean_build_time:
+            md5 = get_md5(root_config_path)
+            if root_config_path not in self._stat_cache:
+                is_root_config_changed = True
+            elif self._stat_cache[root_config_path]['md5'] != md5:
+                is_root_config_changed = True
 
         if not is_root_config_changed:
             settings_path = os.path.join(os.getcwd(), 'settings.gradle')
             if os.path.exists(settings_path):
-                is_root_config_changed = os.path.getmtime(settings_path) > last_clean_build_time
-                if is_root_config_changed and settings_path in stat_cache_md5 and not self.__check_changes_by_md5(
-                        settings_path):
-                    is_root_config_changed = False
+                if os.path.getmtime(settings_path) > last_clean_build_time:
+                    md5 = get_md5(settings_path)
+                    if settings_path not in self._stat_cache:
+                        is_root_config_changed = True
+                    elif self._stat_cache[settings_path]['md5'] != md5:
+                        is_root_config_changed = True
 
         return {'last_clean_build_time': last_clean_build_time, 'is_root_config_changed': is_root_config_changed}
 
@@ -95,7 +97,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
 
         # scan bulid.gradle
         config_path = os.path.join(module_path, 'build.gradle')
-        if self.__check_changes(module_name, config_path, module_cache, should_check_size=False, should_check_md5=True):
+        if self.__check_changes(module_name, config_path, module_cache):
             self._changed_files[module_name]['config'].append(config_path)
 
         # scan libs dirs
@@ -113,8 +115,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         if module_name in self._config['project_source_sets']:
             # scan manifest
             manifest = self._config['project_source_sets'][module_name]['main_manifest_path']
-            if self.__check_changes(module_name, manifest, module_cache, should_check_size=False,
-                                    should_check_md5=True):
+            if self.__check_changes(module_name, manifest, module_cache):
                 self._changed_files[module_name]['manifest'].append(manifest)
 
             # scan native so
@@ -150,7 +151,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if '.DS_Store' in fn:
                                     continue
                                 fpath = os.path.join(sub_dir_path, fn)
-                                if self.__check_changes(module_name, fpath, module_cache, should_check_size=True):
+                                if self.__check_changes(module_name, fpath, module_cache):
                                     self._changed_files[module_name]['res'].append(fpath)
 
             # scan src
@@ -168,7 +169,7 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 if self.__check_changes(module_name, fpath, module_cache):
                                     self._changed_files[module_name]['src'].append(fpath)
 
-    def __check_changes(self, module_name, fpath, module_cache, should_check_size=False, should_check_md5=False):
+    def __check_changes(self, module_name, fpath, module_cache):
         if not fpath:
             return False
 
@@ -183,28 +184,13 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
             stat['mtime'] = mtime
             self._stat_cache[module_name][fpath] = stat
 
-            # md5 checker
-            if should_check_md5:
-                md5_modified = self.__check_changes_by_md5(fpath)
-                if not md5_modified:
-                    self.debug('but {} has no content modification (by md5)'.format(fpath))
-                return md5_modified
-
-            return True
-
-        if should_check_size:
-            size = os.path.getsize(fpath)
-            if size != stat['size']:
+            md5 = get_md5(fpath)
+            if md5 != stat['md5']:
                 self.debug('find {} has modification.'.format(fpath))
-                stat['size'] = size
+                stat['md5'] = md5
                 self._stat_cache[module_name][fpath] = stat
                 return True
         return False
-
-    def __check_changes_by_md5(self, fpath):
-        if fpath in self._stat_cache_md5 and get_md5(fpath) == self._stat_cache_md5[fpath]:
-            return False
-        return True
 
 
 class GenerateFileStatTask(Task):
@@ -214,9 +200,7 @@ class GenerateFileStatTask(Task):
         self._config = config
         self._is_append = is_append
         self._stat_cache = {}
-        self._stat_cache_md5 = {}
         self._cache_path = os.path.join(self._config['build_cache_dir'], 'stat_cache.json')
-        self._cache_path_md5 = os.path.join(self._config['build_cache_dir'], 'stat_cache_md5.json')
 
     def execute(self):
         if self._is_append:  # reload config while append mode
@@ -224,7 +208,6 @@ class GenerateFileStatTask(Task):
             from dispatcher import read_freeline_config
             self._config = read_freeline_config()
             self._stat_cache = load_json_cache(self._cache_path)
-            self._stat_cache_md5 = load_json_cache(self._cache_path_md5)
 
         if 'modules' in self._config:
             all_modules = self._config['modules']
@@ -249,7 +232,6 @@ class GenerateFileStatTask(Task):
         else:
             self._fill_cache_map(all_modules)
             self._save_cache()
-        self._save_cache_md5()
 
     def _fill_cache_map(self, all_modules):
         for module in all_modules:
@@ -257,18 +239,18 @@ class GenerateFileStatTask(Task):
             self._stat_cache[module['name']] = {}
             self._save_module_stat(module['name'], module['path'])
 
+        root_config_path = os.path.join(os.getcwd(), 'build.gradle')
+        md5 = get_md5(root_config_path)
+        self._stat_cache[root_config_path] = {'md5': md5}
+
+        settings_path = os.path.join(os.getcwd(), 'settings.gradle')
+        md5 = get_md5(settings_path)
+        self._stat_cache[settings_path] = {'md5': md5}
+
     def _save_cache(self):
         if os.path.exists(self._cache_path):
             os.remove(self._cache_path)
         write_json_cache(self._cache_path, self._stat_cache)
-
-    def _save_cache_md5(self):
-        if os.path.exists(self._cache_path_md5):
-            os.remove(self._cache_path_md5)
-        if 'check_sources_md5' in self._config and self._config['check_sources_md5'] is not None:
-            for fpath in self._config['check_sources_md5']:
-                self._stat_cache_md5[fpath] = get_md5(fpath)
-        write_json_cache(self._cache_path_md5, self._stat_cache_md5)
 
     def _save_module_stat(self, module_name, module_path):
         # scan bulid.gradle
@@ -331,7 +313,7 @@ class GenerateFileStatTask(Task):
 
     def __save_stat(self, module, fpath):
         if fpath is not None and os.path.exists(fpath):
-            self._stat_cache[module][fpath] = {'mtime': os.path.getmtime(fpath), 'size': os.path.getsize(fpath)}
+            self._stat_cache[module][fpath] = {'mtime': os.path.getmtime(fpath), 'md5': get_md5(fpath)}
 
 
 class GradleDispatchPolicy(DispatchPolicy):
