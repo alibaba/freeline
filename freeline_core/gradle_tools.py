@@ -7,7 +7,7 @@ import zipfile
 
 import android_tools
 from android_tools import InstallApkTask
-from utils import get_file_content, copy, delete_file
+from utils import get_file_content, delete_file
 from freeline_build import ScanChangedFilesCommand, DispatchPolicy
 from logger import Logger
 from sync_client import SyncClient, get_last_sync_ticket, get_apk_created_ticket
@@ -459,16 +459,17 @@ class GradleBackupIncProductTask(Task):
 
     def execute(self):
         merge_dex_path = android_tools.get_incremental_dex_path(self._cache_dir)
+        import shutil
         if os.path.exists(merge_dex_path):
             backup_merged_dex_path = android_tools.get_backup_merged_dex_path(self._cache_dir)
-            copy(merge_dex_path, backup_merged_dex_path)
+            shutil.copy(merge_dex_path, backup_merged_dex_path)
 
         last_syncid = str(get_last_sync_ticket(self._cache_dir))
         native_path = get_sync_native_file_path(self._cache_dir)
         if os.path.exists(native_path):
             backup_native_dir = android_tools.get_backup_native_dir(self._cache_dir)
             backup_native_path = os.path.join(backup_native_dir, "native_" + last_syncid + ".zip")
-            copy(native_path, backup_native_path)
+            shutil.copy(native_path, backup_native_path)
 
         backup_res_pack_dir = android_tools.get_backup_res_pack_dir(self._cache_dir)
 
@@ -482,7 +483,7 @@ class GradleBackupIncProductTask(Task):
                 continue
 
             backup_res_pack_path = os.path.join(backup_res_pack_dir, module + "_" + last_syncid + ".pack")
-            copy(fpath, backup_res_pack_path)
+            shutil.copy(fpath, backup_res_pack_path)
 
 '''
 检测手机里面是否安装了对应的包,没用安装就安装上一次的基准包
