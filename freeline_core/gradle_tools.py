@@ -1039,7 +1039,7 @@ def fix_package_name(config, manifest):
         if manifest and os.path.isfile(manifest):
             Logger.debug('find app has a different application id, freeline will fix the package name in manifest')
             content = get_file_content(manifest)
-            result = re.sub('package=\"(.*)\"', 'package=\"{}\"'.format(config['package']), content)
+            result = re.sub('package=\"{}\"', 'package=\"{}\"'.format(config['debug_package'], config['package']), content)
             Logger.debug('change package name from {} to {}'.format(config['debug_package'], config['package']))
             from utils import write_file_content
             write_file_content(target_manifest_path, result)
