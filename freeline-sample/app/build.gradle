@@ -16,6 +16,7 @@ android {
                 SUPPORT_RTL: false
         ]
     }
+//    flavorDimensions "dev"
     buildTypes {
         debug {
             applicationIdSuffix ".dev"
@@ -30,7 +31,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         monkey {
-            
+
         }
     }
     sourceSets {

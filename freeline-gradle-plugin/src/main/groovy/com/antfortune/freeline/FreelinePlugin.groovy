@@ -133,10 +133,11 @@ class FreelinePlugin implements Plugin<Project> {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
-                            def manifestOutFile = output.processManifest.manifestOutputFile
-                            if (manifestOutFile.exists()) {
-                                println "find manifest file path: ${manifestOutFile.absolutePath}"
-                                replaceApplication(manifestOutFile.absolutePath as String)
+                            def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
+                            def manifestFile = new File(path)
+                            if (manifestFile.exists()){
+                                println "find manifest file path: ${manifestFile.absolutePath}"
+                                replaceApplication(manifestFile.absolutePath as String)
                             }
                         }
                     }
@@ -261,7 +262,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def classesProcessTask
                 def preDexTask
                 def multiDexListTask
-                boolean multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+                boolean multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
@@ -646,6 +647,7 @@ class FreelinePlugin implements Plugin<Project> {
         def isAptEnabled = project.plugins.hasPlugin("android-apt") && aptConfiguration != null && !aptConfiguration.empty
 
         def annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
+        annotationProcessorConfig.setCanBeResolved(true)
         def isAnnotationProcessor = annotationProcessorConfig != null && !annotationProcessorConfig.empty
 
         if ((isAptEnabled || isAnnotationProcessor) && javaCompile) {
