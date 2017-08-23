@@ -276,6 +276,11 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 } else if (isStudioCanaryVersion) {
                     classesProcessTask = project.tasks.findByName("transformClassesWithDexBuilderFor${variant.name.capitalize()}")
+                    String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
+                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
+                        //classProcesstask没变
+                        multiDexListTask = project.tasks.findByName("transformClassesWithMultidexlistFor${variant.name.capitalize()}")
+                    }
                 } else {
                     String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
                     if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
@@ -665,8 +670,8 @@ class FreelinePlugin implements Plugin<Project> {
         def aptConfiguration = project.configurations.findByName("apt")
         def isAptEnabled = project.plugins.hasPlugin("android-apt") && aptConfiguration != null && !aptConfiguration.empty
 
-        project.configurations.each {
-            it.setCanBeResolved(true) //省的麻烦 并且避免后来reslove provided时候的问题
+        project.configurations.each { config ->
+            config.setCanBeResolved(true) //省的麻烦 并且避免后来reslove provided时候的问题
         }
 
         def annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
