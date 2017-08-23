@@ -133,6 +133,7 @@ class FreelinePlugin implements Plugin<Project> {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
+//                            修改了Manifest的获取方式 之前api已被取消 不过根据Manifest的位置相对固定就这样子去访问了
                             def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
                             def manifestFile = new File(path)
                             if (manifestFile.exists()) {
@@ -265,6 +266,7 @@ class FreelinePlugin implements Plugin<Project> {
                 def classesProcessTask
                 def preDexTask
                 def multiDexListTask
+//                因为gradle plugin最新版的variantData命名和之前相比不同 ， 但是改了之后还是兼容旧版... 不过建议测测
                 boolean multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
