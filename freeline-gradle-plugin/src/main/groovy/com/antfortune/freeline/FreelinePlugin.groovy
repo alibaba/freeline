@@ -60,6 +60,26 @@ class FreelinePlugin implements Plugin<Project> {
                 def forceVersionName = extension.forceVersionName
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild")
 
+                //早点判断Android Studio的plugin版本
+                def isLowerVersion = false
+                def isStudioCanaryVersion = false //是不是Android studio3.0的plugin
+                if (!forceLowerVersion) {
+                    project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+                        if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
+                            if (!it.moduleVersion.startsWith("1.5")
+                                    && !it.moduleVersion.startsWith("2") && !it.moduleVersion.startsWith("3")) {
+                                isLowerVersion = true
+                                return false
+                            } else if (it.moduleVersion.startsWith("3")) {
+                                isStudioCanaryVersion = true
+                            }
+                        }
+                    }
+                } else {
+                    isLowerVersion = true
+                }
+
+
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
                     return
@@ -133,13 +153,22 @@ class FreelinePlugin implements Plugin<Project> {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
+                            if(isStudioCanaryVersion){
 //                            修改了Manifest的获取方式 之前api已被取消 不过根据Manifest的位置相对固定就这样子去访问了
-                            def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
-                            def manifestFile = new File(path)
-                            if (manifestFile.exists()) {
-                                println "find manifest file path: ${manifestFile.absolutePath}"
-                                replaceApplication(manifestFile.absolutePath as String)
+                                def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
+                                def manifestFile = new File(path)
+                                if (manifestFile.exists()) {
+                                    println "find manifest file path: ${manifestFile.absolutePath}"
+                                    replaceApplication(manifestFile.absolutePath as String)
+                                }
+                            }else {
+                                def manifestOutFile = output.processManifest.manifestOutputFile
+                                if (manifestOutFile.exists()) {
+                                    println "find manifest file path: ${manifestOutFile.absolutePath}"
+                                    replaceApplication(manifestOutFile.absolutePath as String)
+                                }
                             }
+
                         }
                     }
                 }
@@ -245,29 +274,18 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 // modify .class file
-                def isLowerVersion = false
-                def isStudioCanaryVersion = false //是不是Android studio3.0的plugin
-                if (!forceLowerVersion) {
-                    project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
-                        if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
-                            if (!it.moduleVersion.startsWith("1.5")
-                                    && !it.moduleVersion.startsWith("2") && !it.moduleVersion.startsWith("3")) {
-                                isLowerVersion = true
-                                return false
-                            } else if (it.moduleVersion.startsWith("3")) {
-                                isStudioCanaryVersion = true
-                            }
-                        }
-                    }
-                } else {
-                    isLowerVersion = true
-                }
-
                 def classesProcessTask
                 def preDexTask
                 def multiDexListTask
-//                因为gradle plugin最新版的variantData命名和之前相比不同 ， 但是改了之后还是兼容旧版... 不过建议测测
-                boolean multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
+
+                boolean multiDexEnabled
+                if (isStudioCanaryVersion){
+//                因为gradle plugin最新版的variantData命名和之前相比不同
+                    multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
+                }else {
+                    multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+                }
+
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
@@ -672,8 +690,19 @@ class FreelinePlugin implements Plugin<Project> {
         def aptConfiguration = project.configurations.findByName("apt")
         def isAptEnabled = project.plugins.hasPlugin("android-apt") && aptConfiguration != null && !aptConfiguration.empty
 
-        project.configurations.each { config ->
-            config.setCanBeResolved(true) //省的麻烦 并且避免后来reslove provided时候的问题
+        //只需要在AS3.0的plugin启用 在旧版启用会崩
+        def shouldDealWithResolveProblem = false
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
+                if (it.moduleVersion.startsWith("3")) {
+                    shouldDealWithResolveProblem = true
+                }
+            }
+        }
+        if (shouldDealWithResolveProblem){
+            project.configurations.each {
+                config -> config.setCanBeResolved(true)
+            }
         }
 
         def annotationProcessorConfig = project.configurations.findByName("annotationProcessor")

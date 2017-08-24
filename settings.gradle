@@ -1,10 +1,10 @@
 // freeline sample
-//include ':freeline-sample:app'
-//include ':freeline-sample:common'
-//include ':freeline-sample:resources'
-//include ':freeline-sample:ThirdParty:share'
-//include ':freeline-sample:ThirdParty:payment'
-//include ':freeline-sample:PureJavaLib'
+include ':freeline-sample:app'
+include ':freeline-sample:common'
+include ':freeline-sample:resources'
+include ':freeline-sample:ThirdParty:share'
+include ':freeline-sample:ThirdParty:payment'
+include ':freeline-sample:PureJavaLib'
 
 // freeline runtime
 include ':runtime'
