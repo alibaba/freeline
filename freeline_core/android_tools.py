@@ -560,6 +560,14 @@ class AndroidIncBuildInvoker(object):
 
         return self._is_need_javac
 
+    def check_kotlinc_task(self):
+        changed_count = len(self._changed_files['kotlin'])
+        if changed_count == 0:
+            self.debug('{} project kotlin files have no change, need not go ahead'.format(self._name))
+            return False
+        else:
+            return True
+
     def _is_only_r_changed(self):
         is_only_r_changed = True
         for fpath in self._changed_files['src']:
