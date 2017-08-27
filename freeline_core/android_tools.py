@@ -576,6 +576,8 @@ class AndroidIncBuildInvoker(object):
             else:
                 self._is_r_file_changed = True
                 self.debug('find R.java modified in src list')
+        if len(self._changed_files['kotlin']):
+            is_only_r_changed = False
         return is_only_r_changed
 
     def fill_classpaths(self):

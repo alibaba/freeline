@@ -667,11 +667,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
     #运行增量kotlinc
     def run_kotlinc_task(self):
-        # if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
-        #     self._is_need_javac = False
-        #     android_tools.clean_src_changed_flag(self._cache_dir)
-        #     self.debug('apt process do not generate new files, ignore javac task.')
-        #     return
+        # todo 检查R的变化
+        if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
+            self._is_need_javac = False
+            # self._is_need_kotlinc = False
+            android_tools.clean_src_changed_flag(self._cache_dir)
+            self.debug('apt process do not generate new files, ignore javac task.')
+            return
         kotlincargs = self._generate_kotlin_compile_args()
         self.debug('kotlinc exec: ' + ' '.join(kotlincargs))
         output, err, code = cexec(kotlincargs, callback=None)
@@ -679,7 +681,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         if code != 0:
             raise FreelineException('incremental kotlinc compile failed.', '{}\n{}'.format(output, err))
         else:
-            # 这个应该是和kotlin没有关系 拷贝R类用的
+            # todo 这个应该是和kotlin没有关系 拷贝R类用的
             if self._is_r_file_changed:
                 old_r_file = self._finder.get_dst_r_path(config=self._config)
                 new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
@@ -758,8 +760,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         kotlincargs = ['kotlinc']
         arguments = []
         arguments.append('-cp')
-        #just for test classpath
-        self._classpaths.append('/Users/jichenyang/AndroidStudioProjects/One-master/app/build/tmp/kotlin-classes/debug')
+        # todo 也许要放在配置里面？
+        self._classpaths.append('{}/tmp/kotlin-classes/debug'.format(self._config['build_directory']))
         arguments.append(os.pathsep.join(self._classpaths))
 
         for fpath in self._changed_files['kotlin']:
@@ -769,7 +771,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         arguments.append(self._finder.get_patch_classes_cache_dir())
 
         # ref: https://support.microsoft.com/en-us/kb/830473
-        # 去你丫的Windows
+        # todo 去你丫的Windows？？
         # if is_windows_system():
         #     arguments_length = sum(map(len, arguments))
         #     if arguments_length > 8000:
