@@ -110,6 +110,14 @@ class IncJavacCommand(MacroCommand):
         self._invoker.run_javac_task()
 
 
+class IncKotlincCommand(MacroCommand):
+    def __init__(self, pro, invoker):
+        MacroCommand.__init__(self, '{}_inc_kotlinc_compile'.format(pro))
+        self._invoker = invoker
+    def execute(self):
+        self._invoker.run_kotlinc_task()
+
+
 class IncDexCommand(MacroCommand):
     def __init__(self, pro, invoker):
         MacroCommand.__init__(self, '{}_inc_dex_compile'.format(pro))

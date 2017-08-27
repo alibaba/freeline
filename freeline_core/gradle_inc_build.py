@@ -5,7 +5,7 @@ import os
 import shutil
 
 import android_tools
-from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
+from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand, IncKotlincCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
@@ -189,6 +189,7 @@ class GradleCompileCommand(CompileCommand):
 
     def _setup(self):
         # self.add_command(GradleIncAaptCommand(self._module, self._invoker))
+        self.add_command(GradleIncKotlincCommand(self._module, self._invoker))
         self.add_command(GradleIncJavacCommand(self._module, self._invoker))
         self.add_command(GradleIncDexCommand(self._module, self._invoker))
 
@@ -236,12 +237,34 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.run_retrolambda()
 
 
+class GradleIncKotlincCommand(IncKotlincCommand):
+    def __init__(self, module_name, invoker):
+        IncKotlincCommand.__init__(self, module_name, invoker)
+
+    def execute(self):
+        self._invoker.check_r_md5()  # check if R.java has changed
+        # self._invoker.check_other_modules_resources()
+        should_run_kotlinc_task = self._invoker.check_kotlinc_task()
+        if not should_run_kotlinc_task:
+            self.debug('no need to execute kotlinc ')
+            return
+
+        self.debug('start to execute kotlinc command...')
+        self._invoker.append_r_file()
+        self._invoker.fill_classpaths()
+        # self._invoker.fill_extra_javac_args()
+        self._invoker.clean_dex_cache()
+        # self._invoker.run_apt_only()
+        self._invoker.run_kotlinc_task()
+        # self._invoker.run_retrolambda()
+
 class GradleIncDexCommand(IncDexCommand):
     def __init__(self, module_name, invoker):
         IncDexCommand.__init__(self, module_name, invoker)
 
     def execute(self):
-        should_run_dex_task = self._invoker.check_dex_task()
+        # hack kotlinc不给merge的情况 todo: 优化代码
+        should_run_dex_task = self._invoker.check_dex_task() or self._invoker.check_kotlinc_task()
         if not should_run_dex_task:
             self.debug('no need to execute')
             return
@@ -642,6 +665,32 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     shutil.copyfile(new_r_file, old_r_file)
                     self.debug('copy {} to {}'.format(new_r_file, old_r_file))
 
+    #运行增量kotlinc
+    def run_kotlinc_task(self):
+        # todo 检查R的变化
+        if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
+            self._is_need_javac = False
+            # self._is_need_kotlinc = False
+            android_tools.clean_src_changed_flag(self._cache_dir)
+            self.debug('apt process do not generate new files, ignore javac task.')
+            return
+        kotlincargs = self._generate_kotlin_compile_args()
+        self.debug('kotlinc exec: ' + ' '.join(kotlincargs))
+        output, err, code = cexec(kotlincargs, callback=None)
+
+        if code != 0:
+            raise FreelineException('incremental kotlinc compile failed.', '{}\n{}'.format(output, err))
+        else:
+            # todo 这个应该是和kotlin没有关系 拷贝R类用的
+            if self._is_r_file_changed:
+                old_r_file = self._finder.get_dst_r_path(config=self._config)
+                new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
+                if old_r_file and new_r_file:
+                    shutil.copyfile(new_r_file, old_r_file)
+                    self.debug('copy {} to {}'.format(new_r_file, old_r_file))
+
+
+
     def _should_run_databinding_apt(self):
         if 'apt' in self._changed_files:
             for fpath in self._changed_files['apt']:
@@ -703,6 +752,45 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         javacargs.extend(arguments)
         return javacargs
+
+    #kotlin增量命令的生成 暂时直接kotlinc了
+    def _generate_kotlin_compile_args(self, extra_javac_args_enabled=False):
+        # javacargs = [self._javac]
+        # test kotlinc
+        kotlincargs = ['kotlinc']
+        arguments = []
+        arguments.append('-cp')
+        # todo 也许要放在配置里面？
+        self._classpaths.append('{}/tmp/kotlin-classes/debug'.format(self._config['build_directory']))
+        arguments.append(os.pathsep.join(self._classpaths))
+
+        for fpath in self._changed_files['kotlin']:
+            arguments.append(fpath)
+
+        arguments.append('-d')
+        arguments.append(self._finder.get_patch_classes_cache_dir())
+
+        # ref: https://support.microsoft.com/en-us/kb/830473
+        # todo 去你丫的Windows？？
+        # if is_windows_system():
+        #     arguments_length = sum(map(len, arguments))
+        #     if arguments_length > 8000:
+        #         argument_file_path = os.path.join(self._finder.get_module_cache_dir(), 'javac_args_file')
+        #         self.debug('arguments length: {} > 8000, save args to {}'.format(arguments_length, argument_file_path))
+        #
+        #         if os.path.exists(argument_file_path):
+        #             os.remove(argument_file_path)
+        #
+        #         arguments_content = ' '.join(arguments)
+        #         self.debug('javac arguments: ' + arguments_content)
+        #         write_file_content(argument_file_path, arguments_content)
+        #         arguments = ['@{}'.format(argument_file_path)]
+
+        # javacargs.extend(arguments)
+
+        kotlincargs.extend(arguments)
+        return kotlincargs
+
 
     def _get_apt_related_files(self, filter_tags=None):
         path = self._get_apt_related_files_cache_path()
