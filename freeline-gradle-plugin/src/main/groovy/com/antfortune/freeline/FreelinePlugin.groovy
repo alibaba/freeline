@@ -395,13 +395,11 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 if (multiDexEnabled && applicationProxy) {
-                    def mainDexListFile = new File("${project.buildDir}/intermediates/multi-dex/${variant.dirName}/maindexlist.txt")
+                    def manifestKeepFile = new File("${project.buildDir}/intermediates/multi-dex/${variant.dirName}/manifest_keep.txt")
                     if (multiDexListTask) {
                         multiDexListTask.outputs.upToDateWhen { false }
-                        multiDexListTask.doLast {
-                            Constants.FREELINE_CLASSES.each { clazz ->
-                                mainDexListFile << "\n${clazz}"
-                            }
+                        multiDexListTask.doFirst {
+                            manifestKeepFile << "-keep class com.antfortune.freeline.** { *; }"
                         }
                     }
                 }
