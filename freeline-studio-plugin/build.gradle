@@ -18,3 +18,29 @@ intellij {
     // Uncomment to test against Android Studio
     // intellij.alternativeIdePath = '/Applications/Android Studio.app'
 }
+
+project.tasks['patchPluginXml'].doLast {
+    //<idea-version since-build="162.2228" until-build="162.*"/>
+    //=>
+    //<idea-version since-build="141.0"/>
+
+    File xmlFile = project.file('build/patchedPluginXmlFiles/plugin.xml')
+
+    def ideaPlugin = new XmlParser().parse(new InputStreamReader(new FileInputStream(xmlFile.absolutePath), "utf-8"))
+
+    if (ideaPlugin) {
+        def ideaVersions = ideaPlugin['idea-version']
+        ideaVersions.findAll {
+            it.parent().remove(it)
+        }
+
+        ideaPlugin.appendNode('idea-version', ["since-build": "141.0"])
+
+        // Write the manifest file
+        def printer = new XmlNodePrinter(new PrintWriter(xmlFile.absolutePath, "utf-8"))
+        printer.preserveWhitespace = true
+        printer.print(ideaPlugin)
+
+        println("parse: ${xmlFile} \n<idea-version since-build=\"162.2228\" until-build=\"162.*\"/> \n=> \n<idea-version since-build=\"141.0\"/>")
+    }
+}
