@@ -160,7 +160,7 @@ public final class GradleUtil {
         if (file != null) {
             List plugins = file.getPlugins();
             if (plugins != null && plugins.size() > 0) {
-                return plugins.contains("com.android.library") || plugins.contains("android-library");
+                return !plugins.contains("com.android.application") && !plugins.contains("android");
             }
         }
         return true;
