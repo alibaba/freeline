@@ -20,4 +20,4 @@ include ':gradle'
 project(':gradle').projectDir = new File('freeline-gradle-plugin')
 
 // freeline studio plugin
-include ':freeline-studio-plugin'
+//include ':freeline-studio-plugin'
