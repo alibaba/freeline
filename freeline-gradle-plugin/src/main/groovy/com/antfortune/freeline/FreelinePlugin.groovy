@@ -16,11 +16,15 @@ import org.gradle.util.VersionNumber
  */
 class FreelinePlugin implements Plugin<Project> {
 
-    String freelineVersion = "0.8.7"
+    String freelineVersion = "0.8.8"
+
 
     @Override
     void apply(Project project) {
-
+        def projectDescription = FreelineUtils.readProjectDescription(project.rootProject)
+        if (projectDescription) {
+            project.rootProject.extensions.add("projectDescription", projectDescription)
+        }
         project.extensions.create("freeline", FreelineExtension, project)
 
         if (FreelineUtils.getProperty(project, "disableAutoDependency")) {
@@ -28,9 +32,9 @@ class FreelinePlugin implements Plugin<Project> {
         } else {
             println "freeline auto add runtime dependencies: ${freelineVersion}"
             project.dependencies {
-                debugCompile "com.antfortune.freeline:runtime:${freelineVersion}"
-                releaseCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
-                testCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+                debugCompile "com.veyhey.freeline:runtime:${freelineVersion}"
+//                releaseCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
+//                testCompile "com.antfortune.freeline:runtime-no-op:${freelineVersion}"
             }
         }
 
@@ -153,7 +157,7 @@ class FreelinePlugin implements Plugin<Project> {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
-                            if(isStudioCanaryVersion){
+                            if (isStudioCanaryVersion) {
 //                            修改了Manifest的获取方式 之前api已被取消 不过根据Manifest的位置相对固定就这样子去访问了
                                 def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
                                 def manifestFile = new File(path)
@@ -161,7 +165,7 @@ class FreelinePlugin implements Plugin<Project> {
                                     println "find manifest file path: ${manifestFile.absolutePath}"
                                     replaceApplication(manifestFile.absolutePath as String)
                                 }
-                            }else {
+                            } else {
                                 def manifestOutFile = output.processManifest.manifestOutputFile
                                 if (manifestOutFile.exists()) {
                                     println "find manifest file path: ${manifestOutFile.absolutePath}"
@@ -279,10 +283,10 @@ class FreelinePlugin implements Plugin<Project> {
                 def multiDexListTask
 
                 boolean multiDexEnabled
-                if (isStudioCanaryVersion){
+                if (isStudioCanaryVersion) {
 //                因为gradle plugin最新版的variantData命名和之前相比不同
                     multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
-                }else {
+                } else {
                     multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
                 }
 
@@ -491,13 +495,15 @@ class FreelinePlugin implements Plugin<Project> {
                             "${p.name}${File.separator}build${File.separator}intermediates${File.separator}bundles${File.separator}"
                     ]
                     if (type == "resources") {
-                        p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) {
-                            it.absolutePath
+                        project.rootProject.projectDescription["project_source_sets"][p.name]["main_res_directory"].asList().collect(mapper.path) {
+                            it
                         }
+                        // p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     } else if (type == "assets") {
-                        p.android.sourceSets.main.assets.srcDirs.asList().collect(mapper.path) {
-                            it.absolutePath
+                        project.rootProject.projectDescription["project_source_sets"][p.name]["main_assets_directory"].asList().collect(mapper.path) {
+                            it
                         }
+                        // p.android.sourceSets.main.assets.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     }
                     mappers.add(mapper)
                 }
@@ -699,7 +705,7 @@ class FreelinePlugin implements Plugin<Project> {
                 }
             }
         }
-        if (shouldDealWithResolveProblem){
+        if (shouldDealWithResolveProblem) {
             project.configurations.each {
                 config -> config.setCanBeResolved(true)
             }

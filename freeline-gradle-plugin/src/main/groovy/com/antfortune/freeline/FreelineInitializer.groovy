@@ -153,7 +153,7 @@ class FreelineInitializer {
             def pro = allProjectMap.get(product.name)
             def sourceSets = createSourceSets(pro, product.flavor, product.buildType)
             project_source_sets[pro.name] = sourceSets
-            modules.add(['name': pro.name, 'path': pro.projectDir.absolutePath])
+            modules.add(['name': pro.name, 'path': pro.projectDir.absolutePath, 'flavor':product.flavor, 'buildType': product.buildType])
         }
 
         def mainAppSourceSets = project_source_sets[project.name];

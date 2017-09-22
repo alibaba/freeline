@@ -1,8 +1,8 @@
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply from: 'bintray.gradle'
+// apply from: 'bintray.gradle'
 
-group 'com.antfortune.freeline'
+group 'com.veyhey.freeline'
 version FREELINE_RELEASE_VERSION
 
 sourceCompatibility = 1.6
