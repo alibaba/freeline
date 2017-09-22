@@ -62,6 +62,26 @@ class FreelinePlugin implements Plugin<Project> {
                 def forceVersionName = extension.forceVersionName
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild")
 
+                //早点判断Android Studio的plugin版本
+                def isLowerVersion = false
+                def isStudioCanaryVersion = false //是不是Android studio3.0的plugin
+                if (!forceLowerVersion) {
+                    project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+                        if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
+                            if (!it.moduleVersion.startsWith("1.5")
+                                    && !it.moduleVersion.startsWith("2") && !it.moduleVersion.startsWith("3")) {
+                                isLowerVersion = true
+                                return false
+                            } else if (it.moduleVersion.startsWith("3")) {
+                                isStudioCanaryVersion = true
+                            }
+                        }
+                    }
+                } else {
+                    isLowerVersion = true
+                }
+
+
                 if (!"debug".equalsIgnoreCase(variant.buildType.name as String)) {
                     println "variant ${variant.name} is not debug, skip hack process."
                     return
@@ -135,11 +155,22 @@ class FreelinePlugin implements Plugin<Project> {
                     variant.outputs.each { output ->
                         output.processManifest.outputs.upToDateWhen { false }
                         output.processManifest.doLast {
-                            def manifestOutFile = output.processManifest.manifestOutputFile
-                            if (manifestOutFile.exists()) {
-                                println "find manifest file path: ${manifestOutFile.absolutePath}"
-                                replaceApplication(manifestOutFile.absolutePath as String)
+                            if(isStudioCanaryVersion){
+//                            修改了Manifest的获取方式 之前api已被取消 不过根据Manifest的位置相对固定就这样子去访问了
+                                def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
+                                def manifestFile = new File(path)
+                                if (manifestFile.exists()) {
+                                    println "find manifest file path: ${manifestFile.absolutePath}"
+                                    replaceApplication(manifestFile.absolutePath as String)
+                                }
+                            }else {
+                                def manifestOutFile = output.processManifest.manifestOutputFile
+                                if (manifestOutFile.exists()) {
+                                    println "find manifest file path: ${manifestOutFile.absolutePath}"
+                                    replaceApplication(manifestOutFile.absolutePath as String)
+                                }
                             }
+
                         }
                     }
                 }
@@ -196,10 +227,10 @@ class FreelinePlugin implements Plugin<Project> {
                             def supportIncludeFiles = requireVersion(retrolambdaVersion, '2.1.0')
 
                             def lambdaConfig = [
-                                    'enabled': retrolambdaEnabled,
-                                    'targetJar': targetJar,
-                                    'mainClass': mainClass,
-                                    'rtJar': rtJar,
+                                    'enabled'            : retrolambdaEnabled,
+                                    'targetJar'          : targetJar,
+                                    'mainClass'          : mainClass,
+                                    'rtJar'              : rtJar,
                                     'supportIncludeFiles': supportIncludeFiles
                             ]
                             projectRetrolambdaConfig[pro.name] = lambdaConfig
@@ -212,7 +243,7 @@ class FreelinePlugin implements Plugin<Project> {
                         if (pro.configurations.findByName("compile") != null) {
                             pro.configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
                                 if (it.moduleGroup == 'com.google.dagger'
-                                    || it.moduleGroup == 'com.squareup.dagger') {
+                                        || it.moduleGroup == 'com.squareup.dagger') {
                                     aptLibraries.dagger = true
                                 } else if (it.moduleGroup == 'com.jakewharton' && it.moduleName == 'butterknife') {
                                     aptLibraries.butterknife = true
@@ -245,25 +276,18 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 // modify .class file
-                def isLowerVersion = false
-                if (!forceLowerVersion) {
-                    project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
-                        if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
-                            if (!it.moduleVersion.startsWith("1.5")
-                                    && !it.moduleVersion.startsWith("2")) {
-                                isLowerVersion = true
-                                return false
-                            }
-                        }
-                    }
-                } else {
-                    isLowerVersion = true
-                }
-
                 def classesProcessTask
                 def preDexTask
                 def multiDexListTask
-                boolean multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+
+                boolean multiDexEnabled
+                if (isStudioCanaryVersion){
+//                因为gradle plugin最新版的variantData命名和之前相比不同
+                    multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
+                }else {
+                    multiDexEnabled = variant.apkVariantData.variantConfiguration.isMultiDexEnabled()
+                }
+
                 if (isLowerVersion) {
                     if (multiDexEnabled) {
                         classesProcessTask = project.tasks.findByName("packageAll${variant.name.capitalize()}ClassesForMultiDex")
@@ -271,6 +295,13 @@ class FreelinePlugin implements Plugin<Project> {
                     } else {
                         classesProcessTask = project.tasks.findByName("dex${variant.name.capitalize()}")
                         preDexTask = project.tasks.findByName("preDex${variant.name.capitalize()}")
+                    }
+                } else if (isStudioCanaryVersion) {
+                    classesProcessTask = project.tasks.findByName("transformClassesWithDexBuilderFor${variant.name.capitalize()}")
+                    String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
+                    if (getMinSdkVersion(variant.mergedFlavor, manifest_path) < 21 && multiDexEnabled) {
+                        //classProcesstask没变
+                        multiDexListTask = project.tasks.findByName("transformClassesWithMultidexlistFor${variant.name.capitalize()}")
                     }
                 } else {
                     String manifest_path = project.android.sourceSets.main.manifest.srcFile.path
@@ -283,7 +314,7 @@ class FreelinePlugin implements Plugin<Project> {
                 }
 
                 if (classesProcessTask == null) {
-                    println "Skip ${project.name}'s hack process"
+                    println "Can not find ClassProcess Task ,Skip ${project.name}'s hack process"
                     return
                 }
 
@@ -345,12 +376,14 @@ class FreelinePlugin implements Plugin<Project> {
 
                     if (preDexTask == null) {
                         def providedConf = project.configurations.findByName("provided")
+//                        providedConf.setCanBeResolved(true) //适配3.0 但是这里不行
                         if (providedConf) {
                             def providedJars = providedConf.asPath.split(File.pathSeparator)
                             jarDependencies.addAll(providedJars)
                         }
 
-                        jarDependencies.addAll(addtionalJars)  // add all additional jars to final jar dependencies
+                        jarDependencies.addAll(addtionalJars)
+                        // add all additional jars to final jar dependencies
                         def json = new JsonBuilder(jarDependencies).toPrettyString()
                         project.logger.info(json)
                         FreelineUtils.saveJson(json, FreelineUtils.joinPath(FreelineUtils.getBuildCacheDir(project.buildDir.absolutePath), "jar_dependencies.json"), true);
@@ -407,7 +440,8 @@ class FreelinePlugin implements Plugin<Project> {
         }
     }
 
-    private static void findResourceDependencies(def variant, Project project, String buildCacheDir, String type) {
+    private static void findResourceDependencies(
+            def variant, Project project, String buildCacheDir, String type) {
         def mergeResourcesTask = project.tasks.findByName("merge${variant.name.capitalize()}${type.capitalize()}")
         def resourcesInterceptor = "${type}InterceptorBeforeMerge${variant.name.capitalize()}${type.capitalize()}"
         if (mergeResourcesTask == null) {
@@ -453,7 +487,7 @@ class FreelinePlugin implements Plugin<Project> {
 
             project.rootProject.allprojects.each { p ->
                 if (p.hasProperty("android") && p.android.hasProperty("sourceSets")) {
-                    def mapper = ["match" : "", "path" : []]
+                    def mapper = ["match": "", "path": []]
                     mapper.match = [
                             "exploded-aar${File.separator}${p.group}${File.separator}${p.name}${File.separator}",
                             "${p.name}${File.separator}build${File.separator}intermediates${File.separator}bundles${File.separator}"
@@ -471,9 +505,13 @@ class FreelinePlugin implements Plugin<Project> {
             
             def projectResDirs = []
             if (type == "resources") {
-                project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+                project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) {
+                    it.absolutePath
+                }
             } else if (type == "assets") {
-                project.android.sourceSets.main.assets.srcDirs.asList().collect(projectResDirs) { it.absolutePath }
+                project.android.sourceSets.main.assets.srcDirs.asList().collect(projectResDirs) {
+                    it.absolutePath
+                }
             }
 
             mergeResourcesTask.inputs.files.files.each { f ->
@@ -485,7 +523,9 @@ class FreelinePlugin implements Plugin<Project> {
                         mappers.each { mapper ->
                             mapper.match.each { matcher ->
                                 if (path.contains(matcher as String)) {
-                                    mapper.path.collect(resourcesDependencies.local_resources) {it}
+                                    mapper.path.collect(resourcesDependencies.local_resources) {
+                                        it
+                                    }
                                     println "add local resource: ${path}"
                                     marker = true
                                     return false
@@ -611,7 +651,8 @@ class FreelinePlugin implements Plugin<Project> {
 
     }
 
-    private static boolean requireVersion(VersionNumber retrolambdaVersion, String version, boolean fallback = false) {
+    private
+    static boolean requireVersion(VersionNumber retrolambdaVersion, String version, boolean fallback = false) {
         if (retrolambdaVersion == null) {
             // Don't know version, assume fallback
             return fallback
@@ -649,7 +690,23 @@ class FreelinePlugin implements Plugin<Project> {
         def aptConfiguration = project.configurations.findByName("apt")
         def isAptEnabled = project.plugins.hasPlugin("android-apt") && aptConfiguration != null && !aptConfiguration.empty
 
+        //只需要在AS3.0的plugin启用 在旧版启用会崩
+        def shouldDealWithResolveProblem = false
+        project.rootProject.buildscript.configurations.classpath.resolvedConfiguration.firstLevelModuleDependencies.each {
+            if (it.moduleGroup == "com.android.tools.build" && it.moduleName == "gradle") {
+                if (it.moduleVersion.startsWith("3")) {
+                    shouldDealWithResolveProblem = true
+                }
+            }
+        }
+        if (shouldDealWithResolveProblem){
+            project.configurations.each {
+                config -> config.setCanBeResolved(true)
+            }
+        }
+
         def annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
+//        annotationProcessorConfig.setCanBeResolved(true)
         def isAnnotationProcessor = annotationProcessorConfig != null && !annotationProcessorConfig.empty
 
         if ((isAptEnabled || isAnnotationProcessor) && javaCompile) {
@@ -688,12 +745,12 @@ class FreelinePlugin implements Plugin<Project> {
                     }
                 }
 
-                def aptConfig = ['enabled': true,
+                def aptConfig = ['enabled'         : true,
                                  'disableDiscovery': disableDiscovery,
-                                 'aptOutput': aptOutputDir,
-                                 'processorPath': processorPath,
-                                 'processor': processor,
-                                 'aptArgs': aptArgs]
+                                 'aptOutput'       : aptOutputDir,
+                                 'processorPath'   : processorPath,
+                                 'processor'       : processor,
+                                 'aptArgs'         : aptArgs]
                 projectAptConfig[project.name] = aptConfig
             }
         } else {
