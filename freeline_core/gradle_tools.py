@@ -424,10 +424,23 @@ class GradleDirectoryFinder(android_tools.DirectoryFinder):
                 else:
                     return os.path.join(self.get_base_gen_dir(), 'classes', self._config['product_flavor'], 'debug')
             else:
-                release_dir = os.path.join(self.get_base_gen_dir(), 'classes', 'release')
-                if not os.path.exists(release_dir):
-                    release_dir = os.path.join(self.get_base_gen_dir(), 'classes', 'debug')
-                return release_dir
+                modules = []
+                flavor = ''
+                if 'modules' in self._config:
+                    modules = self._config['modules']
+                for module in modules:
+                    if module['name'] == self._module_name:
+                        flavor = module['flavor']
+                if flavor:
+                    release_dir = os.path.join(self.get_base_gen_dir(), 'classes',flavor ,'release')
+                    if not os.path.exists(release_dir):
+                        release_dir = os.path.join(self.get_base_gen_dir(), 'classes',flavor ,'debug')
+                        return release_dir
+                else:
+                    release_dir = os.path.join(self.get_base_gen_dir(), 'classes', 'release')
+                    if not os.path.exists(release_dir):
+                        release_dir = os.path.join(self.get_base_gen_dir(), 'classes', 'debug')
+                    return release_dir
         return GradleDirectoryFinder.find_dst_classes_dir(self.get_base_gen_dir(), package_name=self._package_name)
 
     @staticmethod

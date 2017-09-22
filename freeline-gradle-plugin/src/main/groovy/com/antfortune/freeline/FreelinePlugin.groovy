@@ -18,8 +18,10 @@ class FreelinePlugin implements Plugin<Project> {
 
     String freelineVersion = "0.8.7"
 
+
     @Override
     void apply(Project project) {
+        project.rootProject.extensions["projectDescription"] = FreelineUtils.readProjectDescription(project.rootProject)
 
         project.extensions.create("freeline", FreelineExtension, project)
 
@@ -491,18 +493,16 @@ class FreelinePlugin implements Plugin<Project> {
                             "${p.name}${File.separator}build${File.separator}intermediates${File.separator}bundles${File.separator}"
                     ]
                     if (type == "resources") {
-                        p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) {
-                            it.absolutePath
-                        }
+                        project.rootProject.projectDescription["project_source_sets"][p.name]["main_res_directory"].asList().collect(mapper.path){it}
+                        // p.android.sourceSets.main.res.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     } else if (type == "assets") {
-                        p.android.sourceSets.main.assets.srcDirs.asList().collect(mapper.path) {
-                            it.absolutePath
-                        }
+                        project.rootProject.projectDescription["project_source_sets"][p.name]["main_assets_directory"].asList().collect(mapper.path){it}
+                        // p.android.sourceSets.main.assets.srcDirs.asList().collect(mapper.path) { it.absolutePath }
                     }
                     mappers.add(mapper)
                 }
             }
-
+            
             def projectResDirs = []
             if (type == "resources") {
                 project.android.sourceSets.main.res.srcDirs.asList().collect(projectResDirs) {
