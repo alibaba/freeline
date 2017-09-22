@@ -1,0 +1,11 @@
+task packageFreeLinePy(type: Zip) {
+    from("../freeline.py") {
+        into "freeline"
+    }
+    from("./") {
+        into "freeline/freeline_core"
+    }
+    include "**.py"
+    archiveName 'freeline.zip'
+    destinationDir = file("./build")
+}

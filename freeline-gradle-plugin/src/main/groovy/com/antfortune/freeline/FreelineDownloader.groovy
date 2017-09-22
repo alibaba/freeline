@@ -128,14 +128,14 @@ class FreelineDownloader {
     }
 
     private static String fetchData(Project project, String cdnUrl, boolean mirror) {
-        def json = fetchDataFromAPI(project)
-        if (json != null) {
-            String version = json.freelineVersion.version
-            checkVersion(project, version)
-            return getDownloadUrl(mirror, cdnUrl, version, json.freelineVersion.download_url as String)
-        }
+//        def json = fetchDataFromAPI(project)
+//        if (json != null) {
+//            String version = json.freelineVersion.version
+//            checkVersion(project, version)
+//            return getDownloadUrl(mirror, cdnUrl, version, json.freelineVersion.download_url as String)
+//        }
 
-        json = fetchDataFromGithub(project)
+        def json = fetchDataFromGithub(project)
         if (json != null) {
             String version = json.name
             checkVersion(project, version)

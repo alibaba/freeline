@@ -8,11 +8,11 @@ def issueUrl = 'https://github.com/alibaba/freeline/issues'
 
 def licenseIds = ['BSD']
 
-def developerId = 'yong.hy'
-def developerName = 'yong.hy'
-def developerEmail = 'yong.hy@alipay.com'
+def developerId = 'veyhey'
+def developerName = 'veyhey'
+def developerEmail = '478263058@qq.com'
 
-def publishedGroupId = 'com.antfortune.freeline'
+def publishedGroupId = 'com.veyhey.freeline'
 def artifact = 'runtime'
 def libraryName = 'freeline-runtime'
 def publishVersion = FREELINE_RELEASE_VERSION
@@ -65,7 +65,7 @@ bintray {
 
     configurations = ['archives']
     pkg {
-        repo = 'maven'
+        repo = 'github'
         name = libraryName
         desc = mavenDesc
         websiteUrl = siteUrl

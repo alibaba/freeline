@@ -102,12 +102,12 @@ class SyncClient(object):
             cexec([self._adb, 'forward', 'tcp:{}'.format(PORT_START + i), 'tcp:{}'.format(PORT_START + i)],
                   callback=None)
             url = 'http://127.0.0.1:{}/getSyncTicket'.format(PORT_START + i)
-            self.debug('url===='+url)
             result, err, code = curl(url)
             if code == 0 and result is not None:
                 try:
                     result = json.loads(result.replace("'", '"'))
                     self.debug(result)
+                    self.debug("uuid={}".format(uuid))
                     if result["apkBuildFlag"] == uuid:
                         port = PORT_START + i
                         break
