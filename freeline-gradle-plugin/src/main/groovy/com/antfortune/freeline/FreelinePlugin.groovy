@@ -59,6 +59,11 @@ class FreelinePlugin implements Plugin<Project> {
                 def retrolambdaEnabled = extension.retrolambdaEnabled
                 def forceVersionName = extension.forceVersionName
                 def freelineBuild = FreelineUtils.getProperty(project, "freelineBuild")
+                def customAnnotationSupportEnabled = false
+
+                if (extension.annotationMap.size() > 0){
+                    customAnnotationSupportEnabled = true
+                }
 
                 //早点判断Android Studio的plugin版本
                 def isLowerVersion = false
@@ -249,6 +254,13 @@ class FreelinePlugin implements Plugin<Project> {
                             }
                         }
                     }
+
+                    if (customAnnotationSupportEnabled){
+                        extension.annotationMap.each {
+                            entry -> FreelineAnnotationCollector.CUSTOM_ANNOTATION_TARGETS.put(entry.key,entry.value)
+                        }
+                    }
+
                 }
 
                 // find databinding compiler jar path

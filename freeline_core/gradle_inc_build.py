@@ -189,8 +189,8 @@ class GradleCompileCommand(CompileCommand):
 
     def _setup(self):
         # self.add_command(GradleIncAaptCommand(self._module, self._invoker))
-        self.add_command(GradleIncKotlincCommand(self._module, self._invoker))
         self.add_command(GradleIncJavacCommand(self._module, self._invoker))
+        self.add_command(GradleIncKotlincCommand(self._module, self._invoker))
         self.add_command(GradleIncDexCommand(self._module, self._invoker))
 
     def execute(self):

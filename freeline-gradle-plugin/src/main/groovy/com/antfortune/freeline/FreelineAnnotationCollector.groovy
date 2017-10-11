@@ -26,12 +26,27 @@ class FreelineAnnotationCollector {
         "Ljavax/inject/Inject;": "Inject"
     ]
 
+    public static final def CUSTOM_ANNOTATION_TARGETS = [:]
+
     private static def sAnnotationCollection = [:]
 
     public static void addNewAnno(String anno, String path, String className, String entry, boolean isJar) {
         String key = ANNOTATION_TARGETS[anno]
+
+        println "custom anno settings enabled :)==> $CUSTOM_ANNOTATION_TARGETS"
+
+        if (key == null){
+            CUSTOM_ANNOTATION_TARGETS.keySet().each { annoToken ->
+                if (anno.contains(annoToken)){
+                    key = CUSTOM_ANNOTATION_TARGETS[annoToken]
+                }
+            }
+        }
+
         if (!sAnnotationCollection.containsKey(key)) {
             sAnnotationCollection[key] = []
+            //print 出增加适配的key
+            println "new anno --> ${(['path': path, 'className': className, 'entry': entry, 'isJar': isJar]).toString()}"
         }
 
         sAnnotationCollection[key].add(['path': path, 'className': className, 'entry': entry, 'isJar': isJar])

@@ -31,6 +31,8 @@ class FreelineExtension {
 
     List<String> checkSourcesMd5 = []
 
+    Map<String,String> annotationMap = [:]
+
     boolean foceLowerVersion = false
 
     boolean applicationProxy = true

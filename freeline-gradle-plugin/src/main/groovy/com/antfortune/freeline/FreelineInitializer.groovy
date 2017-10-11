@@ -31,6 +31,10 @@ class FreelineInitializer {
         def ignoreResourceIds = extension.ignoreResourceIds
         def checkSourcesMd5 = extension.checkSourcesMd5
         def useSystemGradle = extension.useSystemGradle
+        def annotationMap = extension.annotationMap
+        def customAnnotationSupportEnabled = false
+
+        println "anno custom Map =====>  $annotationMap"
 
         def projectDescription = [:]
 
@@ -64,6 +68,13 @@ class FreelineInitializer {
         projectDescription.use_jdk8 = isUseJdk8(projectDescription.android_gradle_plugin_version as String)
         projectDescription.ignore_resource_ids = FreelineCompat.compatIgnoreResourceIds(ignoreResourceIds)
         projectDescription.use_system_gradle = useSystemGradle
+        projectDescription.annotationMap = annotationMap
+
+        if (annotationMap.size() > 0){
+            customAnnotationSupportEnabled = true
+        }
+
+        projectDescription.customAnnotationSupportEnabled = customAnnotationSupportEnabled //加上这个是否开启的bool值 省的在python里面判断
 
         def useMd5PathArray = [];
         for(String path : checkSourcesMd5){
