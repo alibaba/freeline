@@ -30,6 +30,9 @@ class FreelineAnnotationCollector {
 
     private static def sAnnotationCollection = [:]
 
+    // 收集所有注解信息 以供后续观察 DSL自定义注解规则可以参考
+    public static final def DEBUG_ANNOTATION_COLLECTOR = new HashSet<String>()
+
     public static void addNewAnno(String anno, String path, String className, String entry, boolean isJar) {
         String key = ANNOTATION_TARGETS[anno]
 
@@ -76,6 +79,10 @@ class FreelineAnnotationCollector {
         def json = new JsonBuilder(sAnnotationCollection).toPrettyString()
         println json
         FreelineUtils.saveJson(json, FreelineUtils.joinPath(buildCacheDirPath, "freeline_annotation_info.json"), true)
+
+        def allAnnotationJson = new JsonBuilder(DEBUG_ANNOTATION_COLLECTOR).toPrettyString()
+        println allAnnotationJson
+        FreelineUtils.saveJson(allAnnotationJson, FreelineUtils.joinPath(buildCacheDirPath, "freeline_debug_annotation_collection.json"), true)
 
         sAnnotationCollection.clear()
     }

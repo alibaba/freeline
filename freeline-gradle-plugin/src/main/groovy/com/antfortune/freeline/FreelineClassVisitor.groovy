@@ -124,6 +124,10 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
                     FreelineAnnotationCollector.addNewAnno(anno, filePath, className, entry, isJar)
                 }
             }
+            // 收集所有的注解信息已供自定义注解处理器规则的书写
+            if (!FreelineAnnotationCollector.DEBUG_ANNOTATION_COLLECTOR.contains(desc)){
+                FreelineAnnotationCollector.DEBUG_ANNOTATION_COLLECTOR.add(desc)
+            }
         }
     }
 
