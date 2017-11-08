@@ -30,8 +30,8 @@ task clean(type: Delete) {
 def supportLibVersion = '25.1.1'
 
 ext {
-    freelineDevVersion = '0.8.7-SNAPSHOT'
-    freelineReleaseVersion = '0.8.7'
+    freelineDevVersion = '0.8.8-SNAPSHOT'
+    freelineReleaseVersion = '0.8.8'
     minSdkVersion = 14
     targetSdkVersion = 25
     compileSdkVersion = 25
