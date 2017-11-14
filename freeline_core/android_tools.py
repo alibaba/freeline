@@ -569,6 +569,8 @@ class AndroidIncBuildInvoker(object):
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))
                 self._is_need_javac = False
+        else:
+            self._is_need_javac = True
 
         return self._is_need_javac
 
