@@ -521,9 +521,10 @@ class AndroidIncBuildInvoker(object):
         if is_windows_system():
             buf = fix_unicode_parse_error(get_file_content(path), path)
             write_file_content(path, buf)
-
+#todo 检查R文件增量问题 library模块里面的
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
+        res_changed_count = len(self._changed_files['res'])
         apt_changed_count = 0
         if 'apt' in self._changed_files:
             apt_changed_count = len(self._changed_files['apt'])
@@ -554,9 +555,15 @@ class AndroidIncBuildInvoker(object):
             elif apt_changed_count != 0:
                 self.debug('{} has apt files changed so that it need javac task.'.format(self._name))
                 self._is_need_javac = True
+            elif res_changed_count != 0:
+                self.debug('{} has res files changeed so that it need javac task for R.java'.format(self._name))
+                # 照顾到Kotlin部分的R.java
+                self._is_need_javac = True
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))
                 self._is_need_javac = False
+        else:
+            self._is_need_javac = True
 
         return self._is_need_javac
 
@@ -576,7 +583,7 @@ class AndroidIncBuildInvoker(object):
             else:
                 self._is_r_file_changed = True
                 self.debug('find R.java modified in src list')
-        if len(self._changed_files['kotlin']):
+        if len(self._changed_files['kotlin']) > 0:
             is_only_r_changed = False
         return is_only_r_changed
 

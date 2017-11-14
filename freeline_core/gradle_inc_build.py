@@ -224,7 +224,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         # self._invoker.check_other_modules_resources()
         should_run_javac_task = self._invoker.check_javac_task()
         if not should_run_javac_task:
-            self.debug('no need to execute')
+            self.debug('no need to execute javac')
             return
 
         self.debug('start to execute javac command...')
@@ -232,7 +232,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.fill_classpaths()
         self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
-        self._invoker.run_apt_only()
+        # self._invoker.run_apt_only() #辣鸡
         self._invoker.run_javac_task()
         self._invoker.run_retrolambda()
 
@@ -291,6 +291,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             'databinding_modules']
         self._is_dagger_enabled = 'apt_libraries' in self._config and self._config['apt_libraries']['dagger']
         self._apt_output_dir = None
+        self._custom_annotation_support_enabled = self._config['customAnnotationSupportEnabled']
+        self._custon_annotation_tags = self._config['annotationMap'].values()
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
@@ -650,7 +652,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             return
 
         extra_javac_args_enabled = not (self._is_databinding_enabled and self._should_run_databinding_apt())
-        javacargs = self._generate_java_compile_args(extra_javac_args_enabled=extra_javac_args_enabled)
+        javacargs = self._generate_java_compile_args(extra_javac_args_enabled=True)
 
         self.debug('javac exec: ' + ' '.join(javacargs))
         output, err, code = cexec(javacargs, callback=None)
@@ -716,11 +718,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     arguments.append(fpath)
 
             filter_tags = []
-            if self._is_databinding_enabled:
-                filter_tags.extend(['BindingAdapter', 'BindingConversion', 'Bindable'])
+            # if self._is_databinding_enabled:
+            #     filter_tags.extend(['BindingAdapter', 'BindingConversion', 'Bindable'])
 
             if self._is_dagger_enabled:
                 filter_tags.extend(['DaggerComponent', 'DaggerModule'])
+
+            filter_tags.extend(self._custon_annotation_tags)
+            self.debug('anno--> add custom annotation dependencies => {}'.format(self._custon_annotation_tags))
 
             files = self._get_apt_related_files(filter_tags=filter_tags)
             for fpath in files:
@@ -729,6 +734,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         continue
                     self.debug('add apt related file: {}'.format(fpath))
                     arguments.append(fpath)
+
+            # apt_args = ['-s', '/Users/retrox/AndroidStudioProjects/One/app/build/generated/source/apt/debug']
+            # apt_args.append('-processorpath')
+            # apt_args.append('/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/compiler/1.0.0-alpha9-1/b264bf594f3af7789ded9eb2944163cbd016cb96/compiler-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.lifecycle/compiler/1.0.0-alpha9-1/e523b9fc6247e9f2c4723427e6c7020551fe64a1/compiler-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/migration/1.0.0-alpha9-1/f15118c72b2d142edbcc8a44cea663c2932abd9e/migration-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/common/1.0.0-alpha9-1/9c06db25a3274ddeafff6a1dbc65a63df7988368/common-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.1.3/e51ebc59da5103a2052859e89682c7f9c3456298/kotlin-stdlib-1.1.3.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.auto/auto-common/0.6/cf7212b0f8bfef12657b942df8f4f2cf032d3f41/auto-common-0.6.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.squareup/javapoet/1.8.0/e858dc62ef484048540d27d36f3ec2177a3fa9b1/javapoet-1.8.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4/4.5.3/f35db7e4b2446e4174ba6a73db7bd6b3e6bb5da1/antlr4-4.5.3.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.16.1/72540738ecee65b58ef5a6dbc125e83223716b17/sqlite-jdbc-3.16.1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/commons-codec/commons-codec/1.10/4b95f4897fa13f2cd904aee711aeafc0c5295cd8/commons-codec-1.10.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.lifecycle/common/1.0.0/e414a4cb28434e25c4f6aa71426eb20cf4874ae9/common-1.0.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.android.support/support-annotations/26.1.0/814258103cf26a15fcc26ecce35f5b7d24b73f8/support-annotations-26.1.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.0/c4ba5371a29ac9b2ad6129b1d39ea38750043eff/gson-2.8.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/18.0/cce0823396aa693798f8882e64213b1772032b09/guava-18.0.jar')
+            # self._extra_javac_args.extend(apt_args)
+            # self.debug('anno--> ' + ' '.join(apt_args))
 
             arguments.extend(self._extra_javac_args)
 
@@ -761,7 +772,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         arguments = []
         arguments.append('-cp')
         # todo 也许要放在配置里面？
-        self._classpaths.append('{}/tmp/kotlin-classes/debug'.format(self._config['build_directory']))
+        self._classpaths.append('{}/tmp/kotlin-classes'.format(self._config['build_directory']))
         arguments.append(os.pathsep.join(self._classpaths))
 
         for fpath in self._changed_files['kotlin']:
