@@ -242,7 +242,7 @@ class GradleIncKotlincCommand(IncKotlincCommand):
         IncKotlincCommand.__init__(self, module_name, invoker)
 
     def execute(self):
-        self._invoker.check_r_md5()  # check if R.java has changed
+        # self._invoker.check_r_md5()  # check if R.java has changed
         # self._invoker.check_other_modules_resources()
         should_run_kotlinc_task = self._invoker.check_kotlinc_task()
         if not should_run_kotlinc_task:
@@ -250,7 +250,7 @@ class GradleIncKotlincCommand(IncKotlincCommand):
             return
 
         self.debug('start to execute kotlinc command...')
-        self._invoker.append_r_file()
+        # self._invoker.append_r_file()
         self._invoker.fill_classpaths()
         # self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
@@ -651,6 +651,11 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             self.debug('apt process do not generate new files, ignore javac task.')
             return
 
+        if len(self._changed_files['src']) == 0:
+            self.debug('no java file have changed, drop javac task.')
+            # 保护性
+            return
+
         extra_javac_args_enabled = not (self._is_databinding_enabled and self._should_run_databinding_apt())
         javacargs = self._generate_java_compile_args(extra_javac_args_enabled=True)
 
@@ -682,16 +687,6 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         if code != 0:
             raise FreelineException('incremental kotlinc compile failed.', '{}\n{}'.format(output, err))
-        else:
-            # todo 这个应该是和kotlin没有关系 拷贝R类用的
-            if self._is_r_file_changed:
-                old_r_file = self._finder.get_dst_r_path(config=self._config)
-                new_r_file = android_tools.DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
-                if old_r_file and new_r_file:
-                    shutil.copyfile(new_r_file, old_r_file)
-                    self.debug('copy {} to {}'.format(new_r_file, old_r_file))
-
-
 
     def _should_run_databinding_apt(self):
         if 'apt' in self._changed_files:
@@ -961,7 +956,17 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         if not finder:
             finder = self._finder
 
-        r_path = android_tools.find_r_file(finder.get_dst_r_dir(), package_name=package_name)
+        # 解决搜索R类搜到其他flavor的问题
+        flavor = ''
+        target_flavor_path = ''
+        if 'product_flavor' in self._config:
+            flavor = self._config['product_flavor']
+        if flavor != '':
+            target_flavor_path = os.path.join(finder.get_dst_r_dir(), flavor)
+        else:
+            target_flavor_path = finder.get_dst_r_dir()
+
+        r_path = android_tools.find_r_file(target_flavor_path, package_name=package_name)
         if r_path and os.path.exists(r_path):
             target_dir = os.path.join(self.__get_freeline_backup_r_dir(), package_name.replace('.', os.sep))
             if not os.path.exists(target_dir):

@@ -218,6 +218,13 @@ class DirectoryFinder(object):
             os.makedirs(backup_dir)
         return backup_dir
 
+    # 也是用来解决kotlin适配之后的R类增量问题 之前的@get_backup_dir 并不能搜索到library里面的R类
+    def get_freeline_backup_r_dir(self):
+        dirpath = os.path.join(self._cache_dir, 'freeline-backup-r')
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+        return dirpath
+
     def get_backup_res_dir(self):
         dir_path = os.path.join(self.get_backup_dir(), 'res')
         if not os.path.isdir(dir_path):
@@ -498,7 +505,7 @@ class AndroidIncBuildInvoker(object):
         old_md5 = None
         old_r_file = self._finder.get_dst_r_path(config=self._config)
         self.debug("{} old R.java path: {}".format(self._name, old_r_file))
-        new_r_file = DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
+        new_r_file = DirectoryFinder.get_r_file_path(self._finder.get_freeline_backup_r_dir())
         self.debug("{} new R.java path: {}".format(self._name, new_r_file))
         if old_r_file and os.path.exists(old_r_file):
             old_md5 = get_md5(old_r_file)
@@ -562,8 +569,6 @@ class AndroidIncBuildInvoker(object):
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))
                 self._is_need_javac = False
-        else:
-            self._is_need_javac = True
 
         return self._is_need_javac
 
