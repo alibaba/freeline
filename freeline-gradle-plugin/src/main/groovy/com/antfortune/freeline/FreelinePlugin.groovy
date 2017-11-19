@@ -16,7 +16,7 @@ import org.gradle.util.VersionNumber
  */
 class FreelinePlugin implements Plugin<Project> {
 
-    String freelineVersion = "0.8.8" // DEBUG
+    String freelineVersion = "0.8.8"
 
     @Override
     void apply(Project project) {

@@ -21,6 +21,8 @@ class FreelineExtension {
 
     String launcher = ""
 
+    String kotlinPath = "kotlinc"
+
     List<String> extraResourceDependencyPaths = []
 
     List<String> excludeResourceDependencyPaths = []

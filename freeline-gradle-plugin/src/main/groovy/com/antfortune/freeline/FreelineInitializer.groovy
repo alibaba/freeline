@@ -32,6 +32,7 @@ class FreelineInitializer {
         def checkSourcesMd5 = extension.checkSourcesMd5
         def useSystemGradle = extension.useSystemGradle
         def annotationMap = extension.annotationMap
+        def kotlincPath = extension.kotlinPath
         def customAnnotationSupportEnabled = false
 
         println "anno custom Map =====>  $annotationMap"
@@ -69,6 +70,7 @@ class FreelineInitializer {
         projectDescription.ignore_resource_ids = FreelineCompat.compatIgnoreResourceIds(ignoreResourceIds)
         projectDescription.use_system_gradle = useSystemGradle
         projectDescription.annotationMap = annotationMap
+        projectDescription.kotlincPath = kotlincPath
 
         if (annotationMap.size() > 0){
             customAnnotationSupportEnabled = true

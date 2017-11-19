@@ -775,11 +775,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         javacargs.extend(arguments)
         return javacargs
 
-    #kotlin增量命令的生成 暂时直接kotlinc了
+    #kotlin增量命令的生成
     def _generate_kotlin_compile_args(self, extra_javac_args_enabled=False):
         # javacargs = [self._javac]
-        # test kotlinc
-        kotlincargs = ['kotlinc']
+        # 自定义Kotlinc Path，如果没有那就使用环境变量中的kotlinc
+        kotlinc_path = self._config.get('kotlincPath','kotlinc')
+        kotlincargs = [kotlinc_path]
         arguments = []
         arguments.append('-cp')
         # todo 也许要放在配置里面？
@@ -794,19 +795,19 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         # ref: https://support.microsoft.com/en-us/kb/830473
         # todo 去你丫的Windows？？
-        # if is_windows_system():
-        #     arguments_length = sum(map(len, arguments))
-        #     if arguments_length > 8000:
-        #         argument_file_path = os.path.join(self._finder.get_module_cache_dir(), 'javac_args_file')
-        #         self.debug('arguments length: {} > 8000, save args to {}'.format(arguments_length, argument_file_path))
-        #
-        #         if os.path.exists(argument_file_path):
-        #             os.remove(argument_file_path)
-        #
-        #         arguments_content = ' '.join(arguments)
-        #         self.debug('javac arguments: ' + arguments_content)
-        #         write_file_content(argument_file_path, arguments_content)
-        #         arguments = ['@{}'.format(argument_file_path)]
+        if is_windows_system():
+            arguments_length = sum(map(len, arguments))
+            if arguments_length > 8000:
+                argument_file_path = os.path.join(self._finder.get_module_cache_dir(), 'kotlinc_args_file')
+                self.debug('arguments length: {} > 8000, save args to {}'.format(arguments_length, argument_file_path))
+
+                if os.path.exists(argument_file_path):
+                    os.remove(argument_file_path)
+
+                arguments_content = ' '.join(arguments)
+                self.debug('kotlinc arguments: ' + arguments_content)
+                write_file_content(argument_file_path, arguments_content)
+                arguments = ['@{}'.format(argument_file_path)]
 
         # javacargs.extend(arguments)
 
