@@ -192,7 +192,7 @@ class TaskEngine(object):
         parent_task_queue = Queue.Queue()
         parent_task_queue.put(task)
         while not parent_task_queue.empty():
-            has_circular_task = False
+            has_recursive_task = False
             parent_task = parent_task_queue.get()
 
             if parent_task.name not in depth:
@@ -200,13 +200,13 @@ class TaskEngine(object):
 
             for parent in parent_task.parent_tasks:
                 if parent.name == task.name:
-                    has_circular_task = True
+                    has_recursive_task = True
                     parent_task.parent_tasks.remove(parent);
                     break;
                 if parent.name not in depth:
                     parent_task_queue.put(parent)
 
-            if has_circular_task:
-                Logger.info("[CAUTIONS] Circular Tasks Detected! Drop {} for {} !!".format(depth.pop(), task.name))
+            if has_recursive_task:
+                Logger.info("[CAUTIONS] Recursive Tasks Detected! Drop {} for {} !!".format(depth.pop(), task.name))
 
         return len(depth)
