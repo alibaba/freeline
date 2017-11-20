@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Just a drawable holder -->
+    <drawable name="avd_show_password_1">#fff</drawable>
+    <drawable name="avd_show_password_2">#fff</drawable>
+    <drawable name="avd_show_password_3">#fff</drawable>
+    <drawable name="avd_hide_password_1">#fff</drawable>
+    <drawable name="avd_hide_password_2">#fff</drawable>
+    <drawable name="avd_hide_password_3">#fff</drawable>
+</resources>
