@@ -155,7 +155,7 @@ class FreelinePlugin implements Plugin<Project> {
                         output.processManifest.doLast {
                             if(isStudioCanaryVersion){
 //                            修改了Manifest的获取方式 之前api已被取消 不过根据Manifest的位置相对固定就这样子去访问了
-                                def path = "${project.buildDir}/intermediates/manifests/full/debug/AndroidManifest.xml"
+                                def path = "${project.buildDir}/intermediates/manifests/full/$productFlavor/debug/AndroidManifest.xml"
                                 def manifestFile = new File(path)
                                 if (manifestFile.exists()) {
                                     println "find manifest file path: ${manifestFile.absolutePath}"
