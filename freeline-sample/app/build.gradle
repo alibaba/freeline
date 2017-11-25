@@ -16,13 +16,13 @@ android {
                 SUPPORT_RTL: false
         ]
     }
-//    flavorDimensions "dev"
+
     buildTypes {
         debug {
             applicationIdSuffix ".dev"
             applicationVariants.all { variant ->
-                variant.outputs.each { output ->
-                    output.outputFile = new File(output.outputFile.parent, output.outputFile.name.replace(".apk", "-" + defaultConfig.versionName + ".apk"))
+                variant.outputs.all {
+                    outputFileName = "${variant.name}-${variant.versionName}.apk"
                 }
             }
         }
@@ -31,11 +31,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         monkey {
-
+            matchingFallbacks = ['debug', 'release']
         }
-    }
-    sourceSets {
-        debug.setRoot('buildType/debug')
     }
 
     freeline {
@@ -44,6 +41,7 @@ android {
         autoDependency false
     }
 
+    flavorDimensions "env"
     productFlavors {
         normal {
         }
@@ -57,22 +55,22 @@ android {
 
 
 dependencies {
-    testCompile 'junit:junit:4.12'
-    compile deps.appcompatV7
+//    testCompile 'junit:junit:4.12'
+    implementation deps.appcompatV7
 
-    compile project(":freeline-sample:common")
-    compile project(":freeline-sample:PureJavaLib")
-    compile project(":freeline-sample:ThirdParty:share")
-    compile project(":freeline-sample:ThirdParty:payment")
+    implementation project(":freeline-sample:common")
+    implementation project(":freeline-sample:PureJavaLib")
+    implementation project(":freeline-sample:ThirdParty:share")
+    implementation project(":freeline-sample:ThirdParty:payment")
 
-    debugCompile deps.freelineRuntime
-    releaseCompile deps.freelineRuntimeNoOp
-    testCompile deps.freelineRuntimeNoOp
-    monkeyCompile deps.freelineRuntimeNoOp
+    debugImplementation deps.freelineRuntime
+    releaseImplementation deps.freelineRuntimeNoOp
+    testImplementation deps.freelineRuntimeNoOp
+    monkeyImplementation deps.freelineRuntimeNoOp
 
-    compile 'com.jakewharton:butterknife:8.4.0'
+    implementation 'com.jakewharton:butterknife:8.4.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
 
-    compile "org.androidannotations:androidannotations-api:4.1.0"
+    implementation "org.androidannotations:androidannotations-api:4.1.0"
     annotationProcessor "org.androidannotations:androidannotations:4.1.0"
 }
