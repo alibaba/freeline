@@ -3,11 +3,12 @@
 buildscript {
     repositories {
         mavenLocal()
+        google()
         jcenter()
         maven { url 'http://dl.bintray.com/jetbrains/intellij-plugin-service' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.0.0'
         classpath 'com.antfortune.freeline:gradle:0.8.8'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
@@ -19,6 +20,7 @@ buildscript {
 
 allprojects {
     repositories {
+        google()
         jcenter()
     }
 }
@@ -27,15 +29,15 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-def supportLibVersion = '25.1.1'
+def supportLibVersion = '27.0.0'
 
 ext {
     freelineDevVersion = '0.8.8-SNAPSHOT'
     freelineReleaseVersion = '0.8.8'
     minSdkVersion = 14
     targetSdkVersion = 25
-    compileSdkVersion = 25
-    buildToolsVersion = '25.0.2'
+    compileSdkVersion = 27
+    buildToolsVersion = '27.0.0'
 }
 
 def deps = [
