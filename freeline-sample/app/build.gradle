@@ -1,6 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.antfortune.freeline'
 
+freeline {
+    hack true
+    productFlavor "develop"
+    autoDependency false
+}
+
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -33,12 +39,6 @@ android {
         monkey {
             matchingFallbacks = ['debug', 'release']
         }
-    }
-
-    freeline {
-        hack true
-        productFlavor "develop"
-        autoDependency false
     }
 
     flavorDimensions "env"
