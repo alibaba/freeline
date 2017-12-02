@@ -63,10 +63,8 @@ dependencies {
     implementation project(":freeline-sample:ThirdParty:share")
     implementation project(":freeline-sample:ThirdParty:payment")
 
+    implementation deps.freelineRuntimeNoOp
     debugImplementation deps.freelineRuntime
-    releaseImplementation deps.freelineRuntimeNoOp
-    testImplementation deps.freelineRuntimeNoOp
-    monkeyImplementation deps.freelineRuntimeNoOp
 
     implementation 'com.jakewharton:butterknife:8.4.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
