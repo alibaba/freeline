@@ -50,6 +50,19 @@ class SyncClient(object):
                 raise UsbConnectionException('More than 1 devices connect',
                                              '\tOnly 1 device allowed, '
                                              'use `adb devices` to check your devices\' connection')
+                                             
+            for content in devices:
+                if content.find('offline') <> -1:
+                    raise UsbConnectionException('Device is connected but offline',
+                                                '\tPlease replug in device')
+
+                if content.find('unauthorized') <> -1:
+                    raise UsbConnectionException('Device is connected but unauthorized',
+                                                '\tReplug in device and accept authorization as usual')
+
+                if not (content.find('device') > -1):
+                    raise UsbConnectionException('Device is connected but unknown status',
+                                                '\tPlease replug in device')
 
     def check_installation(self):
         commands = [self._adb, 'shell', 'pm', 'list', 'packages', self._config['debug_package']]
@@ -90,6 +103,9 @@ class SyncClient(object):
                     break
                 time.sleep(0.2)
                 self.debug('try to connect device {} times...'.format(i))
+                
+        if self._port == -1:
+            self._port = 0
 
     def close_connection(self):
         if self._port != 0:
@@ -111,6 +127,11 @@ class SyncClient(object):
                     if result["apkBuildFlag"] == uuid:
                         port = PORT_START + i
                         break
+                    elif result["apkBuildFlag"] is not None:
+                        self.debug('apkBuildFlag: {} does not match uuid: {}'.format(result["apkBuildFlag"], uuid))
+                        port = -1
+                        break
+                        
                 except Exception, e:
                     pass
 
