@@ -1,6 +1,10 @@
 package com.antfortune.freeline;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,11 +17,24 @@ public class MiddlewareActivity extends Activity {
     private static final String TAG = "Freeline.MiddlewareAct";
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
     private static final long RESET_WAIT = 1000L;
+    private static final int DELAY_TIME = 200;
     private long createTime;
     private boolean ready;
     private int back;
     private final Runnable reset = new Runnable() {
         public void run() {
+
+            //通过定时器启动提高重新启动应用的成功率
+            Context context = MiddlewareActivity.this;
+
+            Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
+
+            AlarmManager mgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            mgr.set(AlarmManager.RTC, System.currentTimeMillis() + DELAY_TIME, pendingIntent);
+
             Log.d(TAG, "kill process: " + Process.myPid());
             Process.killProcess(Process.myPid());
         }
