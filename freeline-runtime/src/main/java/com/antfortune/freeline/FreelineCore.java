@@ -77,7 +77,9 @@ public class FreelineCore {
         sApplication = app;
         setDynamicImpl(dynamicImpl);
 
-        if (AppUtils.isApkDebugable(app) && AppUtils.isMainProcess(app)) {
+        // 子进程也可以应用 patch
+        //if (AppUtils.isApkDebugable(app) && AppUtils.isMainProcess(app)) {
+        if (AppUtils.isApkDebugable(app)) {
             Log.i(TAG, "freeline init application");
             ActivityManager.initApplication(app);
             MonkeyPatcher.monkeyPatchApplication(app, app, sRealApplication, null);
@@ -145,8 +147,10 @@ public class FreelineCore {
     }
 
     public static long getBuildTime(Context context) {
-        String path = context.getApplicationInfo().sourceDir;
-        return (new File(path)).lastModified();
+        // 使用 ApkBuildFlag 作为基点进行对比，判断应用版本是否匹配
+        long buildTime = getApkBuildFlag();
+        Log.i(TAG, "Build Time is: " + buildTime);
+        return buildTime;
     }
 
     public static long getApkBuildFlag() {
@@ -195,7 +199,10 @@ public class FreelineCore {
     }
 
     private static long getDynamicTime() {
-        return getDynamicInfoSp().getLong("dynamicTime", System.currentTimeMillis());
+        // 使用 ApkBuildFlag 作为基点进行对比，判断应用版本是否匹配
+        long dynamicTime = getDynamicInfoSp().getLong("dynamicTime", getApkBuildFlag());
+        Log.i(TAG, "Dynamic Time is: " + dynamicTime);
+        return dynamicTime;
     }
 
     private static boolean checkVersionChange() {
@@ -234,7 +241,13 @@ public class FreelineCore {
     }
 
     private static void injectHackNativeLib(Context context, PathClassLoader classLoader) {
-        NativeUtils.injectHackNativeLib(getDynamicNativeDir(), classLoader);
+        // 修复so patch不生效问题
+        try {
+            NativeUtils.installNativeLibraryPath(classLoader, new File(getDynamicNativeDir()), false);
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
+        //NativeUtils.injectHackNativeLib(getDynamicNativeDir(), classLoader);
     }
 
 
@@ -342,7 +355,8 @@ public class FreelineCore {
     }
 
     public static void updateDynamicTime() {
-        long dynamicTime = System.currentTimeMillis();
+        // 使用 ApkBuildFlag 作为基点进行对比，判断应用版本是否匹配
+        long dynamicTime = getApkBuildFlag();
         Log.i(TAG, "update dynamic time: " + dynamicTime);
         getDynamicInfoSp().edit().putLong("dynamicTime", dynamicTime).commit();
     }
