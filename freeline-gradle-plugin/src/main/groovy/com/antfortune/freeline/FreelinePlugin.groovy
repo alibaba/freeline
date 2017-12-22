@@ -336,7 +336,8 @@ class FreelinePlugin implements Plugin<Project> {
 
                         preDexTask.inputs.files.files.each { f ->
                             if (f.path.endsWith(".jar")) {
-                                FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
+                                // 屏蔽注入，减少Windows IO操作
+                                //FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
                                 jarDependencies.add(f.path)
                             }
                         }
@@ -357,15 +358,17 @@ class FreelinePlugin implements Plugin<Project> {
                     classesProcessTask.inputs.files.files.each { f ->
                         if (f.isDirectory()) {
                             f.eachFileRecurse(FileType.FILES) { file ->
-                                backUpClass(backupMap, file as File, backUpDirPath as String, modules.values())
-                                FreelineInjector.inject(excludeHackClasses, file as File, modules.values())
+                                // 屏蔽注入，减少Windows IO操作
+                                //backUpClass(backupMap, file as File, backUpDirPath as String, modules.values())
+                                //FreelineInjector.inject(excludeHackClasses, file as File, modules.values())
                                 if (file.path.endsWith(".jar")) {
                                     jarDependencies.add(file.path)
                                 }
                             }
                         } else {
-                            backUpClass(backupMap, f as File, backUpDirPath as String, modules.values())
-                            FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
+                            // 屏蔽注入，减少Windows IO操作
+                            //backUpClass(backupMap, f as File, backUpDirPath as String, modules.values())
+                            //FreelineInjector.inject(excludeHackClasses, f as File, modules.values())
                             if (f.path.endsWith(".jar")) {
                                 jarDependencies.add(f.path)
                             }
@@ -412,7 +415,8 @@ class FreelinePlugin implements Plugin<Project> {
                         FreelineUtils.addNewAttribute(project, 'retrolambda', projectRetrolambdaConfig)
                         FreelineUtils.addNewAttribute(project, 'databinding_compiler_jar', databindingCompilerJarPath)
                         FreelineUtils.addNewAttribute(project, 'apt_libraries', aptLibraries)
-                        rollBackClasses(backupMap)
+                        // 屏蔽注入，减少Windows IO操作
+                        //rollBackClasses(backupMap)
                     }
                 }
             }
