@@ -55,6 +55,7 @@ public class PushDexSchema implements ISchemaAction {
         //FreelineCore.applyDynamicDex(finalFile.getAbsolutePath(), optDir.getAbsolutePath());
         LongLinkServer.setDynamicDexPath(dexDir.getAbsolutePath());
         LongLinkServer.setOptDirPath(optDir.getAbsolutePath());
+        FreelineCore.applyDynamicDex(dexDir.getAbsolutePath(), optDir.getAbsolutePath());
         Log.d(TAG, "dex file received (" + finalFile.length() + " bytes), rename result :" + rst  + ", save to " + finalFile.getAbsolutePath());
     }
 }
