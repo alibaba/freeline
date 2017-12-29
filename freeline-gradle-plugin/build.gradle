@@ -3,7 +3,7 @@ apply plugin: 'java'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version FREELINE_RELEASE_VERSION
+version FREELINE_ARTIFACT_VERSION
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6

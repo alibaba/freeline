@@ -16,7 +16,7 @@ def developerEmail = 'yong.hy@alipay.com'
 def publishedGroupId = 'com.antfortune.freeline'
 def artifact = 'runtime'
 def libraryName = 'freeline-runtime'
-def publishVersion = FREELINE_RELEASE_VERSION
+def publishVersion = FREELINE_ARTIFACT_VERSION
 
 install {
     repositories {

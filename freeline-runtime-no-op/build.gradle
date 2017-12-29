@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply from: 'bintray.gradle'
 
 group 'com.antfortune.freeline'
-version FREELINE_RELEASE_VERSION
+version FREELINE_ARTIFACT_VERSION
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion

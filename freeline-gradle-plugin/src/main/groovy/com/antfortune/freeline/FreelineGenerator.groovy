@@ -32,9 +32,9 @@ class FreelineGenerator {
         if (isRootModuleTheMainModule) {
             params.add('assembleDebug')
         } else if (isNormalProductFlavor(productFlavor)) {
-            params.add(":${mainModule}:assembleDebug")
+            params.add("assembleDebug")
         } else {
-            params.add(":${mainModule}:assemble${productFlavor.capitalize()}Debug")
+            params.add("assemble${productFlavor.capitalize()}Debug")
         }
 
         return params.join(" ")
