@@ -233,6 +233,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.clean_dex_cache()
         self._invoker.run_apt_only()
         self._invoker.run_javac_task()
+        self._invoker.run_desugar_task()
         self._invoker.run_retrolambda()
 
 
@@ -642,6 +643,35 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     shutil.copyfile(new_r_file, old_r_file)
                     self.debug('copy {} to {}'.format(new_r_file, old_r_file))
 
+    def run_desugar_task(self):
+        self.debug('========= desugar task ========')
+        javaargs = [Builder.get_java(self._config)]
+        arguments = ['-jar', Builder.get_desugar()]
+        patch_classes_cache_dir = self._finder.get_patch_classes_cache_dir()
+
+        arguments.append('--input')
+        arguments.append(patch_classes_cache_dir)
+        arguments.append('--output')
+        arguments.append(patch_classes_cache_dir)
+
+        # bootclasspath
+        arguments.append('--bootclasspath_entry')
+        arguments.append(os.path.join(self._config['compile_sdk_directory'], 'android.jar'))
+
+        # classpath
+        for path in self._classpaths:
+            arguments.append('--classpath_entry')
+            arguments.append(path)
+
+        javaargs.extend(arguments)
+
+        self.debug('java exec: ' + ' '.join(javaargs))
+        output, err, code = cexec(javaargs, callback=None)
+
+        if code != 0:
+            raise FreelineException('desugar failed.', '{}\n{}'.format(output, err))
+
+
     def _should_run_databinding_apt(self):
         if 'apt' in self._changed_files:
             for fpath in self._changed_files['apt']:
@@ -653,7 +683,7 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         javacargs = [self._javac]
         arguments = ['-encoding', 'UTF-8', '-g']
         if not self._is_retrolambda_enabled:
-            arguments.extend(['-target', '1.7', '-source', '1.7'])
+            arguments.extend(['-target', '1.8', '-source', '1.8'])
 
         arguments.append('-cp')
         arguments.append(os.pathsep.join(self._classpaths))

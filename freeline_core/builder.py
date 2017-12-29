@@ -84,6 +84,11 @@ class Builder(object):
         return aapt if os.path.exists(aapt) else None
 
     @staticmethod
+    def get_desugar():
+        desugar = os.path.join('freeline', 'release-tools', 'desugar_deploy.jar')
+        return desugar if os.path.exists(desugar) else None
+
+    @staticmethod
     def get_javac(config=None):
         path = os.getenv('JAVA_HOME')
         if config is not None and 'java_home' in config:

@@ -51,6 +51,11 @@ android {
     }
 
     useLibrary 'org.apache.http.legacy'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 
@@ -63,7 +68,7 @@ dependencies {
     implementation project(":freeline-sample:ThirdParty:share")
     implementation project(":freeline-sample:ThirdParty:payment")
 
-    implementation deps.freelineRuntimeNoOp
+    releaseImplementation deps.freelineRuntimeNoOp
     debugImplementation deps.freelineRuntime
 
     implementation 'com.jakewharton:butterknife:8.4.0'
