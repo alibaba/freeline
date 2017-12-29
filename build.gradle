@@ -11,7 +11,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.0.0'
         classpath "com.antfortune.freeline:gradle:$FREELINE_RELEASE_VERSION"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.0'
         classpath 'me.tatarka:gradle-retrolambda:3.6.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -33,8 +33,8 @@ task clean(type: Delete) {
 def supportLibVersion = '27.0.0'
 
 ext {
-    freelineDevVersion = '0.8.8-SNAPSHOT'
-    freelineReleaseVersion = '0.8.8'
+    freelineDevVersion = FREELINE_RELEASE_VERSION
+    freelineReleaseVersion = FREELINE_RELEASE_VERSION
     minSdkVersion = 14
     targetSdkVersion = 25
     compileSdkVersion = 27
