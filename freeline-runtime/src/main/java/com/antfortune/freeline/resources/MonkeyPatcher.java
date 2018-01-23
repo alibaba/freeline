@@ -389,9 +389,15 @@ public class MonkeyPatcher {
                         Field mResourcesImpl = Resources.class.getDeclaredField("mResourcesImpl");
                         mResourcesImpl.setAccessible(true);
                         Object resourceImpl = mResourcesImpl.get(resources);
-                        Field implAssets = resourceImpl.getClass().getDeclaredField("mAssets");
-                        implAssets.setAccessible(true);
-                        implAssets.set(resourceImpl, newAssetManager);
+                        try {
+                            Field implAssets = resourceImpl.getClass().getDeclaredField("mAssets");
+                            implAssets.setAccessible(true);
+                            implAssets.set(resourceImpl, newAssetManager);
+                        } catch (Throwable e) {
+                            Field implAssets = resourceImpl.getClass().getSuperclass().getDeclaredField("mAssets");
+                            implAssets.setAccessible(true);
+                            implAssets.set(resourceImpl, newAssetManager);
+                        }
                     }
                     resources.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
                 }

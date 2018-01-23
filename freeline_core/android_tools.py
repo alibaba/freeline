@@ -50,7 +50,8 @@ class InstallApkTask(Task):
         commands = [self._adb, 'devices']
         output, err, code = cexec(commands, callback=None)
         if code == 0:
-            length = len(output.strip().split('\n'))
+            devices = output.strip().split('\n')
+            length = len(devices)
             from exceptions import UsbConnectionException
             if length < 2:
                 raise UsbConnectionException('No device\'s connection found',
@@ -59,6 +60,18 @@ class InstallApkTask(Task):
                 raise UsbConnectionException('More than 1 device connect',
                                              '\tOnly 1 device allowed, '
                                              'use `adb devices` to check your devices\' connection')
+            for content in devices:
+                if content.find('offline') <> -1:
+                    raise UsbConnectionException('Device is connected but offline',
+                                                '\tPlease replug in device')
+
+                if content.find('unauthorized') <> -1:
+                    raise UsbConnectionException('Device is connected but unauthorized',
+                                                '\tReplug in device and accept authorization as usual')
+
+                if not (content.find('device') > -1):
+                    raise UsbConnectionException('Device is connected but unknown status',
+                                                '\tPlease replug in device')
 
     def _install_apk(self):
         if self._adb:

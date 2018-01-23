@@ -261,6 +261,12 @@ class GenerateFileStatTask(Task):
             os.remove(self._cache_path)
         write_json_cache(self._cache_path, self._stat_cache)
 
+        # build class related
+        class_related_args = ['java', '-jar', os.path.join('freeline', 'release-tools', 'classrelated.jar'), self._cache_path]
+        self.debug('build class related: ' + ' '.join(class_related_args))
+        show_gradle_log = False
+        output, err, code = cexec(class_related_args, callback=None)
+
     def _save_module_stat(self, module_name, module_path):
         # scan bulid.gradle
         self.__save_stat(module_name, os.path.join(module_path, 'build.gradle'))

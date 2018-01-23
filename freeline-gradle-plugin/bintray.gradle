@@ -1,5 +1,6 @@
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 def mavenDesc = 'Freeline is an incremental build tool for Android platform.'
 def siteUrl = 'https://github.com/alibaba/freeline'
@@ -15,7 +16,7 @@ def developerEmail = 'yong.hy@alipay.com'
 def publishedGroupId = 'com.antfortune.freeline'
 def artifact = 'gradle'
 def libraryName = 'freeline-gradle'
-def publishVersion = FREELINE_RELEASE_VERSION
+def publishVersion = FREELINE_ARTIFACT_VERSION
 
 install {
     repositories {
