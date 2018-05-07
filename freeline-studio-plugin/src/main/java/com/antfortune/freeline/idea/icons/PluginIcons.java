@@ -1,8 +1,8 @@
 package com.antfortune.freeline.idea.icons;
 
+import com.android.tools.idea.ui.Icons;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.util.IconLoader;
-import icons.AndroidIcons;
 
 import javax.swing.*;
 
@@ -35,7 +35,7 @@ public class PluginIcons {
     }
 
     private static Icon androidLoad(String path) {
-        return IconLoader.getIcon(path, AndroidIcons.class);
+        return IconLoader.getIcon(path, Icons.class);
     }
 
     private static Icon intellijLoad(String path) {

@@ -1,10 +1,10 @@
 package com.antfortune.freeline.idea.utils;
 
+import com.android.tools.idea.gradle.dsl.api.GradleBuildModel;
+import com.android.tools.idea.gradle.dsl.api.dependencies.ArtifactDependencyModel;
+import com.android.tools.idea.gradle.dsl.api.dependencies.ArtifactDependencySpec;
 import com.antfortune.freeline.idea.actions.UpdateAction;
 
-import com.android.tools.idea.gradle.dsl.model.GradleBuildModel;
-import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencyModel;
-import com.android.tools.idea.gradle.dsl.model.dependencies.ArtifactDependencySpec;
 import com.android.tools.idea.gradle.parser.GradleBuildFile;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
@@ -306,7 +306,7 @@ public class FreelineUtil {
                                     for (ArtifactDependencyModel model1 : artifactDependencyModels) {
                                         ArtifactDependencyModelWrapper wrapper = new ArtifactDependencyModelWrapper(model1);
                                         if (wrapper.group().equals(Constant.ANDROID_GRADLE_TOOL_GROUP_NAME)) {
-                                            ArtifactDependencySpec spec = new ArtifactDependencySpec(dependencyEntity.getArtifactId(),
+                                            ArtifactDependencySpec spec = ArtifactDependencySpec.create(dependencyEntity.getArtifactId(),
                                                     dependencyEntity.getGroupId(), dependencyEntity.getNewestReleaseVersion());
                                             model.buildscript().dependencies().addArtifact("classpath", spec);
                                             model.applyChanges();
