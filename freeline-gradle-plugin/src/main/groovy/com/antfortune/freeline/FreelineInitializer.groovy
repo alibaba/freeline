@@ -1,6 +1,7 @@
 package com.antfortune.freeline
 
 import com.android.build.gradle.AppExtension
+import com.android.builder.model.ProductFlavor
 import com.antfortune.freeline.versions.StaticVersionComparator
 import com.antfortune.freeline.versions.VersionParser
 import groovy.json.JsonBuilder
@@ -98,10 +99,22 @@ class FreelineInitializer {
                     invalidFlavor = false;
                 }
             }
+
+            def flavorApplicationIdSuffix = ""
+            for (ProductFlavor flavor : baseVariant.productFlavors) {
+                if (baseVariant.flavorName.equals(flavor.getName())) {
+                    flavorApplicationIdSuffix = flavor.applicationIdSuffix
+                    break
+                }
+            }
+            if (flavorApplicationIdSuffix == null || flavorApplicationIdSuffix == "") {
+                flavorApplicationIdSuffix = baseVariant.buildType.applicationIdSuffix
+            }
+
             def buildType = baseVariant.buildType;
             if (!applicationSuffixAdded && "debug".equalsIgnoreCase(buildType.name as String)) {
-                if (buildType.applicationIdSuffix) {
-                    projectDescription.debug_package = projectDescription.debug_package + buildType.applicationIdSuffix
+                if (flavorApplicationIdSuffix) {
+                    projectDescription.debug_package = projectDescription.debug_package + flavorApplicationIdSuffix
                     applicationSuffixAdded = true
                 }
             }
