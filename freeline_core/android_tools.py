@@ -231,6 +231,13 @@ class DirectoryFinder(object):
             os.makedirs(backup_dir)
         return backup_dir
 
+    # 也是用来解决kotlin适配之后的R类增量问题 之前的@get_backup_dir 并不能搜索到library里面的R类
+    def get_freeline_backup_r_dir(self):
+        dirpath = os.path.join(self._cache_dir, 'freeline-backup-r')
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+        return dirpath
+
     def get_backup_res_dir(self):
         dir_path = os.path.join(self.get_backup_dir(), 'res')
         if not os.path.isdir(dir_path):
@@ -511,7 +518,7 @@ class AndroidIncBuildInvoker(object):
         old_md5 = None
         old_r_file = self._finder.get_dst_r_path(config=self._config)
         self.debug("{} old R.java path: {}".format(self._name, old_r_file))
-        new_r_file = DirectoryFinder.get_r_file_path(self._finder.get_backup_dir())
+        new_r_file = DirectoryFinder.get_r_file_path(self._finder.get_freeline_backup_r_dir())
         self.debug("{} new R.java path: {}".format(self._name, new_r_file))
         if old_r_file and os.path.exists(old_r_file):
             old_md5 = get_md5(old_r_file)
@@ -534,9 +541,10 @@ class AndroidIncBuildInvoker(object):
         if is_windows_system():
             buf = fix_unicode_parse_error(get_file_content(path), path)
             write_file_content(path, buf)
-
+#todo 检查R文件增量问题 library模块里面的
     def check_javac_task(self):
         changed_count = len(self._changed_files['src'])
+        res_changed_count = len(self._changed_files['res'])
         apt_changed_count = 0
         if 'apt' in self._changed_files:
             apt_changed_count = len(self._changed_files['apt'])
@@ -567,11 +575,25 @@ class AndroidIncBuildInvoker(object):
             elif apt_changed_count != 0:
                 self.debug('{} has apt files changed so that it need javac task.'.format(self._name))
                 self._is_need_javac = True
+            elif res_changed_count != 0:
+                self.debug('{} has res files changeed so that it need javac task for R.java'.format(self._name))
+                # 照顾到Kotlin部分的R.java
+                self._is_need_javac = True
             else:
                 self.debug('{} code only change R.java, need not go ahead'.format(self._name))
                 self._is_need_javac = False
+        else:
+            self._is_need_javac = True
 
         return self._is_need_javac
+
+    def check_kotlinc_task(self):
+        changed_count = len(self._changed_files['kotlin'])
+        if changed_count == 0:
+            self.debug('{} project kotlin files have no change, need not go ahead'.format(self._name))
+            return False
+        else:
+            return True
 
     def _is_only_r_changed(self):
         is_only_r_changed = True
@@ -581,6 +603,8 @@ class AndroidIncBuildInvoker(object):
             else:
                 self._is_r_file_changed = True
                 self.debug('find R.java modified in src list')
+        if len(self._changed_files['kotlin']) > 0:
+            is_only_r_changed = False
         return is_only_r_changed
 
     def fill_classpaths(self):

@@ -53,6 +53,7 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
     @Override
     AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         collectAnno(desc)
+        println "anno-- class $className--> $desc"
         return super.visitAnnotation(desc, visible)
     }
 
@@ -94,6 +95,7 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
 
             @Override
             AnnotationVisitor visitAnnotation(String annoDesc, boolean visible) {
+                println "anno-- method $name--> $annoDesc"
                 collectAnno(annoDesc)
                 return super.visitAnnotation(annoDesc, visible)
             }
@@ -107,6 +109,7 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
         return new FieldVisitor(ASM4, fv) {
             @Override
             AnnotationVisitor visitAnnotation(String annoDesc, boolean visible) {
+                println "anno-- field $name--> $annoDesc"
                 collectAnno(annoDesc)
                 return super.visitAnnotation(annoDesc, visible)
             }
@@ -120,6 +123,10 @@ class FreelineClassVisitor extends ClassVisitor implements Opcodes {
                     foundAnnos.add(anno)
                     FreelineAnnotationCollector.addNewAnno(anno, filePath, className, entry, isJar)
                 }
+            }
+            // 收集所有的注解信息已供自定义注解处理器规则的书写
+            if (!FreelineAnnotationCollector.DEBUG_ANNOTATION_COLLECTOR.contains(desc)){
+                FreelineAnnotationCollector.DEBUG_ANNOTATION_COLLECTOR.add(desc)
             }
         }
     }

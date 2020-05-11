@@ -237,6 +237,15 @@ class FreelinePlugin implements Plugin<Project> {
                             }
                         }
                     }
+
+                    if (customAnnotationSupportEnabled){
+                        extension.annotationMap.each { entry ->
+                            //在 Freeline注解收集器中注册
+                            FreelineAnnotationCollector.CUSTOM_ANNOTATION_TARGETS.put(entry.key,entry.value)
+                            FreelineAnnotationCollector.ANNOTATION_CLASSES.add(entry.key)
+                        }
+                    }
+
                 }
 
                 // find databinding compiler jar path

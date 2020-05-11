@@ -21,6 +21,8 @@ class FreelineExtension {
 
     String launcher = ""
 
+    String kotlinPath = "kotlinc"
+
     List<String> extraResourceDependencyPaths = []
 
     List<String> excludeResourceDependencyPaths = []
@@ -30,6 +32,8 @@ class FreelineExtension {
     List<String> ignoreResourceIds = []
 
     List<String> checkSourcesMd5 = []
+
+    Map<String,String> annotationMap = [:]
 
     boolean foceLowerVersion = false
 

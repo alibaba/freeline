@@ -5,7 +5,7 @@ import os
 import shutil
 
 import android_tools
-from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand
+from build_commands import CompileCommand, IncAaptCommand, IncJavacCommand, IncDexCommand, IncKotlincCommand
 from builder import IncrementalBuilder, Builder
 from gradle_tools import get_project_info, GradleDirectoryFinder, GradleSyncClient, GradleSyncTask, \
     GradleCleanCacheTask, GradleMergeDexTask, get_sync_native_file_path, fix_package_name, DataBindingProcessor, \
@@ -102,7 +102,7 @@ class GradleIncBuilder(IncrementalBuilder):
                 self.debug('find {} modules have res changed'.format(key))
                 return True
         return False
-        
+
     def __get_class_full_name(self, file_path):
         class_full_name = "";
 
@@ -112,14 +112,14 @@ class GradleIncBuilder(IncrementalBuilder):
 
         if (index > -1):
             class_full_name = file_path
-            
+
             class_full_name = class_full_name.replace("\\", "/")
             last_index = class_full_name.rfind(".java")
             class_full_name = class_full_name[index:last_index]
             class_full_name = class_full_name.replace("/", ".")
 
         return class_full_name;
-    
+
     def __get_package(self, file_path):
         if file_path.rfind(".java") == -1:
             return ""
@@ -132,16 +132,16 @@ class GradleIncBuilder(IncrementalBuilder):
             package_name = package_name[0:index]
 
         return package_name;
-       
+
     def __update_class_related(self):
         # update class related
-        
+
         changed_java_files = []
-        
+
         for module, file_dict in self._changed_files['projects'].iteritems():
             if len(file_dict['src']) > 0:
                 changed_java_files.extend(file_dict['src'])
-        
+
         # process changed java files
         if len(changed_java_files) > 0:
             # update stat_cache.json
@@ -153,17 +153,17 @@ class GradleIncBuilder(IncrementalBuilder):
             if ArgsConfig.args is not None and ('gradlelog' in ArgsConfig.args and ArgsConfig.args.gradlelog):
                 show_gradle_log = True
             output, err, code = cexec(class_related_args, callback=None, use_stdout=show_gradle_log)
-            
+
             # read from stat_cache.json
             stat_cache = load_json_cache(cache_path)
-            
+
             # ignore files
             ignore_java_files = ['UCR.java', 'UCContentProvider.java']
-            
+
             related_files = []
-            
+
             package_map = {}
-            
+
             # read all package java files
             for module, file_dict in stat_cache.items():
                 for file in file_dict.keys():
@@ -171,14 +171,14 @@ class GradleIncBuilder(IncrementalBuilder):
 
                     if package_name == '':
                         continue
-                    
+
                     if not package_map.has_key(package_name):
                         same_package_files = []
                         package_map[package_name] = same_package_files
                     else:
                         same_package_files = package_map.get(package_name);
                     same_package_files.append(file)
-            
+
             # read all related java files
             for file in changed_java_files:
                 for module, file_dict in stat_cache.items():
@@ -186,7 +186,7 @@ class GradleIncBuilder(IncrementalBuilder):
                         file_stat = file_dict[file]
                         if file_stat.has_key('related'):
                             related_files.extend(file_stat['related'])
-                
+
                 # read all same package files
                 package_name = self.__get_package(file)
                 if package_name != '' and package_map.has_key(package_name):
@@ -207,7 +207,7 @@ class GradleIncBuilder(IncrementalBuilder):
 
     def __changed_modules(self):
         self.__update_class_related()
-    
+
         modules = []
         for module, file_dict in self._changed_files['projects'].iteritems():
             if len(file_dict['src']) > 0 or len(file_dict['res']) or len(file_dict['assets']) > 0:
@@ -294,6 +294,7 @@ class GradleCompileCommand(CompileCommand):
     def _setup(self):
         # self.add_command(GradleIncAaptCommand(self._module, self._invoker))
         self.add_command(GradleIncJavacCommand(self._module, self._invoker))
+        self.add_command(GradleIncKotlincCommand(self._module, self._invoker))
         self.add_command(GradleIncDexCommand(self._module, self._invoker))
 
     def execute(self):
@@ -327,7 +328,7 @@ class GradleIncJavacCommand(IncJavacCommand):
         # self._invoker.check_other_modules_resources()
         should_run_javac_task = self._invoker.check_javac_task()
         if not should_run_javac_task:
-            self.debug('no need to execute')
+            self.debug('no need to execute javac')
             return
 
         self.debug('start to execute javac command...')
@@ -335,18 +336,40 @@ class GradleIncJavacCommand(IncJavacCommand):
         self._invoker.fill_classpaths()
         self._invoker.fill_extra_javac_args()
         self._invoker.clean_dex_cache()
-        self._invoker.run_apt_only()
+        # self._invoker.run_apt_only() #辣鸡
         self._invoker.run_javac_task()
         self._invoker.run_desugar_task()
         self._invoker.run_retrolambda()
 
+
+class GradleIncKotlincCommand(IncKotlincCommand):
+    def __init__(self, module_name, invoker):
+        IncKotlincCommand.__init__(self, module_name, invoker)
+
+    def execute(self):
+        # self._invoker.check_r_md5()  # check if R.java has changed
+        # self._invoker.check_other_modules_resources()
+        should_run_kotlinc_task = self._invoker.check_kotlinc_task()
+        if not should_run_kotlinc_task:
+            self.debug('no need to execute kotlinc ')
+            return
+
+        self.debug('start to execute kotlinc command...')
+        # self._invoker.append_r_file()
+        self._invoker.fill_classpaths()
+        # self._invoker.fill_extra_javac_args()
+        self._invoker.clean_dex_cache()
+        # self._invoker.run_apt_only()
+        self._invoker.run_kotlinc_task()
+        # self._invoker.run_retrolambda()
 
 class GradleIncDexCommand(IncDexCommand):
     def __init__(self, module_name, invoker):
         IncDexCommand.__init__(self, module_name, invoker)
 
     def execute(self):
-        should_run_dex_task = self._invoker.check_dex_task()
+        # hack kotlinc不给merge的情况 todo: 优化代码
+        should_run_dex_task = self._invoker.check_dex_task() or self._invoker.check_kotlinc_task()
         if not should_run_dex_task:
             self.debug('no need to execute')
             return
@@ -373,6 +396,8 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             'databinding_modules']
         self._is_dagger_enabled = 'apt_libraries' in self._config and self._config['apt_libraries']['dagger']
         self._apt_output_dir = None
+        self._custom_annotation_support_enabled = self._config['customAnnotationSupportEnabled']
+        self._custon_annotation_tags = self._config['annotationMap'].values()
         for mname in self._all_module_info.keys():
             if mname in self._config['project_source_sets']:
                 self._merged_res_paths.extend(self._config['project_source_sets'][mname]['main_res_directory'])
@@ -731,8 +756,13 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
             self.debug('apt process do not generate new files, ignore javac task.')
             return
 
+        if len(self._changed_files['src']) == 0:
+            self.debug('no java file have changed, drop javac task.')
+            # 保护性
+            return
+
         extra_javac_args_enabled = not (self._is_databinding_enabled and self._should_run_databinding_apt())
-        javacargs = self._generate_java_compile_args(extra_javac_args_enabled=extra_javac_args_enabled)
+        javacargs = self._generate_java_compile_args(extra_javac_args_enabled=True)
 
         self.debug('javac exec: ' + ' '.join(javacargs))
         output, err, code = cexec(javacargs, callback=None)
@@ -746,6 +776,22 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                 if old_r_file and new_r_file:
                     shutil.copyfile(new_r_file, old_r_file)
                     self.debug('copy {} to {}'.format(new_r_file, old_r_file))
+
+    #运行增量kotlinc
+    def run_kotlinc_task(self):
+        # todo 检查R的变化
+        if self._is_only_r_changed() and not self._is_other_modules_has_src_changed:
+            self._is_need_javac = False
+            # self._is_need_kotlinc = False
+            android_tools.clean_src_changed_flag(self._cache_dir)
+            self.debug('apt process do not generate new files, ignore javac task.')
+            return
+        kotlincargs = self._generate_kotlin_compile_args()
+        self.debug('kotlinc exec: ' + ' '.join(kotlincargs))
+        output, err, code = cexec(kotlincargs, callback=None)
+
+        if code != 0:
+            raise FreelineException('incremental kotlinc compile failed.', '{}\n{}'.format(output, err))
 
     def run_desugar_task(self):
         self.debug('========= desugar task ========')
@@ -817,11 +863,14 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                     arguments.append(fpath)
 
             filter_tags = []
-            if self._is_databinding_enabled:
-                filter_tags.extend(['BindingAdapter', 'BindingConversion', 'Bindable'])
+            # if self._is_databinding_enabled:
+            #     filter_tags.extend(['BindingAdapter', 'BindingConversion', 'Bindable'])
 
             if self._is_dagger_enabled:
                 filter_tags.extend(['DaggerComponent', 'DaggerModule'])
+
+            filter_tags.extend(self._custon_annotation_tags)
+            self.debug('anno--> add custom annotation dependencies => {}'.format(self._custon_annotation_tags))
 
             files = self._get_apt_related_files(filter_tags=filter_tags)
             for fpath in files:
@@ -830,6 +879,12 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
                         continue
                     self.debug('add apt related file: {}'.format(fpath))
                     arguments.append(fpath)
+
+            # apt_args = ['-s', '/Users/retrox/AndroidStudioProjects/One/app/build/generated/source/apt/debug']
+            # apt_args.append('-processorpath')
+            # apt_args.append('/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/compiler/1.0.0-alpha9-1/b264bf594f3af7789ded9eb2944163cbd016cb96/compiler-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.lifecycle/compiler/1.0.0-alpha9-1/e523b9fc6247e9f2c4723427e6c7020551fe64a1/compiler-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/migration/1.0.0-alpha9-1/f15118c72b2d142edbcc8a44cea663c2932abd9e/migration-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.persistence.room/common/1.0.0-alpha9-1/9c06db25a3274ddeafff6a1dbc65a63df7988368/common-1.0.0-alpha9-1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.1.3/e51ebc59da5103a2052859e89682c7f9c3456298/kotlin-stdlib-1.1.3.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.auto/auto-common/0.6/cf7212b0f8bfef12657b942df8f4f2cf032d3f41/auto-common-0.6.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.squareup/javapoet/1.8.0/e858dc62ef484048540d27d36f3ec2177a3fa9b1/javapoet-1.8.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.antlr/antlr4/4.5.3/f35db7e4b2446e4174ba6a73db7bd6b3e6bb5da1/antlr4-4.5.3.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.16.1/72540738ecee65b58ef5a6dbc125e83223716b17/sqlite-jdbc-3.16.1.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/commons-codec/commons-codec/1.10/4b95f4897fa13f2cd904aee711aeafc0c5295cd8/commons-codec-1.10.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/android.arch.lifecycle/common/1.0.0/e414a4cb28434e25c4f6aa71426eb20cf4874ae9/common-1.0.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.android.support/support-annotations/26.1.0/814258103cf26a15fcc26ecce35f5b7d24b73f8/support-annotations-26.1.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.8.0/c4ba5371a29ac9b2ad6129b1d39ea38750043eff/gson-2.8.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar:/Users/retrox/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/18.0/cce0823396aa693798f8882e64213b1772032b09/guava-18.0.jar')
+            # self._extra_javac_args.extend(apt_args)
+            # self.debug('anno--> ' + ' '.join(apt_args))
 
             arguments.extend(self._extra_javac_args)
 
@@ -853,6 +908,46 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
 
         javacargs.extend(arguments)
         return javacargs
+
+    #kotlin增量命令的生成
+    def _generate_kotlin_compile_args(self, extra_javac_args_enabled=False):
+        # javacargs = [self._javac]
+        # 自定义Kotlinc Path，如果没有那就使用环境变量中的kotlinc
+        kotlinc_path = self._config.get('kotlincPath','kotlinc')
+        kotlincargs = [kotlinc_path]
+        arguments = []
+        arguments.append('-cp')
+        # todo 也许要放在配置里面？
+        self._classpaths.append('{}/tmp/kotlin-classes'.format(self._config['build_directory']))
+        arguments.append(os.pathsep.join(self._classpaths))
+
+        for fpath in self._changed_files['kotlin']:
+            arguments.append(fpath)
+
+        arguments.append('-d')
+        arguments.append(self._finder.get_patch_classes_cache_dir())
+
+        # ref: https://support.microsoft.com/en-us/kb/830473
+        # todo 去你丫的Windows？？
+        if is_windows_system():
+            arguments_length = sum(map(len, arguments))
+            if arguments_length > 8000:
+                argument_file_path = os.path.join(self._finder.get_module_cache_dir(), 'kotlinc_args_file')
+                self.debug('arguments length: {} > 8000, save args to {}'.format(arguments_length, argument_file_path))
+
+                if os.path.exists(argument_file_path):
+                    os.remove(argument_file_path)
+
+                arguments_content = ' '.join(arguments)
+                self.debug('kotlinc arguments: ' + arguments_content)
+                write_file_content(argument_file_path, arguments_content)
+                arguments = ['@{}'.format(argument_file_path)]
+
+        # javacargs.extend(arguments)
+
+        kotlincargs.extend(arguments)
+        return kotlincargs
+
 
     def _get_apt_related_files(self, filter_tags=None):
         path = self._get_apt_related_files_cache_path()
@@ -1012,7 +1107,17 @@ class GradleIncBuildInvoker(android_tools.AndroidIncBuildInvoker):
         if not finder:
             finder = self._finder
 
-        r_path = android_tools.find_r_file(finder.get_dst_r_dir(), package_name=package_name)
+        # 解决搜索R类搜到其他flavor的问题
+        flavor = ''
+        target_flavor_path = ''
+        if 'product_flavor' in self._config:
+            flavor = self._config['product_flavor']
+        if flavor != '':
+            target_flavor_path = os.path.join(finder.get_dst_r_dir(), flavor)
+        else:
+            target_flavor_path = finder.get_dst_r_dir()
+
+        r_path = android_tools.find_r_file(target_flavor_path, package_name=package_name)
         if r_path and os.path.exists(r_path):
             target_dir = os.path.join(self.__get_freeline_backup_r_dir(), package_name.replace('.', os.sep))
             if not os.path.exists(target_dir):

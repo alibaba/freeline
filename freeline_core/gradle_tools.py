@@ -51,7 +51,8 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
         for module_name, module_info in self.project_info.iteritems():
             if module_name in self._stat_cache:
                 self._changed_files[module_name] = {'libs': [], 'assets': [], 'res': [], 'src': [], 'manifest': [],
-                                                    'config': [], 'so': [], 'cpp': []}
+                                                    'config': [], 'so': [], 'cpp': [], 'kotlin': []}
+                # kotlin占坑
                 self._scan_module_changes(module_name, module_info['path'])
 
         self._mark_changed_flag()
@@ -66,6 +67,9 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                 android_tools.mark_src_changed(cache_dir)
             if not android_tools.is_res_changed(cache_dir) and len(bundle['res']) > 0:
                 android_tools.mark_res_changed(cache_dir)
+            # kotlin增量flag
+            if not android_tools.is_src_changed(cache_dir) and len(bundle['kotlin']) > 0:
+                android_tools.mark_src_changed(cache_dir)
 
     def _get_build_info(self):
         final_apk_path = self._config['apk_path']
@@ -168,6 +172,11 @@ class GradleScanChangedFilesCommand(ScanChangedFilesCommand):
                                 fpath = os.path.join(dirpath, fn)
                                 if self.__check_changes(module_name, fpath, module_cache):
                                     self._changed_files[module_name]['src'].append(fpath)
+                            # 添加kotlin的增量检查
+                            elif fn.endswith('kt'):
+                                fpath = os.path.join(dirpath, fn)
+                                if self.__check_changes(module_name, fpath, module_cache):
+                                    self._changed_files[module_name]['kotlin'].append(fpath)
 
     def __check_changes(self, module_name, fpath, module_cache):
         if not fpath:
@@ -315,6 +324,9 @@ class GenerateFileStatTask(Task):
                             if fn.endswith('java'):
                                 if fn.endswith('package-info.java') or fn.endswith('BuildConfig.java'):
                                     continue
+                                self.__save_stat(module_name, os.path.join(dirpath, fn))
+                                # add kotlin scan
+                            elif fn.endswith('kt'):
                                 self.__save_stat(module_name, os.path.join(dirpath, fn))
 
     def __save_stat(self, module, fpath):
@@ -1012,6 +1024,25 @@ class DataBindingProcessor(object):
             return
 
         source_sets = self._config['project_source_sets']
+        main_project_name = self._config['main_project_name']
+
+        resourcecachepath = os.path.join(self._config['build_cache_dir'],main_project_name,'resources_dependencies.json')
+        resourcecache = load_json_cache(resourcecachepath)
+        extra_resource_dependencies = []
+        extra_resource_dependencies = resourcecache['library_resources']
+        # extra_resource_dependencies.extend(resourcecache['local_resources'])
+
+        # fix 3rd databinding
+        main_res = source_sets[main_project_name]['main_res_directory']
+        for res in extra_resource_dependencies:
+            files = []
+            files = os.listdir(res)
+            if len(files) == 0:
+                continue
+            self.debug("res directory: {}".format(res))
+            if res not in set(main_res):
+                main_res.append(res)
+
         for module_config in databinding_config:
             if module_config['name'] in source_sets:
                 module_name = module_config['name']
