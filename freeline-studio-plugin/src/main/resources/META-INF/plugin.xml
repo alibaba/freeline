@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <id>com.apkfuns.plugin.freeline</id>
     <name>Freeline Plugin</name>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
     <vendor email="" url="https://github.com/alibaba/freeline/tree/master/android-studio-plugin">act262, 舞影凌风</vendor>
 
     <description><![CDATA[
@@ -22,10 +22,13 @@
     <change-notes><![CDATA[
       <ul>
       <li>
+          <b>1.1.5</b><br/>
+          support Android studio 3.1.x
+      </li>
+      <li>
           <b>1.1.4</b><br/>
           Add feedback channel
-        </li>
-      <li>
+      </li>
       <li>
           <b>1.1.3</b><br/>
           fix V2.3 beta2-3 crash
@@ -51,7 +54,7 @@
     </change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="141.0"/>
+    <idea-version since-build="173.0"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
